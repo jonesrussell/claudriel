@@ -1,0 +1,23 @@
+<?php
+
+declare(strict_types=1);
+
+namespace MyClaudia\Entity;
+
+use Waaseyaa\Entity\ContentEntityBase;
+
+final class Integration extends ContentEntityBase
+{
+    protected string $entityTypeId = 'integration';
+
+    protected array $entityKeys = [
+        'id'    => 'iid',
+        'uuid'  => 'uuid',
+        'label' => 'name',
+    ];
+
+    public function __construct(array $values = [])
+    {
+        parent::__construct($values, 'integration', $this->entityKeys);
+    }
+}
