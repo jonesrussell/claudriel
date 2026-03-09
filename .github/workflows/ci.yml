@@ -60,6 +60,7 @@ jobs:
             \$c['repositories'] = [['type' => 'path', 'url' => '../waaseyaa/packages/*']];
             file_put_contents('composer.json', json_encode(\$c, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . \"\\n\");
           "
+          rm -f composer.lock
 
       - name: Install dependencies
         working-directory: myclaudia
