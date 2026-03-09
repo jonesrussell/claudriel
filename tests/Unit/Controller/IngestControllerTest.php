@@ -25,7 +25,7 @@ final class IngestControllerTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->originalApiKey = $_ENV['MYCLAUDIA_API_KEY'] ?? '';
+        $this->originalApiKey = $_ENV['CLAUDRIEL_API_KEY'] ?? '';
 
         $db = PdoDatabase::createSqlite(':memory:');
         $dispatcher = new EventDispatcher();
@@ -42,7 +42,7 @@ final class IngestControllerTest extends TestCase
             $this->entityTypeManager->registerEntityType($type);
         }
 
-        $_ENV['MYCLAUDIA_API_KEY'] = 'test-secret-key';
+        $_ENV['CLAUDRIEL_API_KEY'] = 'test-secret-key';
 
         $this->controller = new IngestController($this->entityTypeManager);
     }
@@ -50,9 +50,9 @@ final class IngestControllerTest extends TestCase
     protected function tearDown(): void
     {
         if ($this->originalApiKey !== '') {
-            $_ENV['MYCLAUDIA_API_KEY'] = $this->originalApiKey;
+            $_ENV['CLAUDRIEL_API_KEY'] = $this->originalApiKey;
         } else {
-            unset($_ENV['MYCLAUDIA_API_KEY']);
+            unset($_ENV['CLAUDRIEL_API_KEY']);
         }
     }
 

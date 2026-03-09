@@ -11,7 +11,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-#[AsCommand(name: 'myclaudia:skills', description: 'List skills in the vault')]
+#[AsCommand(name: 'claudriel:skills', description: 'List skills in the vault')]
 final class SkillsCommand extends Command
 {
     public function __construct(private readonly EntityRepositoryInterface $skillRepo)

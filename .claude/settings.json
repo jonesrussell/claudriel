@@ -24,8 +24,8 @@
       "args": ["tools/memory-mcp/server.js"],
       "cwd": ".",
       "env": {
-        "MYCLAUDIA_API_URL": "http://localhost:8088",
-        "MYCLAUDIA_API_KEY": "${MYCLAUDIA_API_KEY}"
+        "CLAUDRIEL_API_URL": "http://localhost:8088",
+        "CLAUDRIEL_API_KEY": "${CLAUDRIEL_API_KEY}"
       }
     }
   }

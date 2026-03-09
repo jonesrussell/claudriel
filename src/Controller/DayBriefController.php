@@ -23,7 +23,7 @@ final class DayBriefController
 
     public function show(array $params = [], array $query = [], mixed $account = null, mixed $httpRequest = null): SsrResponse
     {
-        $storageDir   = getenv('MYCLAUDIA_STORAGE') ?: sys_get_temp_dir() . '/myclaudia';
+        $storageDir   = getenv('CLAUDRIEL_STORAGE') ?: sys_get_temp_dir() . '/myclaudia';
         $sessionStore = new BriefSessionStore($storageDir . '/brief-session.txt');
         $since        = $sessionStore->getLastBriefAt() ?? new \DateTimeImmutable('-24 hours');
 

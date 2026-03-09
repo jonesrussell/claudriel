@@ -6,8 +6,8 @@
  * can read/write the dashboard's entity storage as their memory backend.
  *
  * Required env vars:
- *   MYCLAUDIA_API_URL  — e.g. http://localhost:8088
- *   MYCLAUDIA_API_KEY  — bearer token for /api/ingest
+ *   CLAUDRIEL_API_URL  — e.g. http://localhost:8088
+ *   CLAUDRIEL_API_KEY  — bearer token for /api/ingest
  */
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
@@ -15,8 +15,8 @@ import { z } from 'zod';
 import fs from 'fs';
 import path from 'path';
 
-const API_URL = process.env.MYCLAUDIA_API_URL || 'http://localhost:8088';
-const API_KEY = process.env.MYCLAUDIA_API_KEY || '';
+const API_URL = process.env.CLAUDRIEL_API_URL || 'http://localhost:8088';
+const API_KEY = process.env.CLAUDRIEL_API_KEY || '';
 
 // Resolve project root (two levels up from tools/memory-mcp/)
 const PROJECT_ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '../..');

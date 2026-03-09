@@ -201,8 +201,8 @@ final class ChatController
     private function resolveProjectRoot(): string
     {
         // The project root is the Waaseyaa application root.
-        // Use MYCLAUDIA_ROOT env, or fall back to common detection.
-        $root = getenv('MYCLAUDIA_ROOT');
+        // Use CLAUDRIEL_ROOT env, or fall back to common detection.
+        $root = getenv('CLAUDRIEL_ROOT');
         if (is_string($root) && $root !== '' && is_dir($root)) {
             return $root;
         }
