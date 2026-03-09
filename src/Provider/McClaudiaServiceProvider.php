@@ -8,6 +8,7 @@ use MyClaudia\Command\BriefCommand;
 use MyClaudia\Command\CommitmentUpdateCommand;
 use MyClaudia\Command\CommitmentsCommand;
 use MyClaudia\Command\SkillsCommand;
+use MyClaudia\Controller\ChatController;
 use MyClaudia\Controller\CommitmentUpdateController;
 use MyClaudia\Controller\ContextController;
 use MyClaudia\Controller\DayBriefController;
@@ -16,6 +17,8 @@ use MyClaudia\Domain\DayBrief\Assembler\DayBriefAssembler;
 use MyClaudia\Domain\DayBrief\Service\BriefSessionStore;
 use MyClaudia\Support\DriftDetector;
 use MyClaudia\Entity\Account;
+use MyClaudia\Entity\ChatMessage;
+use MyClaudia\Entity\ChatSession;
 use MyClaudia\Entity\Commitment;
 use MyClaudia\Entity\Integration;
 use MyClaudia\Entity\McEvent;
@@ -77,6 +80,20 @@ final class McClaudiaServiceProvider extends ServiceProvider
             class: Skill::class,
             keys: ['id' => 'sid', 'uuid' => 'uuid', 'label' => 'name'],
         ));
+
+        $this->entityType(new EntityType(
+            id: 'chat_session',
+            label: 'Chat Session',
+            class: ChatSession::class,
+            keys: ['id' => 'csid', 'uuid' => 'uuid', 'label' => 'title'],
+        ));
+
+        $this->entityType(new EntityType(
+            id: 'chat_message',
+            label: 'Chat Message',
+            class: ChatMessage::class,
+            keys: ['id' => 'cmid', 'uuid' => 'uuid'],
+        ));
     }
 
     public function routes(WaaseyaaRouter $router): void
@@ -127,6 +144,24 @@ final class McClaudiaServiceProvider extends ServiceProvider
                 ->methods('GET')
                 ->build(),
         );
+
+        $router->addRoute(
+            'myclaudia.chat',
+            RouteBuilder::create('/chat')
+                ->controller(ChatController::class . '::index')
+                ->allowAll()
+                ->methods('GET')
+                ->build(),
+        );
+
+        $router->addRoute(
+            'myclaudia.api.chat.send',
+            RouteBuilder::create('/api/chat/send')
+                ->controller(ChatController::class . '::send')
+                ->allowAll()
+                ->methods('POST')
+                ->build(),
+        );
     }
 
     public function commands(
@@ -135,7 +170,7 @@ final class McClaudiaServiceProvider extends ServiceProvider
         EventDispatcherInterface $dispatcher,
     ): array {
         // Trigger getStorage() for each entity type so SqlSchemaHandler::ensureTable() runs.
-        foreach (['mc_event', 'commitment', 'person', 'account', 'integration', 'skill'] as $typeId) {
+        foreach (['mc_event', 'commitment', 'person', 'account', 'integration', 'skill', 'chat_session', 'chat_message'] as $typeId) {
             try {
                 $entityTypeManager->getStorage($typeId);
             } catch (\Throwable) {
