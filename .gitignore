@@ -10,3 +10,15 @@ config/active/
 waaseyaa.sqlite
 .worktrees/
 node_modules/
+
+# User data (gitignored, .gitkeep preserves dirs)
+context/
+!context/.gitkeep
+people/
+!people/.gitkeep
+projects/
+!projects/.gitkeep
+.firecrawl/
+!.firecrawl/.gitkeep
+workspaces/
+!workspaces/_templates/
