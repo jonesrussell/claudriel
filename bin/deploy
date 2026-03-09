@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Deploy: merge main into release branch
+# Usage: bin/deploy [tag]
+# Example: bin/deploy v0.2
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_DIR="$(dirname "$SCRIPT_DIR")"
+cd "$REPO_DIR"
+
+# Ensure we're on main and clean
+CURRENT_BRANCH=$(git branch --show-current)
+if [ "$CURRENT_BRANCH" != "main" ]; then
+    echo "Error: Must be on main branch (currently on $CURRENT_BRANCH)"
+    exit 1
+fi
+
+if ! git diff --quiet || ! git diff --cached --quiet; then
+    echo "Error: Working tree is not clean. Commit or stash changes first."
+    exit 1
+fi
+
+# Merge main into release
+git checkout release
+git merge main --no-edit
+echo "✓ Merged main into release"
+
+# Optional tag
+if [ -n "${1:-}" ]; then
+    git tag "$1"
+    echo "✓ Tagged $1"
+fi
+
+git push origin release --tags
+echo "✓ Pushed release branch"
+
+git checkout main
+echo "✓ Back on main"
+echo ""
+echo "To update installed copy:"
+echo "  cd ~/myclaudia && git pull"

@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Setup: clone repo and configure as installed copy
+# Usage: bin/setup-install [target-dir]
+# Default target: ~/myclaudia
+
+TARGET="${1:-$HOME/myclaudia}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_DIR="$(dirname "$SCRIPT_DIR")"
+
+if [ -d "$TARGET" ]; then
+    echo "Error: $TARGET already exists. Remove it first or choose a different path."
+    exit 1
+fi
+
+echo "Setting up MyClaudia at $TARGET..."
+
+# Clone and checkout release
+git clone "$REPO_DIR" "$TARGET"
+cd "$TARGET"
+git checkout release 2>/dev/null || git checkout -b release
+
+# Create user-data directories
+mkdir -p context people projects .firecrawl workspaces
+
+# Install the user-facing constitution
+if [ -f CLAUDE.user.md ]; then
+    cp CLAUDE.user.md CLAUDE.md
+    echo "✓ Installed user-facing CLAUDE.md"
+fi
+
+# Install PHP dependencies (production only)
+if command -v composer &> /dev/null; then
+    composer install --no-dev --no-interaction --quiet
+    echo "✓ Installed PHP dependencies"
+else
+    echo "⚠ Composer not found — run 'composer install --no-dev' manually"
+fi
+
+echo ""
+echo "✓ MyClaudia installed at $TARGET"
+echo ""
+echo "Next steps:"
+echo "  1. Copy user data from old installation:"
+echo "     rsync -av ~/claudia/context/ $TARGET/context/"
+echo "     rsync -av ~/claudia/people/ $TARGET/people/"
+echo "     rsync -av ~/claudia/projects/ $TARGET/projects/"
+echo "     rsync -av ~/claudia/.firecrawl/ $TARGET/.firecrawl/"
+echo "  2. Verify: cd $TARGET && claude"
