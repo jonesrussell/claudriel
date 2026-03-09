@@ -22,3 +22,13 @@ projects/
 !.firecrawl/.gitkeep
 workspaces/
 !workspaces/_templates/
+
+# Tool artifacts
+.playwright-mcp/
+tools/memory-mcp/package-lock.json
+
+# Screenshots
+*.png
+
+# Signal files
+storage/brief-signal.txt
