@@ -425,27 +425,6 @@ final class McpControllerTest extends TestCase
         self::assertSame(400, $response->getStatusCode());
     }
 
-    public function testSetsSessionIdHeader(): void
-    {
-        $request = Request::create('/mcp', 'POST', [], [], [], [
-            'HTTP_AUTHORIZATION' => 'Bearer test-mcp-key',
-            'CONTENT_TYPE' => 'application/json',
-        ], json_encode([
-            'jsonrpc' => '2.0',
-            'id' => '1',
-            'method' => 'initialize',
-            'params' => [
-                'protocolVersion' => '2025-06-18',
-                'capabilities' => [],
-                'clientInfo' => ['name' => 'test', 'version' => '1.0'],
-            ],
-        ]));
-
-        $response = $this->controller->handle([], [], null, $request);
-
-        self::assertTrue($response->headers->has('Mcp-Session-Id'));
-        self::assertNotEmpty($response->headers->get('Mcp-Session-Id'));
-    }
 }
 ```
 
@@ -523,15 +502,7 @@ final class McpController
         $accountId = 'default';
         $result = $router->handleRequest($body, $accountId);
 
-        $response = new JsonResponse($result);
-
-        // Set session ID on initialize responses.
-        if (($body['method'] ?? '') === 'initialize') {
-            $sessionId = bin2hex(random_bytes(16));
-            $response->headers->set('Mcp-Session-Id', $sessionId);
-        }
-
-        return $response;
+        return new JsonResponse($result);
     }
 
     private function extractBearerToken(mixed $httpRequest): ?string
@@ -568,7 +539,7 @@ final class McpController
 **Step 4: Run test to verify it passes**
 
 Run: `./vendor/bin/phpunit tests/Unit/Controller/McpControllerTest.php`
-Expected: All 6 tests PASS
+Expected: All 5 tests PASS
 
 **Step 5: Commit**
 
@@ -1635,7 +1606,7 @@ git commit -m "feat(mcp): add memory.events tool"
 
 Test should verify:
 - `name()` returns `memory.context`
-- Returns combined context files for the account from `storage/context/{accountId}/`
+- Returns combined context files from `storage/context/`
 - Returns fallback message when context directory doesn't exist
 - Reads me.md, commitments.md, patterns.md, people.md, brief.md if they exist
 
@@ -1725,53 +1696,7 @@ git commit -m "feat(mcp): add memory.remember write tool"
 
 ---
 
-### Task 4.2: MemoryUpdateTool
-
-**Files:**
-- Create: `src/Mcp/Tool/MemoryUpdateTool.php`
-- Create: `tests/Unit/Mcp/Tool/MemoryUpdateToolTest.php`
-
-**Step 1: Write the failing test**
-
-Test should verify:
-- `name()` returns `memory.update`
-- Requires `uuid` and `entity_type` arguments
-- Requires `fields` argument (key-value pairs to update)
-- Updates the entity and saves
-- Returns 404-style error for unknown UUID
-- Validates entity_type is one of: commitment, person, mc_event
-
-**Step 2-5: Standard TDD cycle + commit**
-
-```bash
-git commit -m "feat(mcp): add memory.update tool"
-```
-
----
-
-### Task 4.3: MemoryDeleteTool
-
-**Files:**
-- Create: `src/Mcp/Tool/MemoryDeleteTool.php`
-- Create: `tests/Unit/Mcp/Tool/MemoryDeleteToolTest.php`
-
-**Step 1: Write the failing test**
-
-Test should verify:
-- `name()` returns `memory.delete`
-- Requires `uuid` and `entity_type` arguments
-- Deletes the entity
-- Returns error for unknown UUID
-
-**Step 2-5: Standard TDD cycle + commit**
-
-```bash
-git commit -m "feat(mcp): add memory.delete tool"
-```
-
----
-
-### Task 4.4: MemoryIngestTool
+### Task 4.2: MemoryIngestTool
 
 **Files:**
 - Create: `src/Mcp/Tool/MemoryIngestTool.php`
@@ -1793,12 +1718,12 @@ git commit -m "feat(mcp): add memory.ingest tool"
 
 ---
 
-### Task 4.5: Wire all Slice 4 tools + commit
+### Task 4.3: Wire all Slice 4 tools + commit
 
 **Files:**
 - Modify: `src/Provider/ClaudrielServiceProvider.php`
 
-Register MemoryRememberTool, MemoryUpdateTool, MemoryDeleteTool, MemoryIngestTool in the MCP router.
+Register MemoryRememberTool and MemoryIngestTool in the MCP router.
 
 ```bash
 git commit -m "feat(mcp): wire all memory write tools into service provider"
@@ -1869,10 +1794,9 @@ final class ContextGeneratorTest extends TestCase
     protected function tearDown(): void
     {
         // Clean up temp directory
-        $files = glob($this->storageDir . '/default/*');
+        $files = glob($this->storageDir . '/*');
         if ($files) {
             array_map('unlink', $files);
-            rmdir($this->storageDir . '/default');
         }
         rmdir($this->storageDir);
     }
@@ -1885,9 +1809,9 @@ final class ContextGeneratorTest extends TestCase
         ]);
         $this->commitmentRepo->save($commitment);
 
-        $this->generator->generate('default', 'commitments');
+        $this->generator->generate('commitments');
 
-        $path = $this->storageDir . '/default/commitments.md';
+        $path = $this->storageDir . '/commitments.md';
         self::assertFileExists($path);
         self::assertStringContainsString('Send proposal', file_get_contents($path));
     }
@@ -1900,20 +1824,19 @@ final class ContextGeneratorTest extends TestCase
         ]);
         $this->personRepo->save($person);
 
-        $this->generator->generate('default', 'people');
+        $this->generator->generate('people');
 
-        $path = $this->storageDir . '/default/people.md';
+        $path = $this->storageDir . '/people.md';
         self::assertFileExists($path);
         self::assertStringContainsString('Alice', file_get_contents($path));
     }
 
     public function testGenerateAllCreatesAllFiles(): void
     {
-        $this->generator->generateAll('default');
+        $this->generator->generateAll();
 
-        self::assertDirectoryExists($this->storageDir . '/default');
-        self::assertFileExists($this->storageDir . '/default/commitments.md');
-        self::assertFileExists($this->storageDir . '/default/people.md');
+        self::assertFileExists($this->storageDir . '/commitments.md');
+        self::assertFileExists($this->storageDir . '/people.md');
     }
 }
 ```
@@ -1942,29 +1865,29 @@ final class ContextGenerator
         private readonly EntityRepositoryInterface $personRepo,
     ) {}
 
-    public function generate(string $accountId, string $type): string
+    public function generate(string $type): string
     {
+        $accountId = 'default'; // Single-tenant for now
         $content = match ($type) {
             'commitments' => $this->generateCommitments($accountId),
             'people' => $this->generatePeople($accountId),
             default => '',
         };
 
-        $dir = $this->storageDir . '/' . $accountId;
-        if (!is_dir($dir)) {
-            mkdir($dir, 0777, true);
+        if (!is_dir($this->storageDir)) {
+            mkdir($this->storageDir, 0777, true);
         }
 
-        $path = $dir . '/' . $type . '.md';
+        $path = $this->storageDir . '/' . $type . '.md';
         file_put_contents($path, $content);
 
         return $content;
     }
 
-    public function generateAll(string $accountId): void
+    public function generateAll(): void
     {
-        $this->generate($accountId, 'commitments');
-        $this->generate($accountId, 'people');
+        $this->generate('commitments');
+        $this->generate('people');
     }
 
     private function generateCommitments(string $accountId): string
@@ -2054,7 +1977,7 @@ git commit -m "feat(context): trigger context regeneration after ingestion"
 **Files:**
 - Modify: `src/Domain/Chat/ChatSystemPromptBuilder.php`
 
-Change `readFile('context/me.md')` to read from `storage/context/{tenantId}/me.md`. Add fallback for missing files.
+Change `readFile('context/me.md')` to read from `storage/context/me.md`. Add fallback for missing files.
 
 **Step 1-3: Modify, test, commit**
 
@@ -2066,45 +1989,13 @@ git commit -m "feat(context): update ChatSystemPromptBuilder to use generated co
 
 ## Slice 6: Skill Migration
 
-### Task 6.1: PhpSkillInterface
-
-**Files:**
-- Create: `src/Skill/PhpSkillInterface.php`
-
-```php
-<?php
-
-declare(strict_types=1);
-
-namespace Claudriel\Skill;
-
-interface PhpSkillInterface
-{
-    public function name(): string;
-
-    /** @return string ingestion|background|drift|pattern */
-    public function category(): string;
-
-    /** @param array<string, mixed> $input */
-    public function execute(array $input, string $accountId): array;
-}
-```
-
-**Commit:**
-
-```bash
-git commit -m "feat(skill): add PhpSkillInterface contract"
-```
-
----
-
-### Task 6.2: Promote DriftDetector to PHP skill
+### Task 6.1: Promote DriftDetector to PHP skill
 
 **Files:**
 - Create: `src/Skill/Drift/DriftDetectorSkill.php`
 - Create: `tests/Unit/Skill/Drift/DriftDetectorSkillTest.php`
 
-Wrap the existing `DriftDetector` in a `PhpSkillInterface` implementation. The existing `DriftDetector` class stays as the core logic; the skill is a thin adapter.
+Create `DriftDetectorSkill` as a standalone class (no shared interface yet). The existing `DriftDetector` class stays as the core logic; the skill is a thin adapter. Extract a shared `PhpSkillInterface` when the second PHP skill arrives.
 
 **Step 1-5: Standard TDD cycle + commit**
 
@@ -2114,7 +2005,7 @@ git commit -m "feat(skill): promote DriftDetector to PHP skill"
 
 ---
 
-### Task 6.3: Move prompt skills to resources/skills/
+### Task 6.2: Move prompt skills to resources/skills/
 
 **Files:**
 - Move: `.claude/skills/*.md` → `resources/skills/`
@@ -2141,7 +2032,7 @@ git commit -m "feat(skill): migrate prompt-type skills to resources/skills/"
 
 ---
 
-### Task 6.4: SkillListTool and SkillGetTool
+### Task 6.3: SkillListTool and SkillGetTool
 
 **Files:**
 - Create: `src/Mcp/Tool/SkillListTool.php`
@@ -2161,7 +2052,7 @@ git commit -m "feat(mcp): add skill.list and skill.get tools"
 
 ---
 
-### Task 6.5: Update Skill entity schema
+### Task 6.4: Update Skill entity schema
 
 **Files:**
 - Modify: `src/Entity/Skill.php`
@@ -2190,7 +2081,7 @@ git commit -m "feat(skill): add runtime, category, enabled, config fields to Ski
 
 ---
 
-### Task 6.6: Add active_skills to ChatSession
+### Task 6.5: Add active_skills to ChatSession
 
 **Files:**
 - Modify: `src/Entity/ChatSession.php`
@@ -2209,7 +2100,7 @@ git commit -m "feat(chat): add active_skills field to ChatSession entity"
 
 ---
 
-### Task 6.7: Wire skill tools + commit
+### Task 6.6: Wire skill tools + commit
 
 **Files:**
 - Modify: `src/Provider/ClaudrielServiceProvider.php`
@@ -2222,84 +2113,26 @@ git commit -m "feat(mcp): wire skill.list and skill.get tools into service provi
 
 ## Slice 7: Integration Hardening
 
-### Task 7.1: NormalizerRegistry
+### Task 7.1: Enhance IngestHandlerRegistry with source-aware routing + new normalizers
 
 **Files:**
-- Create: `src/Ingestion/Normalizer/NormalizerRegistry.php`
-- Create: `src/Ingestion/Normalizer/NormalizerInterface.php`
-- Create: `tests/Unit/Ingestion/Normalizer/NormalizerRegistryTest.php`
-
-**NormalizerInterface:**
-
-```php
-interface NormalizerInterface
-{
-    /** @return list<string> Source types this normalizer handles */
-    public function supports(): array;
-
-    /** @return array<string, mixed> Normalized envelope */
-    public function normalize(array $data): array;
-}
-```
-
-**NormalizerRegistry:** Maps source types to normalizers. Falls back to pass-through for unknown sources.
-
-**Step 1-5: Standard TDD cycle + commit**
-
-```bash
-git commit -m "feat(ingestion): add NormalizerRegistry with source-type dispatch"
-```
-
----
-
-### Task 7.2: ManualEventNormalizer
-
-**Files:**
+- Modify: `src/Ingestion/IngestHandlerRegistry.php` (add `source` parameter routing)
+- Create: `src/Ingestion/Normalizer/ClaudiaForwardNormalizer.php`
 - Create: `src/Ingestion/Normalizer/ManualEventNormalizer.php`
+- Create: `tests/Unit/Ingestion/Normalizer/ClaudiaForwardNormalizerTest.php`
 - Create: `tests/Unit/Ingestion/Normalizer/ManualEventNormalizerTest.php`
 
-Handles `source: "manual"` payloads from `memory.remember` MCP tool.
+Enhance `IngestHandlerRegistry` to accept a `source` parameter and route to source-aware handlers. Add `ClaudiaForwardNormalizer` (handles `source: "claudia"` payloads from a local Claudia instance) and `ManualEventNormalizer` (handles `source: "manual"` payloads from `memory.remember` MCP tool) as new handler types.
 
 **Step 1-5: Standard TDD cycle + commit**
 
 ```bash
-git commit -m "feat(ingestion): add ManualEventNormalizer for MCP memory.remember"
+git commit -m "feat(ingestion): enhance IngestHandlerRegistry with source-aware routing and new normalizers"
 ```
 
 ---
 
-### Task 7.3: ClaudiaForwardNormalizer
-
-**Files:**
-- Create: `src/Ingestion/Normalizer/ClaudiaForwardNormalizer.php`
-- Create: `tests/Unit/Ingestion/Normalizer/ClaudiaForwardNormalizerTest.php`
-
-Handles `source: "claudia"` payloads from a local Claudia instance forwarding events.
-
-**Step 1-5: Standard TDD cycle + commit**
-
-```bash
-git commit -m "feat(ingestion): add ClaudiaForwardNormalizer for local Claudia bridge"
-```
-
----
-
-### Task 7.4: Update IngestController to use NormalizerRegistry
-
-**Files:**
-- Modify: `src/Controller/IngestController.php`
-
-Wire NormalizerRegistry into the controller, dispatch incoming payloads through the appropriate normalizer before handing to the IngestHandlerRegistry.
-
-**Step 1-3: Modify, test, commit**
-
-```bash
-git commit -m "refactor(ingestion): wire NormalizerRegistry into IngestController"
-```
-
----
-
-### Task 7.5: Create MCP spec document
+### Task 7.2: Create MCP spec document
 
 **Files:**
 - Create: `docs/specs/mcp.md`
@@ -2319,12 +2152,12 @@ git commit -m "docs: add MCP server specification"
 
 ---
 
-### Task 7.6: Update all spec documents
+### Task 7.3: Update all spec documents
 
 **Files:**
 - Modify: `docs/specs/entity.md` (add account_id field)
 - Modify: `docs/specs/infrastructure.md` (add MCP, ContextGenerator, skill runtime)
-- Modify: `docs/specs/ingestion.md` (add NormalizerRegistry)
+- Modify: `docs/specs/ingestion.md` (add source-aware routing)
 - Modify: `docs/specs/chat.md` (update prompt builder, active_skills)
 
 **Commit:**
@@ -2335,7 +2168,7 @@ git commit -m "docs: update all specs for Identity & Memory Unification"
 
 ---
 
-### Task 7.7: Cleanup deprecated files
+### Task 7.4: Cleanup deprecated files
 
 **Files:**
 - Delete: `.claude/skills/*.md` (migrated to resources/skills/)
@@ -2350,13 +2183,13 @@ git commit -m "chore: cleanup deprecated Claudia skill files and update referenc
 
 ---
 
-### Task 7.8: Final integration verification
+### Task 7.5: Final integration verification
 
 **No files to create.**
 
 **Step 1:** Run full test suite: `./vendor/bin/phpunit`
 
-**Step 2:** Start dev server and verify MCP tools/list returns all 13 tools.
+**Step 2:** Start dev server and verify MCP tools/list returns all 11 tools.
 
 **Step 3:** Verify Claude Code connects via `.mcp.json` and can call `memory.briefing`.
 

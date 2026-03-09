@@ -70,10 +70,10 @@
 
 **Context files** (`context/me.md`, `context/commitments.md`, etc.) become **per-account generated views**, not source-of-truth. The database is canonical. Context files are regenerated on demand or after ingestion, scoped by account_id.
 
-**Context file structure per account:**
+**Context file structure:**
 
 ```
-storage/context/{account_id}/
+storage/context/
   me.md              # Account owner profile
   commitments.md     # Generated from active Commitments
   patterns.md        # Generated from recurring event patterns
@@ -81,6 +81,8 @@ storage/context/{account_id}/
   brief.md           # Latest brief snapshot
   learnings.md       # Extracted learnings (from memory.remember with type=learning)
 ```
+
+Per-account nesting (`storage/context/{account_id}/`) can be added when multi-tenancy is actually implemented.
 
 **Memory read API (MCP tools):**
 
@@ -98,9 +100,9 @@ storage/context/{account_id}/
 | MCP tool | Backing operation |
 |---|---|
 | `memory.remember` | Create McEvent with `source=manual`, type=`memory_note` |
-| `memory.update` | Update entity by UUID (Commitment status, Person details, etc.) |
-| `memory.delete` | Soft-delete or hard-delete entity by UUID |
 | `memory.ingest` | Trigger ingestion pipeline for a raw payload |
+
+**Future:** `memory.update` (update entity by UUID) and `memory.delete` (soft-delete entity by UUID) will be added when a concrete use case demands them.
 
 **What gets retired:**
 - Python claudia-memory daemon (all 33 MCP tools)
@@ -118,9 +120,7 @@ storage/context/{account_id}/
 **Architecture:**
 
 ```
-Claude Code → POST /mcp (JSON-RPC) → McpController → McpRouter → ToolHandler → EntityRepository → DB
-                                         ↓
-                                   BearerAuthMiddleware → Account lookup → tenant scoping
+Claude Code → POST /mcp (JSON-RPC) → McpController (API key check) → McpRouter → ToolHandler → EntityRepository → DB
 ```
 
 **New classes:**
@@ -129,17 +129,16 @@ Claude Code → POST /mcp (JSON-RPC) → McpController → McpRouter → ToolHan
 |---|---|---|
 | `McpController` | `src/Controller/McpController.php` | HTTP entry point, parses JSON-RPC, dispatches to router |
 | `McpRouter` | `src/Mcp/McpRouter.php` | Maps `method` + `params.name` to tool handlers |
-| `McpToolInterface` | `src/Mcp/McpToolInterface.php` | Contract: `name()`, `description()`, `inputSchema()`, `handle(array $args, Account $account): mixed` |
-| `McpSession` | `src/Mcp/McpSession.php` | Session ID management, validates `Mcp-Session-Id` header |
+| `McpToolInterface` | `src/Mcp/McpToolInterface.php` | Contract: `name()`, `description()`, `inputSchema()`, `handle(array $args, string $accountId): mixed` |
 
 **Request flow:**
 
 1. Client sends `POST /mcp` with `Content-Type: application/json`, `Authorization: Bearer {token}`
-2. `BearerAuthMiddleware` resolves token to `Account` entity (or 401)
+2. `McpController` validates bearer token against `CLAUDRIEL_API_KEY` env var (same pattern as `IngestController`)
 3. `McpController` parses JSON-RPC envelope
-4. For `initialize`: returns server capabilities, sets `Mcp-Session-Id` header
+4. For `initialize`: returns server capabilities
 5. For `tools/list`: `McpRouter` collects all registered tools, returns their schemas
-6. For `tools/call`: `McpRouter` finds tool by name, calls `handle($args, $account)`, returns result
+6. For `tools/call`: `McpRouter` finds tool by name, calls `handle($args, $accountId)`, returns result
 7. Response is `Content-Type: application/json` (synchronous) for all tools initially
 
 **JSON-RPC examples:**
@@ -163,9 +162,8 @@ Claude Code → POST /mcp (JSON-RPC) → McpController → McpRouter → ToolHan
 
 **Authentication:**
 - Bearer token in `Authorization` header
-- Token maps to `Account` entity via `AccountRepository::findByToken()`
-- Account entity gains a `token` field (hashed, indexed)
-- For single-tenant: one pre-generated token, stored in `.env`
+- Token validated against `CLAUDRIEL_API_KEY` environment variable (same `getValidApiKeys()` pattern as `IngestController`)
+- For single-tenant: one static API key, stored in `.env`
 - `Origin` header validation for DNS rebinding protection
 
 **`.mcp.json` configuration:**
@@ -191,13 +189,7 @@ Claude Code → POST /mcp (JSON-RPC) → McpController → McpRouter → ToolHan
 
 ### PHP Skills (server-side, computational)
 
-```php
-interface PhpSkillInterface {
-    public function name(): string;
-    public function category(): string; // ingestion|background|drift|pattern
-    public function execute(array $input, Account $account): array;
-}
-```
+Build concrete skill classes directly. Extract a shared interface when the second PHP skill arrives.
 
 **Migration mapping:**
 
@@ -258,8 +250,8 @@ class ContextGenerator {
 
 ```
 1. CLAUDRIEL.md (identity, always included)
-2. context/{account_id}/me.md (who the user is)
-3. context/{account_id}/brief.md (latest brief, truncated to recent)
+2. context/me.md (who the user is)
+3. context/brief.md (latest brief, truncated to recent)
 4. Active prompt skills relevant to the conversation (if any)
 ```
 
@@ -293,17 +285,19 @@ Content-Type: application/json
 **Flow:**
 
 ```
-External source → POST /api/ingest → BearerAuthMiddleware → Account
-  → IngestController → NormalizerRegistry → appropriate Normalizer → Envelope
+External source → POST /api/ingest → IngestController (API key check)
+  → IngestHandlerRegistry (source-aware routing) → appropriate handler → Envelope
   → EventHandler → McEvent (saved) + Person (upserted)
   → Pipeline (CommitmentExtraction, etc.)
   → ContextGenerator::generateAll() (regenerate stale context files)
   → BriefSignal (touch file for SSE notification)
 ```
 
-### Normalizer registry
+### Source-aware handlers
 
-| Source | Normalizer | Status |
+Enhance `IngestHandlerRegistry` to accept a `source` parameter and route to source-aware handlers. No separate NormalizerRegistry.
+
+| Source | Handler | Status |
 |---|---|---|
 | gmail | `GmailMessageNormalizer` | Exists |
 | calendar | `CalendarEventNormalizer` | Future |
@@ -313,7 +307,7 @@ External source → POST /api/ingest → BearerAuthMiddleware → Account
 | claudia | `ClaudiaForwardNormalizer` | New (this milestone) |
 | manual | `ManualEventNormalizer` | New (this milestone) |
 
-New normalizers are built as needed, not all in this milestone. The registry and interface are the deliverable.
+New handlers are built as needed, not all in this milestone.
 
 ### Local Claudia bridge
 
@@ -335,8 +329,8 @@ Just another ingestion source. No special protocol.
 
 ```
 Layer 1: CLAUDRIEL.md              — Identity (always, ~500-800 words)
-Layer 2: context/{aid}/me.md       — User profile (always, ~100-200 words)
-Layer 3: context/{aid}/brief.md    — Latest brief (always, truncated to today)
+Layer 2: context/me.md       — User profile (always, ~100-200 words)
+Layer 3: context/brief.md    — Latest brief (always, truncated to today)
 Layer 4: Prompt skills             — 0-N skill files, selected by context
 Layer 5: Conversation history      — ChatMessage entities for the session
 ```
@@ -379,14 +373,13 @@ claudriel/
 │       └── dashboard.php
 │
 ├── storage/
-│   └── context/                        # Per-account generated context (gitignored)
-│       └── {account_id}/
-│           ├── me.md
-│           ├── commitments.md
-│           ├── patterns.md
-│           ├── people.md
-│           ├── brief.md
-│           └── learnings.md
+│   └── context/                        # Generated context files (gitignored)
+│       ├── me.md
+│       ├── commitments.md
+│       ├── patterns.md
+│       ├── people.md
+│       ├── brief.md
+│       └── learnings.md
 │
 ├── src/
 │   ├── Entity/                         # All gain account_id field
@@ -402,7 +395,6 @@ claudriel/
 │   ├── Mcp/                            # MCP server layer
 │   │   ├── McpToolInterface.php
 │   │   ├── McpRouter.php
-│   │   ├── McpSession.php
 │   │   └── Tool/
 │   │       ├── MemoryBriefingTool.php
 │   │       ├── MemoryRecallTool.php
@@ -411,19 +403,16 @@ claudriel/
 │   │       ├── MemoryEventsTool.php
 │   │       ├── MemoryContextTool.php
 │   │       ├── MemoryRememberTool.php
-│   │       ├── MemoryUpdateTool.php
-│   │       ├── MemoryDeleteTool.php
 │   │       ├── MemoryIngestTool.php
 │   │       ├── IdentityGetTool.php
 │   │       ├── SkillListTool.php
 │   │       └── SkillGetTool.php
 │   │
 │   ├── Skill/                          # PHP server-side skills
-│   │   ├── PhpSkillInterface.php
 │   │   ├── Ingestion/
 │   │   │   └── CommitmentDetector.php
 │   │   ├── Drift/
-│   │   │   └── DriftDetector.php
+│   │   │   └── DriftDetectorSkill.php
 │   │   └── Pattern/
 │   │       └── PatternDetector.php
 │   │
@@ -447,7 +436,6 @@ claudriel/
 │   │   │   ├── PersonHandler.php
 │   │   │   └── CommitmentHandler.php
 │   │   ├── Normalizer/
-│   │   │   ├── NormalizerRegistry.php
 │   │   │   ├── GmailMessageNormalizer.php
 │   │   │   ├── ClaudiaForwardNormalizer.php
 │   │   │   └── ManualEventNormalizer.php
@@ -516,12 +504,9 @@ claudriel/
 **Deliverables:**
 - `src/Mcp/McpToolInterface.php`
 - `src/Mcp/McpRouter.php`
-- `src/Mcp/McpSession.php`
 - `src/Mcp/Tool/MemoryBriefingTool.php`
-- `src/Controller/McpController.php`
-- `Account` entity gains `token` field
-- `BearerAuthMiddleware` wired to MCP route
-- Routes: `POST /mcp`, `GET /mcp`
+- `src/Controller/McpController.php` (with static API key auth, same pattern as IngestController)
+- Routes: `POST /mcp`
 - `.mcp.json` configuration for local dev
 - Tests for controller, router, tool, auth
 
@@ -569,11 +554,10 @@ claudriel/
 **Goal:** Claude Code can create and modify memory.
 
 **Deliverables:**
-- `MemoryRememberTool`, `MemoryUpdateTool`, `MemoryDeleteTool`, `MemoryIngestTool`
-- `ManualEventNormalizer`
+- `MemoryRememberTool`, `MemoryIngestTool`
 - Tests for each tool + integration tests
 
-**Acceptance:** Claude Code can store notes, update commitments, delete entities, trigger ingestion.
+**Acceptance:** Claude Code can store notes and trigger ingestion.
 
 **Dependencies:** Slice 3.
 
@@ -585,7 +569,7 @@ claudriel/
 
 **Deliverables:**
 - `src/Context/ContextGenerator.php`
-- `storage/context/{account_id}/` directory structure
+- `storage/context/` directory structure
 - Context regeneration triggered after ingestion
 - `ChatSystemPromptBuilder` reads from generated context
 - Fallback behavior for missing context
@@ -603,8 +587,7 @@ claudriel/
 
 **Deliverables:**
 - `resources/skills/*.md` (prompt skills migrated from `.claude/skills/`)
-- `src/Skill/PhpSkillInterface.php`
-- `src/Skill/Drift/DriftDetector.php` (promoted from Support)
+- `src/Skill/Drift/DriftDetectorSkill.php` (standalone class, promoted from Support)
 - `SkillListTool`, `SkillGetTool`
 - `Skill` entity gains `runtime`, `category`, `enabled`, `config`
 - `ChatSession` gains `active_skills` field
@@ -622,9 +605,8 @@ claudriel/
 **Goal:** Ingestion hub is multi-source ready.
 
 **Deliverables:**
-- `NormalizerRegistry`
-- `ClaudiaForwardNormalizer`
-- `IngestController` updated to use registry
+- `IngestHandlerRegistry` enhanced with source-aware routing
+- `ClaudiaForwardNormalizer` + `ManualEventNormalizer` as new handler types
 - `docs/specs/mcp.md` (new spec)
 - All specs updated for new architecture
 - `.claude/rules/memory-availability.md` rewritten
