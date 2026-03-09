@@ -18,6 +18,15 @@
       "command": "node",
       "args": ["tools/spec-retrieval/server.js"],
       "cwd": "."
+    },
+    "myclaudia-memory": {
+      "command": "node",
+      "args": ["tools/memory-mcp/server.js"],
+      "cwd": ".",
+      "env": {
+        "MYCLAUDIA_API_URL": "http://localhost:8088",
+        "MYCLAUDIA_API_KEY": "${MYCLAUDIA_API_KEY}"
+      }
     }
   }
 }
