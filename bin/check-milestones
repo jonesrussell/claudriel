@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+# Check GitHub milestone/issue health for jonesrussell/myclaudia.
+# Used as a SessionStart hook to surface triage gaps at conversation start.
+# Always exits 0 — output is a warning surface only, not a CI gate.
+
+REPO="jonesrussell/myclaudia"
+
+echo "=== MyClaudia Milestone Check ==="
+
+# Open issues with no milestone
+NO_MILESTONE=$(gh api "repos/${REPO}/issues?state=open&per_page=50" \
+  --jq '[.[] | select(.milestone == null) | "#\(.number) \(.title)"] | .[]' 2>/dev/null || echo "")
+
+if [ -n "$NO_MILESTONE" ]; then
+  echo "⚠ Open issues without a milestone (incomplete triage):"
+  echo "$NO_MILESTONE" | while read -r line; do echo "  $line"; done
+else
+  echo "✓ All open issues have milestones assigned."
+fi
+
+# Open milestones with zero open issues
+MILESTONES=$(gh api "repos/${REPO}/milestones?state=open" \
+  --jq '.[] | select(.open_issues == 0) | "#\(.number) \(.title)"' 2>/dev/null || echo "")
+
+if [ -n "$MILESTONES" ]; then
+  echo "⚠ Open milestones with no open issues (possibly stale):"
+  echo "$MILESTONES" | while read -r line; do echo "  $line"; done
+fi
+
+echo "================================="
+exit 0

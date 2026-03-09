@@ -1,0 +1,93 @@
+# Entity Specification
+
+## File Map
+
+| File | Purpose |
+|------|---------|
+| `src/Entity/Account.php` | External account (email, calendar, etc.) linked to a Person |
+| `src/Entity/Commitment.php` | Extracted obligation with status + confidence |
+| `src/Entity/Integration.php` | Service integration config record |
+| `src/Entity/McEvent.php` | Immutable ingested fact (source event) |
+| `src/Entity/Person.php` | Contact/sender extracted from ingestion |
+| `src/McClaudiaServiceProvider.php` | Registers all entity types + routes |
+
+## Interface Signatures
+
+All entities extend `Waaseyaa\Entity\ContentEntityBase` (which implements `ContentEntityInterface`):
+
+```php
+// Field access
+$entity->get(string $field): mixed
+$entity->set(string $field, mixed $value): void
+$entity->id(): string|int|null  // returns value of the 'id' entity key
+$entity->uuid(): string|null
+
+// EntityRepositoryInterface (Waaseyaa\Entity\Repository)
+$repo->find(string $id, ?string $langcode = null, bool $fallback = false): ?EntityInterface
+$repo->findBy(array $criteria, ?array $orderBy = null, ?int $limit = null): array
+$repo->save(EntityInterface $entity): int  // returns SAVED_NEW=1 or SAVED_UPDATED=2
+$repo->delete(EntityInterface $entity): void
+$repo->exists(string $id): bool
+$repo->count(array $criteria = []): int
+```
+
+## Entity Keys
+
+| Entity | id key | uuid key | label key |
+|--------|--------|----------|-----------|
+| Account | `aid` | `uuid` | `name` |
+| Commitment | `cid` | `uuid` | `title` |
+| Integration | `iid` | `uuid` | `name` |
+| McEvent | `eid` | `uuid` | — |
+| Person | `pid` | `uuid` | `name` |
+
+## EntityType Registration
+
+```php
+// In McClaudiaServiceProvider::register()
+$this->entityType(new EntityType(
+    id: 'commitment',
+    label: 'Commitment',
+    class: Commitment::class,
+    keys: ['id' => 'cid', 'uuid' => 'uuid', 'label' => 'title'],
+));
+```
+
+## Commitment Fields
+
+| Field | Type | Default | Notes |
+|-------|------|---------|-------|
+| `cid` | int | — | Primary key |
+| `uuid` | string | — | |
+| `title` | string | required | Extracted from AI |
+| `confidence` | float | `1.0` | Set by extraction step |
+| `status` | string | `'pending'` | `pending`, `active`, `done` |
+| `source_event_id` | string | — | McEvent id |
+| `person_id` | string | — | Person entity id |
+| `tenant_id` | string | — | Multi-tenancy key |
+| `updated_at` | string | — | Used by DriftDetector |
+
+## McEvent Fields
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `eid` | int | Primary key |
+| `source` | string | e.g. `'gmail'` |
+| `type` | string | e.g. `'message.received'` |
+| `payload` | string | JSON-encoded payload |
+| `tenant_id` | string | |
+| `trace_id` | string | Unique per ingestion |
+| `occurred` | string | ISO 8601 timestamp |
+
+## Testing Pattern
+
+Use `InMemoryStorageDriver` + `EventDispatcher` for repository tests:
+
+```php
+$repo = new EntityRepository(
+    new EntityType(id: 'commitment', label: 'Commitment', class: Commitment::class,
+        keys: ['id' => 'cid', 'uuid' => 'uuid', 'label' => 'title']),
+    new InMemoryStorageDriver(),
+    new EventDispatcher(),
+);
+```
