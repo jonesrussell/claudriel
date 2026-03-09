@@ -11,7 +11,7 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-#[AsCommand(name: 'myclaudia:brief', description: 'Show your Day Brief')]
+#[AsCommand(name: 'claudriel:brief', description: 'Show your Day Brief')]
 final class BriefCommand extends Command
 {
     public function __construct(

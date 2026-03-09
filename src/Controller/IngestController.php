@@ -84,8 +84,8 @@ final class IngestController
      */
     private function getValidApiKeys(): array
     {
-        $key = $_ENV['MYCLAUDIA_API_KEY']
-            ?? getenv('MYCLAUDIA_API_KEY')
+        $key = $_ENV['CLAUDRIEL_API_KEY']
+            ?? getenv('CLAUDRIEL_API_KEY')
             ?: null;
 
         if ($key === null || $key === '' || $key === false) {

@@ -22,7 +22,7 @@ final class ContextController
 
     public function show(array $params = [], array $query = [], mixed $account = null, mixed $httpRequest = null): SsrResponse
     {
-        $projectRoot = getenv('MYCLAUDIA_PROJECT_ROOT') ?: dirname(__DIR__, 2);
+        $projectRoot = getenv('CLAUDRIEL_PROJECT_ROOT') ?: dirname(__DIR__, 2);
 
         // Load recent events.
         $eventStorage = $this->entityTypeManager->getStorage('mc_event');
