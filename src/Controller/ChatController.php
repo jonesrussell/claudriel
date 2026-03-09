@@ -4,12 +4,8 @@ declare(strict_types=1);
 
 namespace Claudriel\Controller;
 
-use Claudriel\Domain\Chat\AnthropicChatClient;
-use Claudriel\Domain\Chat\ChatSystemPromptBuilder;
-use Claudriel\Domain\DayBrief\Assembler\DayBriefAssembler;
 use Claudriel\Entity\ChatMessage;
 use Claudriel\Entity\ChatSession;
-use Claudriel\Support\DriftDetector;
 use Waaseyaa\Entity\EntityTypeManager;
 use Waaseyaa\SSR\SsrResponse;
 
@@ -132,60 +128,11 @@ final class ChatController
         ]);
         $messageStorage->save($userMsg);
 
-        // Load conversation history for this session
-        $allMsgIds = $messageStorage->getQuery()->execute();
-        $allMessages = $messageStorage->loadMultiple($allMsgIds);
-        $sessionMessages = [];
-        foreach ($allMessages as $msg) {
-            if ($msg->get('session_uuid') === $sessionUuid) {
-                $sessionMessages[] = $msg;
-            }
-        }
-
-        // Sort by created_at
-        usort($sessionMessages, function ($a, $b) {
-            return ($a->get('created_at') ?? '') <=> ($b->get('created_at') ?? '');
-        });
-
-        // Build messages array (only role + content for the API)
-        $apiMessages = array_map(
-            fn ($m) => ['role' => $m->get('role'), 'content' => $m->get('content')],
-            $sessionMessages,
-        );
-
-        // Build system prompt
-        $projectRoot = $this->resolveProjectRoot();
-        $promptBuilder = $this->buildPromptBuilder($projectRoot);
-        $systemPrompt = $promptBuilder->build();
-
-        // Call Anthropic
-        $model = $_ENV['ANTHROPIC_MODEL'] ?? getenv('ANTHROPIC_MODEL') ?: 'claude-sonnet-4-20250514';
-        $client = new AnthropicChatClient($apiKey, $model);
-
-        try {
-            $response = $client->complete($systemPrompt, $apiMessages);
-        } catch (\RuntimeException $e) {
-            return new SsrResponse(
-                content: json_encode(['error' => 'AI service error: ' . $e->getMessage()]),
-                statusCode: 502,
-                headers: ['Content-Type' => 'application/json'],
-            );
-        }
-
-        // Save assistant message
-        $assistantMsg = new ChatMessage([
-            'uuid' => $this->generateUuid(),
-            'session_uuid' => $sessionUuid,
-            'role' => 'assistant',
-            'content' => $response,
-            'created_at' => (new \DateTimeImmutable())->format('c'),
-        ]);
-        $messageStorage->save($assistantMsg);
-
+        // Return message ID for streaming via /stream/chat/{messageId}
         return new SsrResponse(
             content: json_encode([
+                'message_id' => $userMsg->get('uuid'),
                 'session_id' => $sessionUuid,
-                'response' => $response,
             ]),
             statusCode: 200,
             headers: ['Content-Type' => 'application/json'],
@@ -196,46 +143,6 @@ final class ChatController
     {
         $key = getenv('ANTHROPIC_API_KEY');
         return is_string($key) && $key !== '' ? $key : null;
-    }
-
-    private function resolveProjectRoot(): string
-    {
-        // The project root is the Waaseyaa application root.
-        // Use CLAUDRIEL_ROOT env, or fall back to common detection.
-        $root = getenv('CLAUDRIEL_ROOT');
-        if (is_string($root) && $root !== '' && is_dir($root)) {
-            return $root;
-        }
-
-        // Fall back: walk up from this file to find composer.json
-        $dir = __DIR__;
-        while ($dir !== '/' && $dir !== '') {
-            if (is_file($dir . '/composer.json')) {
-                return $dir;
-            }
-            $dir = dirname($dir);
-        }
-
-        return getcwd() ?: '/tmp';
-    }
-
-    private function buildPromptBuilder(string $projectRoot): ChatSystemPromptBuilder
-    {
-        $eventStorage = $this->entityTypeManager->getStorage('mc_event');
-        $commitmentStorage = $this->entityTypeManager->getStorage('commitment');
-
-        // Build lightweight repos for the assembler using entity storage directly.
-        // The assembler calls findBy([]) and get() on entities, which storage supports.
-        $eventRepo = new StorageRepositoryAdapter($eventStorage);
-        $commitmentRepo = new StorageRepositoryAdapter($commitmentStorage);
-        $driftDetector = new DriftDetector($commitmentRepo);
-
-        $skillStorage = $this->entityTypeManager->getStorage('skill');
-        $skillRepo = new StorageRepositoryAdapter($skillStorage);
-
-        $assembler = new DayBriefAssembler($eventRepo, $commitmentRepo, $driftDetector, $skillRepo);
-
-        return new ChatSystemPromptBuilder($assembler, $projectRoot);
     }
 
     private function generateUuid(): string
