@@ -6,13 +6,13 @@ namespace MyClaudia\Controller;
 
 use MyClaudia\DayBrief\BriefSessionStore;
 use Waaseyaa\Entity\EntityTypeManager;
-use Symfony\Component\HttpFoundation\Response;
+use Waaseyaa\SSR\SsrResponse;
 
 /**
  * Web controller for the daily brief JSON endpoint.
  *
- * The HttpKernel instantiates app controllers as new $class($entityTypeManager, $twig),
- * so this controller queries entities directly via EntityTypeManager::getStorage().
+ * The HttpKernel instantiates app controllers as new $class($entityTypeManager, $twig)
+ * and expects SsrResponse with public content/statusCode/headers properties.
  */
 final class DayBriefController
 {
@@ -21,7 +21,7 @@ final class DayBriefController
         private readonly mixed $twig = null,
     ) {}
 
-    public function show(): Response
+    public function show(): SsrResponse
     {
         $storageDir   = getenv('MYCLAUDIA_STORAGE') ?: sys_get_temp_dir() . '/myclaudia';
         $sessionStore = new BriefSessionStore($storageDir . '/brief-session.txt');
@@ -31,7 +31,7 @@ final class DayBriefController
         $allEventIds  = $eventStorage->getQuery()->execute();
         $allEvents    = $eventStorage->loadMultiple($allEventIds);
 
-        $recentEvents   = array_values(array_filter(
+        $recentEvents = array_values(array_filter(
             $allEvents,
             fn ($e) => new \DateTimeImmutable($e->get('occurred') ?? 'now') >= $since,
         ));
@@ -40,7 +40,7 @@ final class DayBriefController
         $people = [];
         foreach ($recentEvents as $event) {
             $source = $event->get('source') ?? 'unknown';
-            $eventsBySource[$source][] = $event;
+            $eventsBySource[$source][] = $event->toArray();
             $payload = json_decode($event->get('payload') ?? '{}', true) ?? [];
             $email   = $payload['from_email'] ?? null;
             $name    = $payload['from_name'] ?? null;
@@ -49,24 +49,28 @@ final class DayBriefController
             }
         }
 
-        $commitmentStorage = $this->entityTypeManager->getStorage('commitment');
-        $pendingIds        = $commitmentStorage->getQuery()->condition('status', 'pending')->execute();
-        $pendingCommitments = array_values($commitmentStorage->loadMultiple($pendingIds));
+        $commitmentStorage  = $this->entityTypeManager->getStorage('commitment');
+        $allCommitmentIds   = $commitmentStorage->getQuery()->execute();
+        $allCommitments     = $commitmentStorage->loadMultiple($allCommitmentIds);
+        $pendingCommitments = array_values(array_filter(
+            $allCommitments,
+            fn ($c) => $c->get('status') === 'pending',
+        ));
 
         $brief = [
-            'recent_events'        => $recentEvents,
+            'recent_events'        => array_map(fn ($e) => $e->toArray(), $recentEvents),
             'events_by_source'     => $eventsBySource,
             'people'               => $people,
-            'pending_commitments'  => $pendingCommitments,
+            'pending_commitments'  => array_map(fn ($c) => $c->toArray(), $pendingCommitments),
             'drifting_commitments' => [],
         ];
 
         $sessionStore->recordBriefAt(new \DateTimeImmutable());
 
-        return new Response(
-            json_encode($brief, JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR),
-            Response::HTTP_OK,
-            ['Content-Type' => 'application/json'],
+        return new SsrResponse(
+            content: json_encode($brief, JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR),
+            statusCode: 200,
+            headers: ['Content-Type' => 'application/json'],
         );
     }
 }

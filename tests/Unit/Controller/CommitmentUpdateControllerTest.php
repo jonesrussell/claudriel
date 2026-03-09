@@ -6,32 +6,58 @@ namespace MyClaudia\Tests\Unit\Controller;
 
 use MyClaudia\Controller\CommitmentUpdateController;
 use MyClaudia\Entity\Commitment;
+use Waaseyaa\Database\PdoDatabase;
 use Waaseyaa\Entity\EntityType;
-use Waaseyaa\EntityStorage\Driver\InMemoryStorageDriver;
-use Waaseyaa\EntityStorage\EntityRepository;
+use Waaseyaa\Entity\EntityTypeManager;
+use Waaseyaa\EntityStorage\SqlEntityStorage;
+use Waaseyaa\EntityStorage\SqlSchemaHandler;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 
 final class CommitmentUpdateControllerTest extends TestCase
 {
-    private EntityRepository $repo;
+    private EntityTypeManager $entityTypeManager;
     private CommitmentUpdateController $controller;
 
     protected function setUp(): void
     {
-        $this->repo = new EntityRepository(
-            new EntityType(id: 'commitment', label: 'Commitment', class: Commitment::class, keys: ['id' => 'cid', 'uuid' => 'uuid', 'label' => 'title']),
-            new InMemoryStorageDriver(),
-            new EventDispatcher(),
+        $db         = PdoDatabase::createSqlite(':memory:');
+        $dispatcher = new EventDispatcher();
+        $type       = new EntityType(
+            id: 'commitment',
+            label: 'Commitment',
+            class: Commitment::class,
+            keys: ['id' => 'cid', 'uuid' => 'uuid', 'label' => 'title'],
         );
-        $this->controller = new CommitmentUpdateController($this->repo);
+
+        $this->entityTypeManager = new EntityTypeManager(
+            $dispatcher,
+            function ($definition) use ($db, $dispatcher): SqlEntityStorage {
+                (new SqlSchemaHandler($definition, $db))->ensureTable();
+                return new SqlEntityStorage($definition, $db, $dispatcher);
+            },
+        );
+        $this->entityTypeManager->registerEntityType($type);
+
+        $this->controller = new CommitmentUpdateController($this->entityTypeManager);
     }
 
     private function saveCommitment(string $uuid): void
     {
-        $commitment = new Commitment(['title' => 'Test commitment', 'status' => 'pending', 'uuid' => $uuid]);
-        $this->repo->save($commitment);
+        $c = new Commitment(['title' => 'Test', 'status' => 'pending', 'uuid' => $uuid]);
+        $this->entityTypeManager->getStorage('commitment')->save($c);
+    }
+
+    private function call(string $uuid, string $body): \Waaseyaa\SSR\SsrResponse
+    {
+        $httpRequest = Request::create('/commitments/' . $uuid, 'PATCH', [], [], [], [], $body);
+        return $this->controller->update(
+            params: ['uuid' => $uuid],
+            query: [],
+            account: null,
+            httpRequest: $httpRequest,
+        );
     }
 
     public function testUpdateStatusToDone(): void
@@ -39,21 +65,18 @@ final class CommitmentUpdateControllerTest extends TestCase
         $uuid = 'bbbbbbbb-0001-0001-0001-bbbbbbbbbbbb';
         $this->saveCommitment($uuid);
 
-        $request  = Request::create('/commitments/' . $uuid, 'PATCH', [], [], [], [], json_encode(['status' => 'done']));
-        $response = $this->controller->update($uuid, $request);
+        $response = $this->call($uuid, json_encode(['status' => 'done']));
 
-        self::assertSame(200, $response->getStatusCode());
-        $body = json_decode($response->getContent(), true);
+        self::assertSame(200, $response->statusCode);
+        $body = json_decode($response->content, true);
         self::assertSame('done', $body['status']);
         self::assertSame($uuid, $body['uuid']);
     }
 
     public function testReturns404ForUnknownUuid(): void
     {
-        $request  = Request::create('/commitments/no-such-uuid', 'PATCH', [], [], [], [], json_encode(['status' => 'done']));
-        $response = $this->controller->update('no-such-uuid', $request);
-
-        self::assertSame(404, $response->getStatusCode());
+        $response = $this->call('no-such-uuid', json_encode(['status' => 'done']));
+        self::assertSame(404, $response->statusCode);
     }
 
     public function testReturns422ForInvalidStatus(): void
@@ -61,9 +84,7 @@ final class CommitmentUpdateControllerTest extends TestCase
         $uuid = 'bbbbbbbb-0002-0002-0002-bbbbbbbbbbbb';
         $this->saveCommitment($uuid);
 
-        $request  = Request::create('/commitments/' . $uuid, 'PATCH', [], [], [], [], json_encode(['status' => 'exploded']));
-        $response = $this->controller->update($uuid, $request);
-
-        self::assertSame(422, $response->getStatusCode());
+        $response = $this->call($uuid, json_encode(['status' => 'exploded']));
+        self::assertSame(422, $response->statusCode);
     }
 }
