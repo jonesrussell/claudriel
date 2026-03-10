@@ -11,4 +11,4 @@ mkdir -p "${DIR}/storage"
 [[ -f "${DIR}/.env" ]] || { cp "${DIR}/.env.example" "${DIR}/.env" 2>/dev/null && echo "Created .env from .env.example — edit with your ANTHROPIC_API_KEY"; }
 
 echo "Claudriel dashboard → http://localhost:${PORT}"
-PORT="${PORT}" exec docker compose -f "${DIR}/docker-compose.yml" up --build
+PORT="${PORT}" exec docker compose --env-file "${DIR}/.env" -f "${DIR}/docker-compose.yml" up --build
