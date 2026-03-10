@@ -1,0 +1,4 @@
+claude-code-sdk
+fastapi
+uvicorn[standard]
+pytest

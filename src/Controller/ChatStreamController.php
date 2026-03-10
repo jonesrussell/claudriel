@@ -6,6 +6,7 @@ namespace Claudriel\Controller;
 
 use Claudriel\Domain\Chat\AnthropicChatClient;
 use Claudriel\Domain\Chat\ChatSystemPromptBuilder;
+use Claudriel\Domain\Chat\SidecarChatClient;
 use Claudriel\Domain\DayBrief\Assembler\DayBriefAssembler;
 use Claudriel\Entity\ChatMessage;
 use Claudriel\Support\DriftDetector;
@@ -97,48 +98,75 @@ final class ChatStreamController
         $promptBuilder = $this->buildPromptBuilder($projectRoot);
         $systemPrompt = $promptBuilder->build();
 
-        // Stream from Anthropic
-        $model = $_ENV['ANTHROPIC_MODEL'] ?? getenv('ANTHROPIC_MODEL') ?: 'claude-sonnet-4-20250514';
-        $client = new AnthropicChatClient($apiKey, $model);
+        // Try sidecar first (provides Gmail/Calendar via Claude Code MCP)
+        $sidecarUrl = $_ENV['SIDECAR_URL'] ?? getenv('SIDECAR_URL') ?: '';
+        $sidecarKey = $_ENV['CLAUDRIEL_SIDECAR_KEY'] ?? getenv('CLAUDRIEL_SIDECAR_KEY') ?: '';
+        $useSidecar = false;
+        $sidecarClient = null;
 
-        $client->stream(
-            $systemPrompt,
-            $apiMessages,
-            onToken: function (string $token): void {
-                $data = json_encode(['token' => $token], JSON_THROW_ON_ERROR);
-                echo "event: chat-token\ndata: {$data}\n\n";
-                if (ob_get_level() > 0) {
-                    ob_flush();
-                }
-                flush();
-            },
-            onDone: function (string $fullResponse) use ($sessionUuid, $msgStorage): void {
-                // Save assistant message
-                $assistantMsg = new ChatMessage([
-                    'uuid' => $this->generateUuid(),
-                    'session_uuid' => $sessionUuid,
-                    'role' => 'assistant',
-                    'content' => $fullResponse,
-                    'created_at' => (new \DateTimeImmutable())->format('c'),
-                ]);
-                $msgStorage->save($assistantMsg);
+        if ($sidecarUrl !== '' && $sidecarKey !== '') {
+            $sidecarClient = new SidecarChatClient($sidecarUrl, $sidecarKey);
+            $useSidecar = $sidecarClient->isAvailable();
+        }
 
-                $data = json_encode(['done' => true, 'full_response' => $fullResponse], JSON_THROW_ON_ERROR);
-                echo "event: chat-done\ndata: {$data}\n\n";
-                if (ob_get_level() > 0) {
-                    ob_flush();
-                }
-                flush();
-            },
-            onError: function (string $error): void {
-                $data = json_encode(['error' => $error], JSON_THROW_ON_ERROR);
-                echo "event: chat-error\ndata: {$data}\n\n";
-                if (ob_get_level() > 0) {
-                    ob_flush();
-                }
-                flush();
-            },
-        );
+        $onToken = function (string $token): void {
+            $data = json_encode(['token' => $token], JSON_THROW_ON_ERROR);
+            echo "event: chat-token\ndata: {$data}\n\n";
+            if (ob_get_level() > 0) {
+                ob_flush();
+            }
+            flush();
+        };
+
+        $onDone = function (string $fullResponse) use ($sessionUuid, $msgStorage): void {
+            $assistantMsg = new ChatMessage([
+                'uuid' => $this->generateUuid(),
+                'session_uuid' => $sessionUuid,
+                'role' => 'assistant',
+                'content' => $fullResponse,
+                'created_at' => (new \DateTimeImmutable())->format('c'),
+            ]);
+            $msgStorage->save($assistantMsg);
+
+            $data = json_encode(['done' => true, 'full_response' => $fullResponse], JSON_THROW_ON_ERROR);
+            echo "event: chat-done\ndata: {$data}\n\n";
+            if (ob_get_level() > 0) {
+                ob_flush();
+            }
+            flush();
+        };
+
+        $onError = function (string $error): void {
+            $data = json_encode(['error' => $error], JSON_THROW_ON_ERROR);
+            echo "event: chat-error\ndata: {$data}\n\n";
+            if (ob_get_level() > 0) {
+                ob_flush();
+            }
+            flush();
+        };
+
+        if ($useSidecar) {
+            $sidecarClient->stream(
+                $systemPrompt,
+                $apiMessages,
+                $onToken,
+                $onDone,
+                $onError,
+                sessionId: $sessionUuid,
+            );
+        } else {
+            // Fallback: direct Anthropic API (no Gmail/Calendar)
+            $model = $_ENV['ANTHROPIC_MODEL'] ?? getenv('ANTHROPIC_MODEL') ?: 'claude-sonnet-4-20250514';
+            $client = new AnthropicChatClient($apiKey, $model);
+
+            $client->stream(
+                $systemPrompt,
+                $apiMessages,
+                onToken: $onToken,
+                onDone: $onDone,
+                onError: $onError,
+            );
+        }
     }
 
     private function getApiKey(): ?string
