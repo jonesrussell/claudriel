@@ -108,6 +108,7 @@ final class ClaudrielServiceProvider extends ServiceProvider
                 ->controller(DashboardController::class . '::show')
                 ->allowAll()
                 ->methods('GET')
+                ->render()
                 ->build(),
         );
 
@@ -118,6 +119,7 @@ final class ClaudrielServiceProvider extends ServiceProvider
                 ->controller(DayBriefController::class . '::show')
                 ->allowAll()
                 ->methods('GET')
+                ->render()
                 ->build(),
         );
 
@@ -128,6 +130,7 @@ final class ClaudrielServiceProvider extends ServiceProvider
                 ->controller(DashboardController::class . '::show')
                 ->allowAll()
                 ->methods('GET')
+                ->render()
                 ->build(),
         );
 
