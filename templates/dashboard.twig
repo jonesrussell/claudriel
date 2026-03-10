@@ -538,8 +538,6 @@
                 </div>
             </div>
 
-            <div class="loading" id="loading">Claudriel is thinking...</div>
-
             <div class="input-area">
                 <textarea
                     id="messageInput"
@@ -559,7 +557,6 @@
         var messagesEl = document.getElementById('messages');
         var inputEl = document.getElementById('messageInput');
         var sendBtn = document.getElementById('sendBtn');
-        var loadingEl = document.getElementById('loading');
         var emptyState = document.getElementById('emptyState');
 
         var sessionId = null;
@@ -604,6 +601,29 @@
 
         // ── Escape helper ──
         function esc(str) { var d = document.createElement('div'); d.textContent = str; return d.innerHTML; }
+
+        // ── Thinking Indicator ──
+        function showThinking() {
+            if (emptyState) emptyState.style.display = 'none';
+            var div = document.createElement('div');
+            div.className = 'message assistant thinking-indicator';
+            var label = document.createElement('div');
+            label.className = 'message-label';
+            label.textContent = 'Claudriel';
+            div.appendChild(label);
+            var content = document.createElement('div');
+            content.className = 'message-content';
+            content.textContent = 'Claudriel is thinking...';
+            div.appendChild(content);
+            messagesEl.appendChild(div);
+            messagesEl.scrollTop = messagesEl.scrollHeight;
+            return div;
+        }
+
+        function removeThinking() {
+            var el = messagesEl.querySelector('.thinking-indicator');
+            if (el) el.remove();
+        }
 
         // ── Rich Card Rendering ──
         var cardPatterns = [
@@ -727,7 +747,7 @@
             inputEl.style.height = 'auto';
 
             appendMessage('user', message);
-            loadingEl.classList.add('visible');
+            showThinking();
 
             var payload = { message: message };
             if (sessionId) payload.session_id = sessionId;
@@ -745,7 +765,7 @@
             })
             .then(function(result) {
                 if (!result.ok) {
-                    loadingEl.classList.remove('visible');
+                    removeThinking();
                     showError(result.data.error || 'Something went wrong.');
                     sending = false;
                     sendBtn.disabled = false;
@@ -758,7 +778,6 @@
 
                 if (messageId) {
                     var assistantContent = appendMessage('assistant', '');
-                    loadingEl.classList.remove('visible');
 
                     chatSource = new EventSource('/stream/chat/' + messageId);
 
@@ -802,7 +821,7 @@
                         inputEl.focus();
                     };
                 } else {
-                    loadingEl.classList.remove('visible');
+                    removeThinking();
                     var contentEl = appendMessage('assistant', result.data.response);
                     wrapCardsInContent(contentEl);
                     sending = false;
@@ -811,7 +830,7 @@
                 }
             })
             .catch(function() {
-                loadingEl.classList.remove('visible');
+                removeThinking();
                 showError('Network error: could not reach the server.');
                 sending = false;
                 sendBtn.disabled = false;
