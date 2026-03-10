@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Claudriel\Controller;
 
+use Symfony\Component\HttpFoundation\Request;
 use Waaseyaa\Entity\EntityTypeManager;
 use Waaseyaa\SSR\SsrResponse;
 
@@ -22,7 +23,7 @@ final class CommitmentUpdateController
         private readonly mixed $twig = null,
     ) {}
 
-    public function update(array $params, array $query, mixed $account, mixed $httpRequest): SsrResponse
+    public function update(array $params, array $query, mixed $account, ?Request $httpRequest = null): SsrResponse
     {
         $uuid = $params['uuid'] ?? '';
 
@@ -38,7 +39,7 @@ final class CommitmentUpdateController
             );
         }
 
-        $raw    = method_exists($httpRequest, 'getContent') ? $httpRequest->getContent() : '';
+        $raw    = $httpRequest?->getContent() ?? '';
         $body   = json_decode($raw, true) ?? [];
         $status = $body['status'] ?? null;
 
