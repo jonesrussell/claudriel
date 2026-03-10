@@ -57,13 +57,16 @@ final class DayBriefController
             fn ($c) => $c->get('status') === 'pending',
         ));
 
-        $sessionStore->recordBriefAt(new \DateTimeImmutable());
-
         // Check Accept header: if the client wants JSON, skip Twig rendering.
         $wantsJson = false;
         if ($httpRequest !== null && isset($httpRequest->headers)) {
             $accept = $httpRequest->headers->get('Accept', '');
             $wantsJson = str_contains($accept, 'application/json');
+        }
+
+        // Only advance the session cursor for full page loads, not JSON poll requests.
+        if (!$wantsJson) {
+            $sessionStore->recordBriefAt(new \DateTimeImmutable());
         }
 
         // Render HTML via Twig when available and client does not prefer JSON.
