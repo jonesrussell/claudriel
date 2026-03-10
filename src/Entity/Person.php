@@ -19,5 +19,9 @@ final class Person extends ContentEntityBase
     public function __construct(array $values = [])
     {
         parent::__construct($values, 'person', $this->entityKeys);
+
+        if ($this->get('tier') === null) {
+            $this->set('tier', 'contact');
+        }
     }
 }
