@@ -778,11 +778,20 @@
 
                 if (messageId) {
                     var assistantContent = appendMessage('assistant', '');
+                    var assistantMsg = assistantContent.parentElement;
+                    assistantMsg.classList.add('streaming');
+                    assistantMsg.style.display = 'none';
+                    var firstToken = true;
 
                     chatSource = new EventSource('/stream/chat/' + messageId);
 
                     chatSource.addEventListener('chat-token', function(e) {
                         try {
+                            if (firstToken) {
+                                removeThinking();
+                                assistantMsg.style.display = '';
+                                firstToken = false;
+                            }
                             var tokenData = JSON.parse(e.data);
                             assistantContent.textContent += tokenData.token || '';
                             messagesEl.scrollTop = messagesEl.scrollHeight;
@@ -792,6 +801,11 @@
                     chatSource.addEventListener('chat-done', function() {
                         chatSource.close();
                         chatSource = null;
+                        if (firstToken) {
+                            removeThinking();
+                            assistantMsg.style.display = '';
+                        }
+                        assistantMsg.classList.remove('streaming');
                         wrapCardsInContent(assistantContent);
                         sending = false;
                         sendBtn.disabled = false;
@@ -802,6 +816,9 @@
                     chatSource.addEventListener('chat-error', function(e) {
                         chatSource.close();
                         chatSource = null;
+                        assistantMsg.classList.remove('streaming');
+                        removeThinking();
+                        assistantMsg.style.display = '';
                         try {
                             var errData = JSON.parse(e.data);
                             showError(errData.error || 'Stream error.');
@@ -816,6 +833,9 @@
                     chatSource.onerror = function() {
                         chatSource.close();
                         chatSource = null;
+                        assistantMsg.classList.remove('streaming');
+                        removeThinking();
+                        assistantMsg.style.display = '';
                         sending = false;
                         sendBtn.disabled = false;
                         inputEl.focus();
