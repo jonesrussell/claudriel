@@ -35,3 +35,4 @@ storage/brief-signal.txt
 
 # Docker
 docker-compose.override.yml
+.superpowers/
