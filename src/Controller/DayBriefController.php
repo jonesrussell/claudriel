@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Claudriel\Controller;
 
 use Claudriel\Domain\DayBrief\Service\BriefSessionStore;
+use Claudriel\Support\DriftDetector;
 use Symfony\Component\HttpFoundation\Request;
 use Waaseyaa\Entity\EntityTypeManager;
 use Waaseyaa\SSR\SsrResponse;
@@ -61,9 +62,13 @@ final class DayBriefController
             fn ($c) => $c->get('status') === 'pending',
         ));
 
+        $commitmentRepo      = new StorageRepositoryAdapter($commitmentStorage);
+        $driftDetector        = new DriftDetector($commitmentRepo);
+        $driftingCommitments  = $driftDetector->findDrifting('default');
+
         // Check Accept header: if the client wants JSON, skip Twig rendering.
         $wantsJson = false;
-        if ($httpRequest instanceof Request) {
+        if ($httpRequest !== null) {
             $accept = $httpRequest->headers->get('Accept', '');
             $wantsJson = $httpRequest->getRequestFormat('') === 'json'
                 || str_contains($accept, 'application/json')
@@ -102,12 +107,17 @@ final class DayBriefController
                 ];
             }
 
+            $twigDrifting = array_map(fn ($c) => [
+                'title'      => $c->get('title'),
+                'updated_at' => $c->get('updated_at'),
+            ], $driftingCommitments);
+
             $html = $this->twig->render('day-brief.html.twig', [
                 'recent_events'        => $recentEvents,
                 'events_by_source'     => $twigEventsBySource,
                 'people'               => $people,
                 'pending_commitments'  => $twigCommitments,
-                'drifting_commitments' => [],
+                'drifting_commitments' => $twigDrifting,
             ]);
 
             return new SsrResponse(
@@ -125,7 +135,7 @@ final class DayBriefController
             ),
             'people'               => $people,
             'pending_commitments'  => array_map(fn ($c) => $c->toArray(), $pendingCommitments),
-            'drifting_commitments' => [],
+            'drifting_commitments' => array_map(fn ($c) => $c->toArray(), $driftingCommitments),
         ];
 
         return new SsrResponse(
