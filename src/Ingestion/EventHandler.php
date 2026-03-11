@@ -31,7 +31,7 @@ final class EventHandler
             return $existing[0];
         }
 
-        $this->upsertPerson($payload['from_email'] ?? '', $payload['from_name'] ?? '', $envelope->tenantId ?? '');
+        $this->upsertPerson($payload['from_email'] ?? '', $payload['from_name'] ?? '', $envelope->tenantId ?? '', $envelope->source);
 
         $category = EventCategorizer::categorize($envelope->source, $envelope->type, $payload);
 
@@ -50,9 +50,13 @@ final class EventHandler
         return $event;
     }
 
-    private function upsertPerson(string $email, string $name, string $tenantId): void
+    private function upsertPerson(string $email, string $name, string $tenantId, string $source = 'gmail'): void
     {
-        if ($this->personRepo->count(['email' => $email]) > 0) {
+        $now = (new \DateTimeImmutable)->format(\DateTimeInterface::ATOM);
+        $existing = $this->personRepo->findBy(['email' => $email]);
+        if ($existing !== []) {
+            $existing[0]->set('last_interaction_at', $now);
+            $this->personRepo->save($existing[0]);
             return;
         }
         $tier = PersonTierClassifier::classify($email);
@@ -61,6 +65,8 @@ final class EventHandler
             'name' => $name ?: $email,
             'tier' => $tier,
             'tenant_id' => $tenantId,
+            'source' => $source,
+            'last_interaction_at' => $now,
         ]));
     }
 }

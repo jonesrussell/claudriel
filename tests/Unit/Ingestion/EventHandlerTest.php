@@ -180,4 +180,48 @@ final class EventHandlerTest extends TestCase
         $events = $this->eventRepo->findBy([]);
         self::assertSame('job_hunt', $events[0]->get('category'));
     }
+
+    public function test_updates_last_interaction_at_on_re_encounter(): void
+    {
+        $payload1 = ['message_id' => 'msg-a', 'thread_id' => 't-a', 'from_email' => 'jane@example.com', 'from_name' => 'Jane', 'subject' => 'First', 'body' => 'Hi', 'date' => '2026-03-08T09:00:00+00:00'];
+        $payload2 = ['message_id' => 'msg-b', 'thread_id' => 't-b', 'from_email' => 'jane@example.com', 'from_name' => 'Jane', 'subject' => 'Second', 'body' => 'Again', 'date' => '2026-03-09T10:00:00+00:00'];
+
+        $this->handler->handle(new Envelope(
+            source: 'gmail',
+            type: 'message.received',
+            payload: $payload1,
+            timestamp: '2026-03-08T09:00:00+00:00',
+            traceId: 'trace-upsert-1',
+            tenantId: 'user-1',
+        ));
+
+        $this->handler->handle(new Envelope(
+            source: 'gmail',
+            type: 'message.received',
+            payload: $payload2,
+            timestamp: '2026-03-09T10:00:00+00:00',
+            traceId: 'trace-upsert-2',
+            tenantId: 'user-1',
+        ));
+
+        $persons = $this->personRepo->findBy([]);
+        self::assertCount(1, $persons);
+        self::assertNotNull($persons[0]->get('last_interaction_at'));
+    }
+
+    public function test_sets_source_from_envelope_on_create(): void
+    {
+        $this->handler->handle(new Envelope(
+            source: 'gmail',
+            type: 'message.received',
+            payload: ['message_id' => 'msg-src', 'from_email' => 'new@example.com', 'from_name' => 'New', 'subject' => 'Hey', 'body' => 'Hi'],
+            timestamp: '2026-03-08T09:00:00+00:00',
+            traceId: 'trace-src-1',
+            tenantId: 'user-1',
+        ));
+
+        $persons = $this->personRepo->findBy([]);
+        self::assertCount(1, $persons);
+        self::assertSame('gmail', $persons[0]->get('source'));
+    }
 }

@@ -42,4 +42,17 @@ final class McEventTest extends TestCase
         $event->set('category', 'job_hunt');
         $this->assertSame('job_hunt', $event->get('category'));
     }
+
+    public function test_workspace_id_defaults_to_null(): void
+    {
+        $event = new McEvent;
+        self::assertNull($event->get('workspace_id'));
+    }
+
+    public function test_workspace_id_can_be_set(): void
+    {
+        $event = new McEvent;
+        $event->set('workspace_id', 'ws-abc-123');
+        self::assertSame('ws-abc-123', $event->get('workspace_id'));
+    }
 }

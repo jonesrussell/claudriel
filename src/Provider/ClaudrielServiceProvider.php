@@ -27,6 +27,7 @@ use Claudriel\Entity\Integration;
 use Claudriel\Entity\McEvent;
 use Claudriel\Entity\Person;
 use Claudriel\Entity\Skill;
+use Claudriel\Entity\Workspace;
 use Claudriel\Support\DriftDetector;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 use Waaseyaa\Database\PdoDatabase;
@@ -97,6 +98,13 @@ final class ClaudrielServiceProvider extends ServiceProvider
             label: 'Chat Message',
             class: ChatMessage::class,
             keys: ['id' => 'cmid', 'uuid' => 'uuid'],
+        ));
+
+        $this->entityType(new EntityType(
+            id: 'workspace',
+            label: 'Workspace',
+            class: Workspace::class,
+            keys: ['id' => 'wid', 'uuid' => 'uuid', 'label' => 'name'],
         ));
     }
 

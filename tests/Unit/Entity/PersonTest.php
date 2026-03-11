@@ -27,4 +27,22 @@ final class PersonTest extends TestCase
         $person->set('tier', 'creator');
         $this->assertSame('creator', $person->get('tier'));
     }
+
+    public function test_last_interaction_at_defaults_to_null(): void
+    {
+        $person = new Person;
+        self::assertNull($person->get('last_interaction_at'));
+    }
+
+    public function test_source_defaults_to_gmail(): void
+    {
+        $person = new Person;
+        self::assertSame('gmail', $person->get('source'));
+    }
+
+    public function test_metadata_defaults_to_empty_json(): void
+    {
+        $person = new Person;
+        self::assertSame('{}', $person->get('metadata'));
+    }
 }

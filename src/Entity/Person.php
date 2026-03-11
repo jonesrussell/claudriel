@@ -23,5 +23,14 @@ final class Person extends ContentEntityBase
         if ($this->get('tier') === null) {
             $this->set('tier', 'contact');
         }
+        if ($this->get('last_interaction_at') === null) {
+            $this->set('last_interaction_at', null);
+        }
+        if ($this->get('source') === null) {
+            $this->set('source', 'gmail');
+        }
+        if ($this->get('metadata') === null) {
+            $this->set('metadata', '{}');
+        }
     }
 }
