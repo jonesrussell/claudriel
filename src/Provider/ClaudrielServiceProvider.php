@@ -184,6 +184,15 @@ final class ClaudrielServiceProvider extends ServiceProvider
         );
 
         $router->addRoute(
+            'claudriel.api.chat.sessions.messages',
+            RouteBuilder::create('/api/chat/sessions/{uuid}/messages')
+                ->controller(ChatController::class.'::messages')
+                ->allowAll()
+                ->methods('GET')
+                ->build(),
+        );
+
+        $router->addRoute(
             'claudriel.api.chat.send',
             RouteBuilder::create('/api/chat/send')
                 ->controller(ChatController::class.'::send')

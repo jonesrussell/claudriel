@@ -51,7 +51,7 @@ parameters:
 		-
 			message: '#^Call to an undefined method Waaseyaa\\Entity\\EntityInterface\:\:get\(\)\.$#'
 			identifier: method.notFound
-			count: 6
+			count: 10
 			path: src/Controller/ChatController.php
 
 		-

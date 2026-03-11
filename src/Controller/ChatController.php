@@ -69,6 +69,46 @@ final class ChatController
     }
 
     /**
+     * GET /api/chat/sessions/{uuid}/messages — load messages for a session.
+     */
+    public function messages(array $params = [], array $query = [], mixed $account = null, mixed $httpRequest = null): SsrResponse
+    {
+        $uuid = $params['uuid'] ?? '';
+        $sessionStorage = $this->entityTypeManager->getStorage('chat_session');
+        $sessionIds = $sessionStorage->getQuery()->condition('uuid', $uuid)->execute();
+
+        if (empty($sessionIds)) {
+            return new SsrResponse(
+                content: json_encode(['error' => 'Session not found']),
+                statusCode: 404,
+                headers: ['Content-Type' => 'application/json'],
+            );
+        }
+
+        $messageStorage = $this->entityTypeManager->getStorage('chat_message');
+        $messageIds = $messageStorage->getQuery()->condition('session_uuid', $uuid)->execute();
+        $allMessages = $messageStorage->loadMultiple($messageIds);
+
+        usort($allMessages, function ($a, $b) {
+            return ($a->get('created_at') ?? '') <=> ($b->get('created_at') ?? '');
+        });
+
+        $result = [];
+        foreach ($allMessages as $msg) {
+            $result[] = [
+                'role' => $msg->get('role'),
+                'content' => $msg->get('content'),
+            ];
+        }
+
+        return new SsrResponse(
+            content: json_encode(['messages' => $result]),
+            statusCode: 200,
+            headers: ['Content-Type' => 'application/json'],
+        );
+    }
+
+    /**
      * POST /api/chat/send — send a message and get the assistant response.
      */
     public function send(array $params = [], array $query = [], mixed $account = null, mixed $httpRequest = null): SsrResponse
