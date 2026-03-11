@@ -32,9 +32,11 @@ final class EventHandler
             return $existing[0];
         }
 
-        $this->upsertPerson($payload['from_email'] ?? '', $payload['from_name'] ?? '', $envelope->tenantId ?? '', $envelope->source);
-
         $category = $this->categorizer->categorize($envelope->source, $envelope->type, $payload);
+
+        if ($category !== 'notification') {
+            $this->upsertPerson($payload['from_email'] ?? '', $payload['from_name'] ?? '', $envelope->tenantId ?? '', $envelope->source);
+        }
 
         $event = new McEvent([
             'source' => $envelope->source,

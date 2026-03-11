@@ -9,6 +9,7 @@ use Claudriel\Ingestion\Handler\CommitmentIngestHandler;
 use Claudriel\Ingestion\Handler\GenericEventHandler;
 use Claudriel\Ingestion\Handler\PersonIngestHandler;
 use Claudriel\Ingestion\IngestHandlerRegistry;
+use Claudriel\Support\AutomatedSenderDetector;
 use Claudriel\Support\BriefSignal;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -28,7 +29,7 @@ final class IngestController
         private readonly EntityTypeManager $entityTypeManager,
         private readonly mixed $twig = null,
     ) {
-        $fallback = new GenericEventHandler($this->entityTypeManager, new EventCategorizer);
+        $fallback = new GenericEventHandler($this->entityTypeManager, new EventCategorizer(new AutomatedSenderDetector));
         $this->registry = new IngestHandlerRegistry($fallback);
         $this->registry->addHandler(new CommitmentIngestHandler($this->entityTypeManager));
         $this->registry->addHandler(new PersonIngestHandler($this->entityTypeManager));

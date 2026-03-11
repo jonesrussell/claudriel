@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Claudriel\Ingestion;
 
+use Claudriel\Support\AutomatedSenderDetector;
+use Waaseyaa\Entity\Repository\EntityRepositoryInterface;
+
 final class EventCategorizer
 {
     private const JOB_KEYWORDS = [
@@ -11,7 +14,10 @@ final class EventCategorizer
         'recruiter', 'resume', 'offer', 'salary', 'applied',
     ];
 
-    public function __construct() {}
+    public function __construct(
+        private readonly AutomatedSenderDetector $automatedDetector = new AutomatedSenderDetector,
+        private readonly ?EntityRepositoryInterface $personRepo = null,
+    ) {}
 
     /**
      * @param  array<string, mixed>  $payload
@@ -45,6 +51,12 @@ final class EventCategorizer
     }
 
     /**
+     * Three-tier Gmail categorization:
+     * 1. Job keywords → job_hunt (highest priority)
+     * 2. Automated sender → notification
+     * 3. Known person (exists in personRepo) → people
+     * 4. Unknown sender → triage
+     *
      * @param  array<string, mixed>  $payload
      */
     private function categorizeGmail(string $type, array $payload): string
@@ -59,6 +71,20 @@ final class EventCategorizer
             }
         }
 
-        return 'people';
+        $fromEmail = $payload['from_email'] ?? '';
+        $fromName = $payload['from_name'] ?? '';
+
+        if ($fromEmail !== '' && $this->automatedDetector->isAutomated($fromEmail, $fromName)) {
+            return 'notification';
+        }
+
+        if ($this->personRepo !== null && $fromEmail !== '') {
+            $existing = $this->personRepo->findBy(['email' => $fromEmail]);
+            if ($existing !== []) {
+                return 'people';
+            }
+        }
+
+        return 'triage';
     }
 }

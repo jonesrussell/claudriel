@@ -8,6 +8,7 @@ use Claudriel\Entity\McEvent;
 use Claudriel\Entity\Person;
 use Claudriel\Ingestion\EventCategorizer;
 use Claudriel\Ingestion\EventHandler;
+use Claudriel\Support\AutomatedSenderDetector;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Waaseyaa\Entity\EntityType;
@@ -38,7 +39,7 @@ final class EventHandlerTest extends TestCase
             $dispatcher,
         );
 
-        $this->handler = new EventHandler($this->eventRepo, $this->personRepo, new EventCategorizer);
+        $this->handler = new EventHandler($this->eventRepo, $this->personRepo, new EventCategorizer(new AutomatedSenderDetector, $this->personRepo));
     }
 
     public function test_creates_event_and_person_from_envelope(): void
@@ -105,9 +106,9 @@ final class EventHandlerTest extends TestCase
         self::assertSame(64, strlen($events[0]->get('content_hash')));
     }
 
-    public function test_upserts_person_with_automated_tier_for_noreply_email(): void
+    public function test_skips_person_upsert_for_automated_sender(): void
     {
-        $this->handler->handle(new Envelope(
+        $event = $this->handler->handle(new Envelope(
             source: 'gmail',
             type: 'message.received',
             payload: ['message_id' => 'msg-noreply', 'from_email' => 'noreply@github.com', 'from_name' => 'GitHub', 'subject' => 'Token expired', 'body' => 'Your PAT expired'],
@@ -117,8 +118,8 @@ final class EventHandlerTest extends TestCase
         ));
 
         $persons = $this->personRepo->findBy([]);
-        self::assertCount(1, $persons);
-        self::assertSame('automated', $persons[0]->get('tier'));
+        self::assertCount(0, $persons);
+        self::assertSame('notification', $event->get('category'));
     }
 
     public function test_upserts_person_with_contact_tier_for_regular_email(): void
@@ -137,7 +138,7 @@ final class EventHandlerTest extends TestCase
         self::assertSame('contact', $persons[0]->get('tier'));
     }
 
-    public function test_categorizes_gmail_event_as_people(): void
+    public function test_categorizes_first_gmail_from_unknown_sender_as_triage(): void
     {
         $this->handler->handle(new Envelope(
             source: 'gmail',
@@ -149,7 +150,31 @@ final class EventHandlerTest extends TestCase
         ));
 
         $events = $this->eventRepo->findBy([]);
-        self::assertSame('people', $events[0]->get('category'));
+        self::assertSame('triage', $events[0]->get('category'));
+    }
+
+    public function test_categorizes_second_gmail_from_known_person_as_people(): void
+    {
+        $first = $this->handler->handle(new Envelope(
+            source: 'gmail',
+            type: 'message.received',
+            payload: ['message_id' => 'msg-first', 'from_email' => 'chris@example.com', 'from_name' => 'Chris', 'subject' => 'First msg', 'body' => 'Hi'],
+            timestamp: '2026-03-08T09:00:00+00:00',
+            traceId: 'trace-cat-1a',
+            tenantId: 'user-1',
+        ));
+
+        $second = $this->handler->handle(new Envelope(
+            source: 'gmail',
+            type: 'message.received',
+            payload: ['message_id' => 'msg-second', 'from_email' => 'chris@example.com', 'from_name' => 'Chris', 'subject' => 'Follow up', 'body' => 'Checking in'],
+            timestamp: '2026-03-08T10:00:00+00:00',
+            traceId: 'trace-cat-1b',
+            tenantId: 'user-1',
+        ));
+
+        self::assertSame('triage', $first->get('category'));
+        self::assertSame('people', $second->get('category'));
     }
 
     public function test_categorizes_calendar_event_as_schedule(): void
