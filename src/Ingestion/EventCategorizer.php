@@ -32,7 +32,7 @@ final class EventCategorizer
      */
     private static function categorizeCalendar(array $payload): string
     {
-        $title = strtolower($payload['title'] ?? '');
+        $title = strtolower($payload['title'] ?? $payload['subject'] ?? '');
         foreach (self::JOB_KEYWORDS as $keyword) {
             if (str_contains($title, $keyword)) {
                 return 'job_hunt';

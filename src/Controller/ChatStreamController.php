@@ -204,7 +204,13 @@ final class ChatStreamController
         $skillRepo = new StorageRepositoryAdapter($skillStorage);
         $driftDetector = new DriftDetector($commitmentRepo);
 
-        $assembler = new DayBriefAssembler($eventRepo, $commitmentRepo, $driftDetector, $skillRepo);
+        $personRepo = null;
+        try {
+            $personRepo = new StorageRepositoryAdapter($this->entityTypeManager->getStorage('person'));
+        } catch (\Throwable) {
+        }
+
+        $assembler = new DayBriefAssembler($eventRepo, $commitmentRepo, $driftDetector, $personRepo, $skillRepo);
 
         return new ChatSystemPromptBuilder($assembler, $projectRoot);
     }
