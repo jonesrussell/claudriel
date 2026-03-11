@@ -10,26 +10,21 @@ Pre-1.0 project. No formal versioning yet. Development is issue-driven with feat
 
 ## Milestone List
 
-| # | Title | Status | Issues |
-|---|-------|--------|--------|
-| 2 | v0.2 — Daily Use | OPEN | #9, #12, #13, #14 |
+| # | Title | Status | Description |
+|---|-------|--------|-------------|
+| 2 | v0.2 — Daily Use | CLOSED | Daily loop proven (21 closed issues) |
+| 3 | v0.3 — Claudia ↔ MyClaudia Integration | CLOSED | Integration architecture (8 closed issues) |
+| 5 | v0.4 — Data Quality | OPEN | Dedup, categorization, person tiering (#67, #68, #69) |
+| 6 | v0.5 — Smart Briefs | OPEN | Priority sorting, grouped sections, actionable items. Depends on v0.4. |
+| 7 | v0.6 — Multi-Source | OPEN | Beyond Gmail: calendar, Slack, GitHub. Depends on v0.5. |
 
-## Issue History
+## Dependency Chain
 
-| # | Status | Milestone | Description |
-|---|--------|-----------|-------------|
-| 14 | OPEN | v0.2 | feat: session tracking for Day Brief |
-| 13 | OPEN | v0.2 | feat: commitment actions (done/ignore/track) |
-| 12 | OPEN | v0.2 | feat: Day Brief v1 sections and grouping |
-| 9 | OPEN | v0.2 | chore: wire CLI commands into ConsoleKernel |
-| 8 | CLOSED | — | feat: Day Brief assembler |
-| 7 | CLOSED | — | feat: Web Day Brief view |
-| 6 | CLOSED | — | feat: CLI commands (brief + commitments) |
-| 5 | CLOSED | — | feat: Drift detector |
-| 4 | CLOSED | — | feat: Event handler |
-| 3 | CLOSED | — | feat: Commitment handler |
-| 2 | CLOSED | — | feat: Commitment extraction pipeline step |
-| 1 | CLOSED | — | feat: Gmail message normalizer |
+```
+v0.4 Data Quality → v0.5 Smart Briefs → v0.6 Multi-Source
+```
+
+You can't build smart briefs until the data is clean, and you can't scale ingestion until the brief logic is smart.
 
 ## The 5 Workflow Rules
 
