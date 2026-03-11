@@ -1,6 +1,6 @@
-# Claudia Skills
+# Claudriel Skills
 
-Skills are behaviors and workflows that extend Claudia's capabilities. They follow the [Agent Skills](https://agentskills.io) open standard and are compatible with Claude Code's skill system.
+Skills are behaviors and workflows that extend Claudriel's capabilities. They follow the [Agent Skills](https://agentskills.io) open standard and are compatible with Claude Code's skill system.
 
 ## Skill Types
 
@@ -180,7 +180,7 @@ argument-hint: [arg]
 | `follow-up-draft/` | Post-meeting thank-you |
 | `file-document/` | Save documents with provenance |
 | `new-person/` | Create relationship file |
-| `diagnose/` | Check Claudia CLI health |
+| `diagnose/` | Check Claudriel CLI health |
 
 ## Effort Levels
 

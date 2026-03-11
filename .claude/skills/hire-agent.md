@@ -70,7 +70,7 @@ auto-dispatch: true|false
 
 # [Agent Name]
 
-You are Claudia's [Agent Name]. [Brief role description]
+You are Claudriel's [Agent Name]. [Brief role description]
 
 ## Your Job
 [Numbered list of responsibilities]

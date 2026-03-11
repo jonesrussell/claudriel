@@ -22,7 +22,7 @@ outputs:
 
 # Judgment Awareness Skill
 
-**Triggers:** Activates at session start (after `claudia memory briefing`) and during any priority conflict, escalation decision, surfacing choice, or delegation routing.
+**Triggers:** Activates at session start (after `claudriel memory briefing`) and during any priority conflict, escalation decision, surfacing choice, or delegation routing.
 
 ---
 
@@ -30,14 +30,14 @@ outputs:
 
 Users accumulate business judgment over time: which clients matter most, when to break standard behavior, what always needs surfacing. This skill loads those judgment rules from `context/judgment.yaml` and applies them contextually across all other skills.
 
-**This is not a rules engine.** Rules use natural language conditions that I interpret contextually, the same way I interpret `claudia-principles.md`. The file encodes the user's business trade-offs, not programmatic logic.
+**This is not a rules engine.** Rules use natural language conditions that I interpret contextually, the same way I interpret `claudriel-principles.md`. The file encodes the user's business trade-offs, not programmatic logic.
 
 ---
 
 ## Rule Hierarchy
 
 ```
-claudia-principles.md        ← Immutable. Safety First is non-negotiable.
+claudriel-principles.md        ← Immutable. Safety First is non-negotiable.
   └── trust-north-star.md    ← Provenance and honesty requirements.
         └── judgment.yaml    ← User's business trade-offs and preferences.
               └── reflections ← Session-learned preferences (lowest priority).
@@ -47,7 +47,7 @@ claudia-principles.md        ← Immutable. Safety First is non-negotiable.
 - Override Safety First (Principle 1)
 - Skip approval for external actions
 - Reduce Trust North Star requirements
-- Contradict claudia-principles.md
+- Contradict claudriel-principles.md
 
 If a judgment rule conflicts with a principle, the principle wins silently.
 
@@ -57,7 +57,7 @@ If a judgment rule conflicts with a principle, the principle wins silently.
 
 ### At Session Start
 
-After calling `claudia memory briefing`, silently check for `context/judgment.yaml`:
+After calling `claudriel memory briefing`, silently check for `context/judgment.yaml`:
 
 1. If the file exists, read it and hold the rules in context
 2. If the file does not exist, continue normally (graceful degradation)

@@ -83,7 +83,7 @@ Note: Price may have increased. The official site is current.
 
 **Synthesis rules:**
 - Do not just list what each source says. Find the through-line.
-- Connect findings to what Claudia knows about the user's context.
+- Connect findings to what Claudriel knows about the user's context.
 - Call out where your synthesis adds interpretation beyond what sources state.
 - Keep synthesis shorter than the combined source material.
 

@@ -19,7 +19,7 @@
       "args": ["tools/spec-retrieval/server.js"],
       "cwd": "."
     },
-    "claudriel-memory": {
+    "claudia-memory": {
       "command": "node",
       "args": ["tools/memory-mcp/server.js"],
       "cwd": ".",

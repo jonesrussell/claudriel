@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Cross-platform pre-compact hook for Claudia.
+"""Cross-platform pre-compact hook for Claudriel.
 
 Injects context advisory before compaction so Claude knows to preserve
 important information via MCP tools. Shell scripts cannot call MCP tools

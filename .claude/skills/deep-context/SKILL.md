@@ -112,4 +112,4 @@ After gathering all data, synthesize into this structure:
 
 ## Performance Notes
 
-This skill makes 6-8 CLI calls (Steps 1-5 plus up to 3 connected entity lookups). Total memory budget: ~180 max (50+50+30+30+20). Designed for the 1M context window where pulling this many memories is practical without compaction risk. For quick lookups, use `claudia memory about` directly. Reserve `/deep-context` for when you need the full picture.
+This skill makes 6-8 CLI calls (Steps 1-5 plus up to 3 connected entity lookups). Total memory budget: ~180 max (50+50+30+30+20). Designed for the 1M context window where pulling this many memories is practical without compaction risk. For quick lookups, use `claudriel memory about` directly. Reserve `/deep-context` for when you need the full picture.

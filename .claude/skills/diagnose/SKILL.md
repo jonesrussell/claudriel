@@ -6,7 +6,7 @@ effort-level: low
 
 # Diagnose
 
-System health check for Claudia's memory infrastructure. Run this when:
+System health check for Claudriel's memory infrastructure. Run this when:
 - Memory commands seem unavailable
 - Session context isn't loading
 - User asks "is my memory working?"
@@ -33,7 +33,7 @@ npx get-claudia .
 If the Python binary in the `command` field doesn't exist:
 ```bash
 # Check if venv exists
-ls -la ~/.claudia/daemon/venv/bin/python 2>/dev/null || echo "Daemon venv not found"
+ls -la ~/.claudriel/daemon/venv/bin/python 2>/dev/null || echo "Daemon venv not found"
 ```
 
 ### Step 1b: Check Active MCP Servers
@@ -63,7 +63,7 @@ The daemon has a built-in preflight validator that tests all 11 startup steps:
 VENV_PYTHON=$(python3 -c "import json; c=json.load(open('.mcp.json')); print(c.get('mcpServers',{}).get('claudia-memory',{}).get('command',''))" 2>/dev/null)
 
 if [[ -n "$VENV_PYTHON" && -x "$VENV_PYTHON" ]]; then
-  "$VENV_PYTHON" -m claudia_memory --preflight --project-dir "$PWD"
+  "$VENV_PYTHON" -m claudriel_memory --preflight --project-dir "$PWD"
 else
   echo "Cannot find daemon Python binary. Re-run: npx get-claudia ."
 fi
@@ -71,7 +71,7 @@ fi
 
 If the preflight file exists, read it for structured results:
 ```bash
-cat ~/.claudia/daemon-preflight.json 2>/dev/null
+cat ~/.claudriel/daemon-preflight.json 2>/dev/null
 ```
 
 ### Step 3: Check Session Manifest
@@ -79,12 +79,12 @@ cat ~/.claudia/daemon-preflight.json 2>/dev/null
 The daemon writes a manifest when it successfully enters the MCP loop:
 
 ```bash
-cat ~/.claudia/daemon-session.json 2>/dev/null || echo "No session manifest (daemon never started)"
+cat ~/.claudriel/daemon-session.json 2>/dev/null || echo "No session manifest (daemon never started)"
 ```
 
 If the manifest exists, check whether the process is still alive:
 ```bash
-PID=$(python3 -c "import json; print(json.load(open('$HOME/.claudia/daemon-session.json')).get('pid',''))" 2>/dev/null)
+PID=$(python3 -c "import json; print(json.load(open('$HOME/.claudriel/daemon-session.json')).get('pid',''))" 2>/dev/null)
 if [[ -n "$PID" ]]; then
   ps -p "$PID" > /dev/null 2>&1 && echo "Daemon running (PID $PID)" || echo "Daemon died (PID $PID no longer running)"
 fi
@@ -99,10 +99,10 @@ curl -s http://localhost:3848/status 2>/dev/null || echo "Standalone daemon not 
 ### Step 5: Check Database Directly
 
 ```bash
-ls -la ~/.claudia/memory/*.db 2>/dev/null || echo "No database files found"
+ls -la ~/.claudriel/memory/*.db 2>/dev/null || echo "No database files found"
 
 # If database exists, check record counts
-for db_file in ~/.claudia/memory/*.db; do
+for db_file in ~/.claudriel/memory/*.db; do
   [[ -f "$db_file" ]] || continue
   echo "Database: $db_file"
   sqlite3 "$db_file" "SELECT 'memories: ' || COUNT(*) FROM memories; SELECT 'entities: ' || COUNT(*) FROM entities;" 2>/dev/null || echo "  Cannot query (may be locked)"
@@ -148,12 +148,12 @@ Format the diagnosis as:
 
 **Fix:** Run the preflight check to see exactly which step fails:
 ```bash
-~/.claudia/daemon/venv/bin/python -m claudia_memory --preflight --project-dir "$PWD"
+~/.claudriel/daemon/venv/bin/python -m claudriel_memory --preflight --project-dir "$PWD"
 ```
 
 If preflight shows fixable issues, try auto-repair:
 ```bash
-~/.claudia/daemon/venv/bin/python -m claudia_memory --repair --project-dir "$PWD"
+~/.claudriel/daemon/venv/bin/python -m claudriel_memory --repair --project-dir "$PWD"
 ```
 
 ### Issue: Tools not in palette but no error
@@ -162,7 +162,7 @@ If preflight shows fixable issues, try auto-repair:
 
 **Fix:** Check the session manifest:
 ```bash
-cat ~/.claudia/daemon-session.json
+cat ~/.claudriel/daemon-session.json
 ```
 - If missing: daemon never reached the MCP loop (run preflight)
 - If present with `exited_at`: daemon started and exited cleanly (check stdin_type, should be "pipe")
@@ -175,9 +175,9 @@ cat ~/.claudia/daemon-session.json
 **Fix:**
 ```bash
 # Find processes using the database
-lsof ~/.claudia/memory/*.db 2>/dev/null
+lsof ~/.claudriel/memory/*.db 2>/dev/null
 # Or try auto-repair
-~/.claudia/daemon/venv/bin/python -m claudia_memory --repair --project-dir "$PWD"
+~/.claudriel/daemon/venv/bin/python -m claudriel_memory --repair --project-dir "$PWD"
 ```
 
 ### Issue: Preflight shows schema_load FAIL
@@ -186,7 +186,7 @@ lsof ~/.claudia/memory/*.db 2>/dev/null
 
 **Fix:**
 ```bash
-~/.claudia/daemon/venv/bin/pip install --force-reinstall claudia-memory
+~/.claudriel/daemon/venv/bin/pip install --force-reinstall claudia-memory
 ```
 Or re-run the installer:
 ```bash
@@ -199,7 +199,7 @@ npx get-claudia .
 
 **Fix:**
 ```bash
-~/.claudia/daemon/venv/bin/pip install sqlite-vec
+~/.claudriel/daemon/venv/bin/pip install sqlite-vec
 ```
 
 ### Issue: Daemon venv not found

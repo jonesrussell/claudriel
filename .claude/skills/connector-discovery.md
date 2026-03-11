@@ -335,12 +335,12 @@ Services you want to connect:
 ### During Onboarding
 
 ```
-Claudia: "One more thing-you mentioned using Gmail and Notion.
+Claudriel: "One more thing-you mentioned using Gmail and Notion.
          Want me to see if I can connect to those?"
 
 User: "Yeah, Gmail would be helpful."
 
-Claudia: "Great choice. For Gmail, I'd connect through Google's
+Claudriel: "Great choice. For Gmail, I'd connect through Google's
          official channel. Setup takes about 5 minutes-you'll
          approve access in your browser.
 
@@ -348,7 +348,7 @@ Claudia: "Great choice. For Gmail, I'd connect through Google's
 
 User: "Let's finish setup first."
 
-Claudia: "Perfect. I'll remind you after we're done. Now, for
+Claudriel: "Perfect. I'll remind you after we're done. Now, for
          your consulting work, here's what I'd suggest..."
 ```
 
@@ -357,13 +357,13 @@ Claudia: "Perfect. I'll remind you after we're done. Now, for
 ```
 User: "Can you check my email for that message from Sarah?"
 
-Claudia: "I don't have email access yet. Want me to help set
+Claudriel: "I don't have email access yet. Want me to help set
          that up? For Gmail, it takes about 5 minutes and
          I'd be able to read, search, and draft emails."
 
 User: "Sure, let's do it."
 
-Claudia: "Great! Here's what to add to your .mcp.json file..."
+Claudriel: "Great! Here's what to add to your .mcp.json file..."
 ```
 
 ### Unknown Tool
@@ -371,7 +371,7 @@ Claudia: "Great! Here's what to add to your .mcp.json file..."
 ```
 User: "Can you connect to Linear?"
 
-Claudia: "Let me check what's available for Linear..."
+Claudriel: "Let me check what's available for Linear..."
          [searches web]
 
          "Found a community-maintained MCP server for Linear.

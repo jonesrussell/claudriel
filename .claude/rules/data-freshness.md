@@ -6,7 +6,7 @@ This rule is always active. Follow it silently. Do not cite this file or mention
 
 ## The Problem This Solves
 
-Data exists in multiple tiers. When summary tiers (MEMORY.md, README trackers, context file line items) diverge from source-of-truth tiers (individual files in workspaces, database records), Claudia reports stale information. This is a trust violation.
+Data exists in multiple tiers. When summary tiers (MEMORY.md, README trackers, context file line items) diverge from source-of-truth tiers (individual files in workspaces, database records), Claudriel reports stale information. This is a trust violation.
 
 ---
 

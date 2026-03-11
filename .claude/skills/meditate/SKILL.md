@@ -6,7 +6,7 @@ effort-level: high
 
 # Meditate
 
-End-of-session reflection that generates persistent learnings. These reflections inform future sessions, helping Claudia remember not just what happened, but what it learned about working with this user.
+End-of-session reflection that generates persistent learnings. These reflections inform future sessions, helping Claudriel remember not just what happened, but what it learned about working with this user.
 
 ## When to Activate
 
@@ -235,7 +235,7 @@ Users can modify reflections anytime in future sessions:
 User: "That thing you learned about me preferring bullet points -
        that's only for technical content, not conversations."
 
-Claudia:
+Claudriel:
 1. Call the `memory.reflections` MCP tool with query: "bullet points" to find the reflection
 2. Call the `memory.reflections` MCP tool with action: "update", id: <id>, content: "..." to update
 3. Confirm: "Updated. I'll keep that distinction in mind."
@@ -244,7 +244,7 @@ Claudia:
 ```
 User: "Delete the reflection about Monday mornings"
 
-Claudia:
+Claudriel:
 1. Search for the reflection via `memory.reflections` MCP tool
 2. Call the `memory.reflections` MCP tool with action: "delete", id: <id> to delete
 3. Confirm: "Done, I've removed that."
@@ -253,7 +253,7 @@ Claudia:
 ```
 User: "Show me all your reflections about me"
 
-Claudia:
+Claudriel:
 1. Call the `memory.reflections` MCP tool with limit: 50
 2. Format nicely with timeline info
 3. Offer to edit or delete any

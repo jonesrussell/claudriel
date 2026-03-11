@@ -9,7 +9,7 @@ This file defines the shared skeleton that ALL archetypes include. Each archetyp
 Every archetype includes these directories and files at all depth levels:
 
 ```
-claudia/
+claudriel/
 ├── CLAUDE.md
 ├── .claude/
 │   ├── commands/

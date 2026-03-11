@@ -1,13 +1,13 @@
 ---
 name: memory-audit
-description: Show everything Claudia knows with provenance tracing and entity counts. Triggers on "what do you know?", "show memories", "memory audit", "what do you remember about".
+description: Show everything Claudriel knows with provenance tracing and entity counts. Triggers on "what do you know?", "show memories", "memory audit", "what do you remember about".
 argument-hint: "[entity name]"
 effort-level: medium
 ---
 
 # Memory Audit
 
-Show what Claudia knows. Verify claims trace to sources. Surface gaps.
+Show what Claudriel knows. Verify claims trace to sources. Surface gaps.
 
 ## Usage
 
@@ -23,9 +23,9 @@ When run without arguments, produce a system-level overview of everything in mem
 Query the memory system for aggregate counts:
 
 ```
-claudia memory entities search --query "*" --project-dir "$PWD"
+claudriel memory entities search --query "*" --project-dir "$PWD"
 claudia memory recall "*" --compact --limit 1 --project-dir "$PWD"
-claudia memory document search --project-dir "$PWD"
+claudriel memory document search --project-dir "$PWD"
 ```
 Parse the JSON output from each command to get counts.
 
@@ -45,9 +45,9 @@ Display:
 ### 2. People (Top 10 by Importance)
 
 ```
-claudia memory entities search --types "person" --limit 10 --project-dir "$PWD"
+claudriel memory entities search --types "person" --limit 10 --project-dir "$PWD"
 For each person:
-  claudia memory about "[person name]" --project-dir "$PWD"
+  claudriel memory about "[person name]" --project-dir "$PWD"
 ```
 
 Display as a table:
@@ -63,13 +63,13 @@ Display as a table:
 
 Same pattern with types=["project"]:
 ```
-claudia memory entities search --types "project" --limit 10 --project-dir "$PWD"
+claudriel memory entities search --types "project" --limit 10 --project-dir "$PWD"
 ```
 
 ### 4. Active Patterns
 
 ```
-claudia memory session context --project-dir "$PWD"
+claudriel memory session context --project-dir "$PWD"
 ```
 
 ### 5. Provenance Sample
@@ -78,7 +78,7 @@ Pick the 3 most recent high-importance memories and trace them:
 ```
 claudia memory recall "*" --compact --limit 3 --project-dir "$PWD"
 For each result, run:
-  claudia memory provenance trace --memory-id "[id]" --project-dir "$PWD"
+  claudriel memory provenance trace --memory-id "[id]" --project-dir "$PWD"
 ```
 
 Display:
@@ -101,7 +101,7 @@ When run with an entity name (e.g., `/memory-audit Sarah Chen`):
 ### 1. Profile
 
 ```
-claudia memory about "[entity name]" --project-dir "$PWD"
+claudriel memory about "[entity name]" --project-dir "$PWD"
 ```
 
 Display:
@@ -117,7 +117,7 @@ Display:
 
 ### 2. All Memories (grouped by type)
 
-From the `claudia memory about` JSON response, group memories:
+From the `claudriel memory about` JSON response, group memories:
 ```
 ### Facts (N)
 - [content] (importance: X, created: date)
@@ -139,7 +139,7 @@ From the `claudia memory about` JSON response, group memories:
 ### 4. Linked Documents
 
 ```
-claudia memory document search --entity "[entity name]" --project-dir "$PWD"
+claudriel memory document search --entity "[entity name]" --project-dir "$PWD"
 ```
 
 Display:
@@ -152,7 +152,7 @@ Display:
 
 For each commitment or high-importance memory (importance > 0.7):
 ```
-claudia memory provenance trace --memory-id "[memory ID]" --project-dir "$PWD"
+claudriel memory provenance trace --memory-id "[memory ID]" --project-dir "$PWD"
 ```
 
 Display:

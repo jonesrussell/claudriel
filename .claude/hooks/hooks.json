@@ -76,9 +76,9 @@
     "implementation": "These hooks define intended behaviors. Claude Code will execute them as behavioral guidelines rather than traditional script execution.",
     "memory_verification": "CRITICAL: At session start, verify memory availability by running `claudia system-health --project-dir \"$PWD\"` BEFORE proceeding. If memory MCP tools are not available, do NOT use plugin:episodic-memory as a substitute. Tell the user the claudia-memory daemon may need to be configured. Fall back to context files only (context/me.md, etc.) in the meantime.",
     "session_start": "At session start: (1) Verify claudia system-health passes, (2) Call the `memory.session_context` MCP tool, (3) Read context files, (4) Check for unsummarized sessions. If me.md is missing, trigger onboarding.",
-    "session_end": "Before session ends, Claudia should generate a session summary via the `memory.end_session` MCP tool (enhanced memory) or update context files (markdown fallback). The summary includes both a free-form narrative and structured extractions.",
+    "session_end": "Before session ends, Claudriel should generate a session summary via the `memory.end_session` MCP tool (enhanced memory) or update context files (markdown fallback). The summary includes both a free-form narrative and structured extractions.",
     "first_run": "The absence of context/me.md signals a first-run scenario requiring onboarding.",
-    "turn_buffering": "During sessions with enhanced memory, Claudia buffers each meaningful conversation turn via the `memory.buffer_turn` MCP tool. This ensures nothing is lost even if the session ends abruptly. The buffered turns are summarized at session end or caught up at next session start.",
+    "turn_buffering": "During sessions with enhanced memory, Claudriel buffers each meaningful conversation turn via the `memory.buffer_turn` MCP tool. This ensures nothing is lost even if the session ends abruptly. The buffered turns are summarized at session end or caught up at next session start.",
     "source_filing": "CRITICAL: When processing transcripts, emails, or documents, ALWAYS call the `memory.file` MCP tool BEFORE extracting information. The Source Preservation principle (#12) is non-negotiable. Raw sources must be filed for provenance."
   }
 }

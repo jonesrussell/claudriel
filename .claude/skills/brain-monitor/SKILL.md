@@ -1,6 +1,6 @@
 ---
 name: brain-monitor
-description: Launch the Brain Monitor TUI, a real-time terminal dashboard for watching Claudia's memory system. Triggers on "brain monitor", "show dashboard", "memory dashboard", "terminal brain".
+description: Launch the Brain Monitor TUI, a real-time terminal dashboard for watching Claudriel's memory system. Triggers on "brain monitor", "show dashboard", "memory dashboard", "terminal brain".
 effort-level: low
 ---
 

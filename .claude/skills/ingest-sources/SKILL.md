@@ -61,7 +61,7 @@ Show inventory to user before proceeding. This prevents partial processing.
 ```
 For each source in inventory:
     1. READ the full content
-    2. CALL `claudia memory document store --project-dir "$PWD"` immediately (do not skip!)
+    2. CALL `claudriel memory document store --project-dir "$PWD"` immediately (do not skip!)
     3. THEN extract entities/facts/commitments
 ```
 
@@ -170,7 +170,7 @@ After user confirms verification:
 **1. Verify all sources filed:**
 Sources were already filed during Phase 2 (File-Then-Extract). Verify the file count matches:
 ```
-Confirm: [N] sources filed to ~/.claudia/files/
+Confirm: [N] sources filed to ~/.claudriel/files/
 ```
 
 If any sources weren't filed in Phase 2, file them now before proceeding.
@@ -182,7 +182,7 @@ Files are auto-routed to entity folders:
 
 **2. Create/update entities:**
 ```bash
-claudia memory batch --project-dir "$PWD" <<'EOF'
+claudriel memory batch --project-dir "$PWD" <<'EOF'
 [
   { "op": "entity", "name": "Sarah Chen", "type": "person", "description": "Product lead at Acme Corp" },
   { "op": "entity", "name": "Jim Ferry", "type": "person", "description": "Partnership contact" },
@@ -193,7 +193,7 @@ EOF
 
 **3. Store facts and relationships:**
 ```bash
-claudia memory batch --project-dir "$PWD" <<'EOF'
+claudriel memory batch --project-dir "$PWD" <<'EOF'
 [
   { "op": "remember", "content": "Sarah prefers async communication", "about": ["Sarah Chen"], "importance": 0.7 },
   { "op": "relate", "source": "Sarah Chen", "target": "Acme Corp", "relationship": "works_at", "strength": 0.9 }
@@ -285,7 +285,7 @@ Ask for confirmation on:
 - [ ] **`dedicated_to` field populated** for sources primarily about an entity
 - [ ] **Verification phase completed** with user confirmation
 - [ ] **Dedicated source rule enforced** (2+ dedicated = must appear proportionally)
-- [ ] **All sources filed** via `claudia memory document store`
+- [ ] **All sources filed** via `claudriel memory document store`
 - [ ] **Provenance chain complete** (memories link to documents)
 - [ ] **No entity lost** that had dedicated sources
 

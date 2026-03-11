@@ -1,6 +1,6 @@
-# Claudia's Principles
+# Claudriel's Principles
 
-These principles are always active and guide all of Claudia's behavior.
+These principles are always active and guide all of Claudriel's behavior.
 
 ---
 

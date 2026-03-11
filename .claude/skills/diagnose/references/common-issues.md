@@ -10,12 +10,12 @@ Reference guide for the diagnose skill. Extracted from the main SKILL.md for pro
 
 **Fix:** Run the preflight check to see exactly which step fails:
 ```bash
-~/.claudia/daemon/venv/bin/python -m claudia_memory --preflight --project-dir "$PWD"
+~/.claudriel/daemon/venv/bin/python -m claudriel_memory --preflight --project-dir "$PWD"
 ```
 
 If preflight shows fixable issues, try auto-repair:
 ```bash
-~/.claudia/daemon/venv/bin/python -m claudia_memory --repair --project-dir "$PWD"
+~/.claudriel/daemon/venv/bin/python -m claudriel_memory --repair --project-dir "$PWD"
 ```
 
 ---
@@ -26,7 +26,7 @@ If preflight shows fixable issues, try auto-repair:
 
 **Fix:** Check the session manifest:
 ```bash
-cat ~/.claudia/daemon-session.json
+cat ~/.claudriel/daemon-session.json
 ```
 - If missing: daemon never reached the MCP loop (run preflight)
 - If present with `exited_at`: daemon started and exited cleanly (check stdin_type, should be "pipe")
@@ -41,9 +41,9 @@ cat ~/.claudia/daemon-session.json
 **Fix:**
 ```bash
 # Find processes using the database
-lsof ~/.claudia/memory/*.db 2>/dev/null
+lsof ~/.claudriel/memory/*.db 2>/dev/null
 # Or try auto-repair
-~/.claudia/daemon/venv/bin/python -m claudia_memory --repair --project-dir "$PWD"
+~/.claudriel/daemon/venv/bin/python -m claudriel_memory --repair --project-dir "$PWD"
 ```
 
 ---
@@ -54,7 +54,7 @@ lsof ~/.claudia/memory/*.db 2>/dev/null
 
 **Fix:**
 ```bash
-~/.claudia/daemon/venv/bin/pip install --force-reinstall claudia-memory
+~/.claudriel/daemon/venv/bin/pip install --force-reinstall claudia-memory
 ```
 Or re-run the installer:
 ```bash
@@ -69,7 +69,7 @@ npx get-claudia .
 
 **Fix:**
 ```bash
-~/.claudia/daemon/venv/bin/pip install sqlite-vec
+~/.claudriel/daemon/venv/bin/pip install sqlite-vec
 ```
 
 ---
@@ -112,7 +112,7 @@ The `--project-dir` should match your current working directory. Re-run `npx get
 
 **Fix:** On Windows, the venv Python binary is at:
 ```
-%USERPROFILE%\.claudia\daemon\venv\Scripts\python.exe
+%USERPROFILE%\.claudriel\daemon\venv\Scripts\python.exe
 ```
 Not `venv/bin/python`. Re-run `npx get-claudia .` on Windows to fix the path.
 
@@ -128,6 +128,6 @@ pip install --force-reinstall sqlite-vec
 | Unix Command | PowerShell Equivalent |
 |---|---|
 | `cat .mcp.json` | `Get-Content .mcp.json` |
-| `ls -la ~/.claudia/memory/*.db` | `Get-ChildItem "$env:USERPROFILE\.claudia\memory\*.db"` |
+| `ls -la ~/.claudriel/memory/*.db` | `Get-ChildItem "$env:USERPROFILE\.claudriel\memory\*.db"` |
 | `curl -s http://localhost:3848/status` | `Invoke-RestMethod http://localhost:3848/status` |
 | `lsof file.db` | `Get-Process \| Where-Object { $_.Modules.FileName -like "*file.db*" }` |

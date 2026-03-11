@@ -4,7 +4,7 @@
 # Falls back gracefully if Claudriel CLI is not installed
 
 # Try Claudriel CLI first
-if command -v claudia &>/dev/null; then
+if command -v claudriel &>/dev/null; then
   HEALTH_JSON=$(claudia system-health --project-dir "${CLAUDE_PROJECT_DIR:-.}" 2>/dev/null)
   EXIT_CODE=$?
 
@@ -64,10 +64,10 @@ print(json.dumps({'additionalContext': msg}))"
 }
 
 # Check if Claudriel CLI is installed at all
-if ! command -v claudia &>/dev/null; then
+if ! command -v claudriel &>/dev/null; then
   # Check if it's a local install (npx get-claudia puts it in node_modules/.bin)
-  if [ -f "${CLAUDE_PROJECT_DIR:-}/node_modules/.bin/claudia" ]; then
-    emit_with_profile "Memory CLI found at node_modules/.bin/claudia but not on PATH. Run: export PATH=\"\$PWD/node_modules/.bin:\$PATH\" or use npx claudia."
+  if [ -f "${CLAUDE_PROJECT_DIR:-}/node_modules/.bin/claudriel" ]; then
+    emit_with_profile "Memory CLI found at node_modules/.bin/claudriel but not on PATH. Run: export PATH=\"\$PWD/node_modules/.bin:\$PATH\" or use npx claudriel."
   else
     emit_with_profile "Claudriel CLI not found. Memory system unavailable. Install with: npm install -g get-claudia && claudia setup. Reading context/ files as fallback."
   fi

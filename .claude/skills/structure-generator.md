@@ -94,7 +94,7 @@ Just the standard `context/` and `people/` folders (no business modules).
 ### Consultant/Advisor
 
 ```
-claudia/
+claudriel/
 ├── CLAUDE.md
 ├── .claude/
 │   ├── commands/           ← Generated commands for consulting
@@ -132,7 +132,7 @@ claudia/
 ### Executive/Manager
 
 ```
-claudia/
+claudriel/
 ├── CLAUDE.md
 ├── .claude/
 │   ├── commands/
@@ -171,7 +171,7 @@ claudia/
 ### Founder/Entrepreneur
 
 ```
-claudia/
+claudriel/
 ├── CLAUDE.md
 ├── .claude/
 │   ├── commands/
@@ -211,7 +211,7 @@ claudia/
 ### Solo Professional
 
 ```
-claudia/
+claudriel/
 ├── CLAUDE.md
 ├── .claude/
 │   ├── commands/
@@ -248,7 +248,7 @@ claudia/
 ### Content Creator
 
 ```
-claudia/
+claudriel/
 ├── CLAUDE.md
 ├── .claude/
 │   ├── commands/
@@ -389,7 +389,7 @@ Observations across our work together.
 
 ### context/learnings.md Template
 ```markdown
-# Claudia's Learnings
+# Claudriel's Learnings
 
 What I've learned about working with you.
 
@@ -1285,7 +1285,7 @@ Only create this file if user showed interest in integrations during onboarding 
 ```markdown
 # Integrations
 
-External tools and services connected to Claudia.
+External tools and services connected to Claudriel.
 
 ## Active
 

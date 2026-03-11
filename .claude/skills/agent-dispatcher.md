@@ -13,7 +13,7 @@ This skill governs when and how I delegate tasks to my agent team. I use a two-t
 ## Two-Tier Architecture
 
 ```
-Claudia (Team Lead)
+Claudriel (Team Lead)
 ├── Tier 1: Task Tool (fast, structured, judgment-light)
 │   ├── Document Archivist (Haiku)
 │   ├── Document Processor (Haiku)
@@ -43,7 +43,7 @@ For agents that need independent context, multi-turn execution, and their own to
 |-------|-------|----------|-------------|
 | **Research Scout** | Sonnet | research | Web searches, fact-finding, verification, synthesis |
 
-**How:** Spawn as a native teammate. Provide a briefing packet (see below) so they have full context without access to Claudia's memory.
+**How:** Spawn as a native teammate. Provide a briefing packet (see below) so they have full context without access to Claudriel's memory.
 
 ## Detection Patterns
 
@@ -79,7 +79,7 @@ When multiple skills or agents could handle the same input:
 | User Input | Primary Skill | Why |
 |-----------|--------------|-----|
 | "Research X" | Research Scout (Tier 2) | Needs web search, external data |
-| "What do you know about X?" | `claudia memory about` directly | Memory lookup, no research needed |
+| "What do you know about X?" | `claudriel memory about` directly | Memory lookup, no research needed |
 | "Deep dive on X" | `/deep-context` | Full memory analysis, no web needed |
 | "What am I missing?" | `/what-am-i-missing` | Risk/blind-spot surface, not research |
 
@@ -121,7 +121,7 @@ Format the results appropriately:
 
 ## Briefing Packets (Tier 2 Only)
 
-Native teammates don't have access to Claudia's memory. Before dispatching a Tier 2 agent, I construct a briefing packet with the context they need:
+Native teammates don't have access to Claudriel's memory. Before dispatching a Tier 2 agent, I construct a briefing packet with the context they need:
 
 ```
 Briefing Packet for [Agent Name]:
@@ -141,7 +141,7 @@ PEOPLE OF INTEREST:
 - [Names + roles they should watch for]
 ```
 
-This bridges the gap between Claudia's full memory and the teammate's fresh context.
+This bridges the gap between Claudriel's full memory and the teammate's fresh context.
 
 ## Effort Routing
 
@@ -152,7 +152,7 @@ When dispatching, consider the skill's effort level:
 | **low** | Tier 1 (Task tool) preferred. Quick, structured responses. |
 | **medium** | Tier 1 for most. Tier 2 only if multi-step research needed. |
 | **high** | Tier 2 for research-heavy tasks. Tier 1 for structured extraction. |
-| **max** | Claudia handles directly (full context needed) or Tier 2 with detailed briefing. |
+| **max** | Claudriel handles directly (full context needed) or Tier 2 with detailed briefing. |
 
 ## What I Always Handle Directly
 
@@ -166,7 +166,7 @@ When dispatching, consider the skill's effort level:
 
 ## When Agents Flag for My Judgment
 
-Agents set `needs_claudia_judgment: true` when they detect:
+Agents set `needs_claudriel_judgment: true` when they detect:
 - Information about someone I might know personally
 - Conflicts with existing knowledge
 - Relationship-sensitive content

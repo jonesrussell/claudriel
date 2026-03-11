@@ -7,7 +7,7 @@ effort-level: high
 
 # Research
 
-Deep research on a topic, grounded in web sources and connected to Claudia's memory. Also handles context-aware lookups when current external information would improve quality.
+Deep research on a topic, grounded in web sources and connected to Claudriel's memory. Also handles context-aware lookups when current external information would improve quality.
 
 ## Usage
 `/research [topic or question]`
@@ -51,7 +51,7 @@ If the topic is clear and narrow, skip this and go straight to work.
 
 ### 2. Check Memory First
 
-Before reaching for the web, check what Claudia already knows:
+Before reaching for the web, check what Claudriel already knows:
 
 ```
 memory.recall "[topic]":
@@ -68,11 +68,11 @@ This avoids redundant fetches and surfaces compounding knowledge.
 
 ### 3. Context-Aware Query Building
 
-Use memory context to build better queries. Claudia knows things a search engine doesn't:
+Use memory context to build better queries. Claudriel knows things a search engine doesn't:
 
-- **Project context:** User says "check the docs for that framework" → Claudia knows they mean Next.js because she remembers the project
-- **Relationship context:** "See if their company announced anything" → Claudia knows "their" refers to Sarah's company, Acme Corp
-- **Historical context:** "Has anything changed since we last looked?" → Claudia knows what was found last time and when
+- **Project context:** User says "check the docs for that framework" → Claudriel knows they mean Next.js because she remembers the project
+- **Relationship context:** "See if their company announced anything" → Claudriel knows "their" refers to Sarah's company, Acme Corp
+- **Historical context:** "Has anything changed since we last looked?" → Claudriel knows what was found last time and when
 
 Turn vague intent into precise queries. This is the edge.
 
@@ -98,7 +98,7 @@ Turn vague intent into precise queries. This is the edge.
 
 **For competitive/market research:**
 - Fetch company pages, recent news, announcements
-- Cross-reference with what Claudia knows about the user's position
+- Cross-reference with what Claudriel knows about the user's position
 - Focus on actionable intelligence, not general summaries
 
 ### 5. Synthesize and Report
@@ -128,7 +128,7 @@ Turn vague intent into precise queries. This is the edge.
 [Relate findings to user's projects, people, commitments, or decisions from memory]
 
 ### What I'd Flag
-[Risks, opportunities, or things that surprised Claudia]
+[Risks, opportunities, or things that surprised Claudriel]
 
 ---
 
@@ -159,7 +159,7 @@ Store facts, not entire pages. Focus on:
 
 When research results are stored in memory, the source URL and fetch date are preserved. On future queries:
 
-- If Claudia finds a memory tagged `source:web:*` that's older than 7 days, note this: "I have this from [date]. Want a fresh check?"
+- If Claudriel finds a memory tagged `source:web:*` that's older than 7 days, note this: "I have this from [date]. Want a fresh check?"
 - If a user asks the same question as a previous session, surface the stored answer first, then offer to update
 - During morning brief or weekly review, if stored research is relevant to upcoming commitments and older than 14 days, flag it as potentially stale
 
@@ -170,7 +170,7 @@ Research can proactively offer to look things up when it detects value. This is 
 **When to offer:**
 - User states something as fact that might be outdated
 - Discussion involves pricing, deadlines, or terms that change over time
-- Meeting prep for a company Claudia hasn't researched recently
+- Meeting prep for a company Claudriel hasn't researched recently
 - User is making a decision that could benefit from current data
 
 **How to offer:**

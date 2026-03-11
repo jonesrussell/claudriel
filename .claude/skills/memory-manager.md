@@ -14,7 +14,7 @@ effort-level: medium
 
 ## How Memory Works
 
-Claudia's memory operates via **MCP tools** provided by the claudia-memory daemon server. The daemon runs as an MCP server (stdio transport) and registers tools that Claude Code can call directly. These are NOT Bash CLI commands.
+Claudriel's memory operates via **MCP tools** provided by the claudia-memory daemon server. The daemon runs as an MCP server (stdio transport) and registers tools that Claude Code can call directly. These are NOT Bash CLI commands.
 
 The `claudia` npm binary handles setup and diagnostics (`claudia setup`, `claudia system-health`) via the Bash tool. All memory operations use MCP tools.
 
@@ -176,12 +176,12 @@ When looking for information about a person or topic:
 1. Call `memory.about` with the entity name. Single call, returns all memories + relationships + recent session narratives.
 2. If no results, check if `people/[name].md` exists (single file read).
 3. If neither has it, it's unknown. Tell the user and ask if they have source material.
-4. **Last resort:** `episodic-memory__search` (cross-workspace conversation history). Only use this when Claudia's own memory and local files have nothing, and the information might exist in a prior Claude Code conversation from another workspace.
+4. **Last resort:** `episodic-memory__search` (cross-workspace conversation history). Only use this when Claudriel's own memory and local files have nothing, and the information might exist in a prior Claude Code conversation from another workspace.
 
 Do NOT:
 - Call both `memory.recall` AND `memory.about` for the same entity (about is the targeted lookup, recall is for broad searches)
-- Search episodic memory for information that should be in Claudia's memory
-- Jump to episodic-memory search before exhausting Claudia's own memory system
+- Search episodic memory for information that should be in Claudriel's memory
+- Jump to episodic-memory search before exhausting Claudriel's own memory system
 - Parse raw `.jsonl` session logs. The cost-to-recovery ratio is poor and it rarely succeeds. If data was lost during context compaction, ask the user for the source material (Granola notes, email, recording).
 
 ---
@@ -429,8 +429,8 @@ Call memory.file with:
 #### Why Not Auto-Extract?
 
 - **Accuracy**: User verifies "Sarah and Jim are colleagues" (not competitors)
-- **Responsiveness**: Claudia stays available for conversation
-- **Focus**: Extraction targets relationships and commitments (Claudia's mission)
+- **Responsiveness**: Claudriel stays available for conversation
+- **Focus**: Extraction targets relationships and commitments (Claudriel's mission)
 - **Control**: User decides when to invest time in extraction
 
 #### Duplicate Detection

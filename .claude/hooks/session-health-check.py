@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Cross-platform session health check hook for Claudia.
+"""Cross-platform session health check hook for Claudriel.
 
 Runs `claudia system-health` and provides actionable guidance.
 Outputs JSON with additionalContext for Claude Code hooks.
@@ -12,21 +12,21 @@ import subprocess
 from pathlib import Path
 
 
-def _run_claudia(*args):
-    """Run claudia CLI and return parsed JSON output, or None on failure."""
-    claudia_bin = shutil.which("claudia")
-    if not claudia_bin:
+def _run_claudriel(*args):
+    """Run claudriel CLI and return parsed JSON output, or None on failure."""
+    claudriel_bin = shutil.which("claudriel")
+    if not claudriel_bin:
         # Check local node_modules
         project_dir = os.environ.get("CLAUDE_PROJECT_DIR", ".")
-        local_bin = Path(project_dir) / "node_modules" / ".bin" / "claudia"
+        local_bin = Path(project_dir) / "node_modules" / ".bin" / "claudriel"
         if local_bin.exists():
-            claudia_bin = str(local_bin)
+            claudriel_bin = str(local_bin)
         else:
             return None
 
     try:
         result = subprocess.run(
-            [claudia_bin, *args],
+            [claudriel_bin, *args],
             capture_output=True, text=True, timeout=10
         )
         if result.returncode == 0 and result.stdout.strip():
@@ -39,7 +39,7 @@ def _run_claudia(*args):
 def check_health():
     project_dir = os.environ.get("CLAUDE_PROJECT_DIR", ".")
 
-    data = _run_claudia("system-health", "--project-dir", project_dir)
+    data = _run_claudriel("system-health", "--project-dir", project_dir)
 
     if data:
         db = data.get("database", {})
@@ -56,12 +56,12 @@ def check_health():
         return
 
     # CLI not available -- provide fallback guidance
-    context_parts = ["Claudia CLI not responding."]
+    context_parts = ["Claudriel CLI not responding."]
 
-    if not shutil.which("claudia"):
-        local_bin = Path(project_dir) / "node_modules" / ".bin" / "claudia"
+    if not shutil.which("claudriel"):
+        local_bin = Path(project_dir) / "node_modules" / ".bin" / "claudriel"
         if local_bin.exists():
-            context_parts.append("CLI found at node_modules/.bin/claudia but not on PATH.")
+            context_parts.append("CLI found at node_modules/.bin/claudriel but not on PATH.")
         else:
             context_parts.append("Install with: npm install -g get-claudia && claudia setup.")
 

@@ -48,7 +48,7 @@ Determine:
 ### 3. File It
 
 ```
-claudia memory document store \
+claudriel memory document store \
   --filename "Descriptive name" \
   --source-type "gmail|transcript|upload|capture" \
   --summary "Brief description" \
@@ -72,7 +72,7 @@ The document is now searchable and linked to [entities].
 You can find it later with:
 - "Show me documents about [entity]"
 - "Find the email from [person]"
-- claudia memory document search --entity "[name]" --project-dir "$PWD"
+- claudriel memory document search --entity "[name]" --project-dir "$PWD"
 ```
 
 ## Source Types
@@ -109,7 +109,7 @@ If no entity linked:
 ```
 User: "Here's an email from Jim about the partnership terms. Save it."
 
-claudia memory document store \
+claudriel memory document store \
   --filename "2026-02-04-jim-ferry-partnership.md" \
   --source-type "gmail" \
   --summary "Jim Ferry re: partnership terms and next steps" \
@@ -126,7 +126,7 @@ You can find it later by asking about Jim's documents."
 ```
 User: "Here's some info I found about competitor pricing. Keep this."
 
-claudia memory document store \
+claudriel memory document store \
   --filename "2026-02-04-competitor-pricing-research.md" \
   --source-type "capture" \
   --summary "Competitor pricing analysis notes" \
@@ -141,7 +141,7 @@ Saved to: general/documents/2026-02-04-competitor-pricing-research.md"
 ```
 User: "Save this contract from Acme Corp"
 
-claudia memory document store \
+claudriel memory document store \
   --filename "2026-02-04-acme-corp-contract.md" \
   --source-type "upload" \
   --summary "Service agreement with Acme Corp" \
@@ -158,8 +158,8 @@ Saved to: clients/acme-corp/documents/2026-02-04-contract.md"
 If you also extract facts from the document:
 
 1. File the document first (get document_id from JSON response)
-2. Extract memories using `claudia memory save` or `claudia memory batch`
-3. Call `claudia memory document store --memory-ids "id1,id2,..."` to link provenance
+2. Extract memories using `claudriel memory save` or `claudriel memory batch`
+3. Call `claudriel memory document store --memory-ids "id1,id2,..."` to link provenance
 
 This creates the chain: memory -> document -> file on disk.
 

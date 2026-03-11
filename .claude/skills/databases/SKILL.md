@@ -1,13 +1,13 @@
 ---
 name: databases
-description: View all Claudia memory databases, switch between them, manage isolation. Triggers on "which database?", "switch workspace", "show databases", "list databases".
+description: View all Claudriel memory databases, switch between them, manage isolation. Triggers on "which database?", "switch workspace", "show databases", "list databases".
 argument-hint: "[list|use|info|delete] [hash]"
 effort-level: low
 ---
 
 # Databases
 
-View all Claudia memory databases, see what's in each, and switch between them.
+View all Claudriel memory databases, see what's in each, and switch between them.
 
 **Triggers:** `/databases`, `/db`, "show databases", "list my databases", "switch database", "which database am I using?"
 
@@ -30,16 +30,16 @@ If no subcommand is clear, default to **list**.
 
 ## List (Default)
 
-Scan all Claudia databases and display their stats.
+Scan all Claudriel databases and display their stats.
 
 ### Step 1: Find all databases
 
 ```bash
 # List production databases
-ls -la ~/.claudia/memory/*.db 2>/dev/null || echo "NO_PROD_DBS"
+ls -la ~/.claudriel/memory/*.db 2>/dev/null || echo "NO_PROD_DBS"
 
 # List demo databases
-ls -la ~/.claudia/demo/*.db 2>/dev/null || echo "NO_DEMO_DBS"
+ls -la ~/.claudriel/demo/*.db 2>/dev/null || echo "NO_DEMO_DBS"
 ```
 
 ### Step 2: Get current database
@@ -74,8 +74,8 @@ If `_meta` table doesn't exist or `workspace_path` is NULL, show "Unknown (legac
 
 ```bash
 # Get file sizes in human-readable format
-du -h ~/.claudia/memory/*.db 2>/dev/null
-du -h ~/.claudia/demo/*.db 2>/dev/null
+du -h ~/.claudriel/memory/*.db 2>/dev/null
+du -h ~/.claudriel/demo/*.db 2>/dev/null
 ```
 
 ### Output Format
@@ -83,9 +83,9 @@ du -h ~/.claudia/demo/*.db 2>/dev/null
 Present the results in a clean table:
 
 ```
-## Claudia Databases
+## Claudriel Databases
 
-### Production (~/.claudia/memory/)
+### Production (~/.claudriel/memory/)
 
 | # | Hash | Workspace | Size | People | Memories | Last Active |
 |---|------|-----------|------|--------|----------|-------------|
@@ -93,11 +93,11 @@ Present the results in a clean table:
 |   | 9z8y7x6w5v4u | ~/work/client-a | 890 KB | 3 | 22 | 3d ago |
 |   | x7y8z9a0b1c2 | Unknown (legacy) | 156 KB | 0 | 5 | 14d ago |
 
-### Demo (~/.claudia/demo/)
+### Demo (~/.claudriel/demo/)
 
 | # | File | Description | Size | People | Memories | Last Active |
 |---|------|-------------|------|--------|----------|-------------|
-|   | claudia-demo.db | Global demo | 1.1 MB | 12 | 19 | 1d ago |
+|   | claudriel-demo.db | Global demo | 1.1 MB | 12 | 19 | 1d ago |
 
 > = currently active
 
@@ -120,7 +120,7 @@ Switch to a different database by setting the `CLAUDIA_DB_OVERRIDE` environment 
 ### Step 1: Verify database exists
 
 ```bash
-ls ~/.claudia/memory/<hash>.db 2>/dev/null || ls ~/.claudia/demo/<hash>.db 2>/dev/null
+ls ~/.claudriel/memory/<hash>.db 2>/dev/null || ls ~/.claudriel/demo/<hash>.db 2>/dev/null
 ```
 
 If not found, report error:
@@ -131,7 +131,7 @@ Database '<hash>' not found. Run `/databases` to see available databases.
 ### Step 2: Get workspace info from target database
 
 ```bash
-sqlite3 "~/.claudia/memory/<hash>.db" "SELECT value FROM _meta WHERE key = 'workspace_path'" 2>/dev/null || echo "Unknown workspace"
+sqlite3 "~/.claudriel/memory/<hash>.db" "SELECT value FROM _meta WHERE key = 'workspace_path'" 2>/dev/null || echo "Unknown workspace"
 ```
 
 ### Step 3: Show warning and get confirmation
@@ -168,7 +168,7 @@ Then edit the file to add:
 ```json
 {
   "env": {
-    "CLAUDIA_DB_OVERRIDE": "/Users/kamil/.claudia/memory/<hash>.db"
+    "CLAUDIA_DB_OVERRIDE": "/Users/kamil/.claudriel/memory/<hash>.db"
   }
 }
 ```
@@ -195,7 +195,7 @@ Show detailed statistics about a specific database.
 ### Step 1: Verify database exists
 
 ```bash
-ls ~/.claudia/memory/<hash>.db 2>/dev/null || ls ~/.claudia/demo/<hash>.db 2>/dev/null
+ls ~/.claudriel/memory/<hash>.db 2>/dev/null || ls ~/.claudriel/demo/<hash>.db 2>/dev/null
 ```
 
 ### Step 2: Query detailed stats
@@ -308,7 +308,7 @@ Switch to a different database first using `/databases use <other-hash>`, then t
 ### Step 2: Verify database exists and gather info
 
 ```bash
-ls ~/.claudia/memory/<hash>.db 2>/dev/null || ls ~/.claudia/demo/<hash>.db 2>/dev/null
+ls ~/.claudriel/memory/<hash>.db 2>/dev/null || ls ~/.claudriel/demo/<hash>.db 2>/dev/null
 ```
 
 Query stats to show what will be lost:
@@ -348,9 +348,9 @@ Wait for the user to type the exact confirmation string.
 Only after explicit confirmation:
 
 ```bash
-rm ~/.claudia/memory/<hash>.db
-rm ~/.claudia/memory/<hash>.db-shm 2>/dev/null
-rm ~/.claudia/memory/<hash>.db-wal 2>/dev/null
+rm ~/.claudriel/memory/<hash>.db
+rm ~/.claudriel/memory/<hash>.db-shm 2>/dev/null
+rm ~/.claudriel/memory/<hash>.db-wal 2>/dev/null
 ```
 
 ### Step 5: Confirm deletion
@@ -359,9 +359,9 @@ rm ~/.claudia/memory/<hash>.db-wal 2>/dev/null
 **Database deleted:** [hash]
 
 The following files were removed:
-- ~/.claudia/memory/[hash].db
-- ~/.claudia/memory/[hash].db-shm (if existed)
-- ~/.claudia/memory/[hash].db-wal (if existed)
+- ~/.claudriel/memory/[hash].db
+- ~/.claudriel/memory/[hash].db-shm (if existed)
+- ~/.claudriel/memory/[hash].db-wal (if existed)
 ```
 
 ---
@@ -379,16 +379,16 @@ The following files were removed:
 
 **No databases found:**
 ```
-No Claudia databases found.
+No Claudriel databases found.
 
 This could mean:
-- Claudia hasn't been set up yet (run `npx get-claudia`)
-- The Claudia CLI hasn't been used yet
+- Claudriel hasn't been set up yet (run `npx get-claudia`)
+- The Claudriel CLI hasn't been used yet
 - Databases are in a non-standard location
 
 Expected locations:
-- Production: ~/.claudia/memory/*.db
-- Demo: ~/.claudia/demo/*.db
+- Production: ~/.claudriel/memory/*.db
+- Demo: ~/.claudriel/demo/*.db
 ```
 
 **Database query fails:**
@@ -402,5 +402,5 @@ The database file may be corrupted or locked by another process.
 ```
 Permission denied when accessing [path].
 
-Check file permissions: `ls -la ~/.claudia/memory/`
+Check file permissions: `ls -la ~/.claudriel/memory/`
 ```

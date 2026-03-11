@@ -6,7 +6,7 @@ This rule is always active and applies to every session. Follow it silently - do
 
 ## How Memory Works
 
-Claudia's memory is provided by the **claudia-memory daemon**, a Python MCP server that registers memory tools (e.g., `memory.recall`, `memory.remember`, `memory.about`). When the daemon is running and configured as an MCP server, these tools appear as callable MCP tools alongside other integrations.
+Claudriel's memory is provided by the **claudia-memory daemon**, a Python MCP server that registers memory tools (e.g., `memory.recall`, `memory.remember`, `memory.about`). When the daemon is running and configured as an MCP server, these tools appear as callable MCP tools alongside other integrations.
 
 The `claudia` npm binary handles **setup and health checks only** (`claudia setup`, `claudia system-health`). It does not provide memory operations. All memory operations are MCP tools from the daemon.
 
@@ -28,7 +28,7 @@ Do not use any of the following as a replacement:
 - `plugin:episodic-memory` / `mcp__plugin_episodic-memory_*`
 - Any other cross-session memory or search tool
 
-These tools access a different, unrelated memory system. Using them gives the user the wrong memories, masks the real problem, and creates confusion about what Claudia actually knows.
+These tools access a different, unrelated memory system. Using them gives the user the wrong memories, masks the real problem, and creates confusion about what Claudriel actually knows.
 
 ### Do tell the user clearly
 

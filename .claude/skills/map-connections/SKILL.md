@@ -84,16 +84,16 @@ Co-mentioned or contextually implied:
 
 Before creating entities:
 1. Normalize names to canonical form (lowercase, no titles)
-2. Check if entity already exists in memory via `claudia memory entities search --project-dir "$PWD"`
+2. Check if entity already exists in memory via `claudriel memory entities search --project-dir "$PWD"`
 3. Merge new information with existing entity data
 4. Track which entities are new vs updated
 
 ### 5. Store in Memory
 
-Use `claudia memory batch` for efficiency:
+Use `claudriel memory batch` for efficiency:
 
 ```bash
-claudia memory batch --project-dir "$PWD" <<'EOF'
+claudriel memory batch --project-dir "$PWD" <<'EOF'
 [
   {"op": "entity", "name": "Sarah Chen", "type": "person", "description": "CEO at Acme Corp"},
   {"op": "entity", "name": "Acme Corp", "type": "organization"},

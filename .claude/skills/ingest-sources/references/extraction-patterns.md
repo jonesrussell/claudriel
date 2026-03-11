@@ -181,7 +181,7 @@ relationships:
 
 **Structured data rules:**
 - Preserve field names as fact categories
-- Map status values to Claudia's attention system where applicable
+- Map status values to Claudriel's attention system where applicable
 - Date fields should include timezone if available
 - Empty fields should be skipped, not stored as "unknown"
 

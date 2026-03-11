@@ -1,16 +1,16 @@
 {
-  "$schema": "Claudia Skill Index v2",
+  "$schema": "Claudriel Skill Index v2",
   "description": "Progressive loading index - lightweight metadata for all skills with trigger examples for contextual matching",
   "skills": [
     {
       "name": "onboarding",
       "path": "onboarding.md",
-      "description": "Guide new users through a conversational discovery flow to create a personalized Claudia setup",
+      "description": "Guide new users through a conversational discovery flow to create a personalized Claudriel setup",
       "invocation": "proactive",
       "effort_level": "medium",
       "triggers": ["first run", "new user setup", "no me.md exists", "getting started"],
       "examples": [
-        "this is my first time using Claudia",
+        "this is my first time using Claudriel",
         "help me get set up",
         "I'm new here"
       ]
@@ -219,7 +219,7 @@
     {
       "name": "databases",
       "path": "databases/SKILL.md",
-      "description": "View all Claudia memory databases, switch between them, manage isolation",
+      "description": "View all Claudriel memory databases, switch between them, manage isolation",
       "invocation": "contextual",
       "effort_level": "low",
       "triggers": ["which database", "switch workspace", "show databases", "list databases"],
@@ -322,7 +322,7 @@
     {
       "name": "memory-audit",
       "path": "memory-audit/SKILL.md",
-      "description": "Show everything Claudia knows with provenance tracing and entity counts",
+      "description": "Show everything Claudriel knows with provenance tracing and entity counts",
       "invocation": "contextual",
       "effort_level": "medium",
       "triggers": ["what do you know", "show memories", "memory audit", "what do you remember about"],
