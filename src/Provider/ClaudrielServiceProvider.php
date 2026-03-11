@@ -7,6 +7,7 @@ namespace Claudriel\Provider;
 use Claudriel\Command\BriefCommand;
 use Claudriel\Command\CommitmentsCommand;
 use Claudriel\Command\CommitmentUpdateCommand;
+use Claudriel\Command\RecategorizeEventsCommand;
 use Claudriel\Command\SkillsCommand;
 use Claudriel\Command\WorkspaceCreateCommand;
 use Claudriel\Command\WorkspacesCommand;
@@ -323,6 +324,7 @@ final class ClaudrielServiceProvider extends ServiceProvider
             new SkillsCommand($skillRepo),
             new WorkspacesCommand($workspaceRepo),
             new WorkspaceCreateCommand($workspaceRepo),
+            new RecategorizeEventsCommand($entityTypeManager),
         ];
     }
 }

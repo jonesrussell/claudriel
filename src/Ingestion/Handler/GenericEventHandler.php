@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Claudriel\Ingestion\Handler;
 
 use Claudriel\Entity\McEvent;
+use Claudriel\Ingestion\EventCategorizer;
 use Claudriel\Ingestion\IngestHandlerInterface;
 use Waaseyaa\Entity\EntityTypeManagerInterface;
 
@@ -26,11 +27,15 @@ final class GenericEventHandler implements IngestHandlerInterface
 
     public function handle(array $data): array
     {
+        $payload = $data['payload'];
+        $category = EventCategorizer::categorize($data['source'], $data['type'], $payload);
+
         $event = new McEvent([
             'source' => $data['source'],
             'type' => $data['type'],
-            'payload' => json_encode($data['payload'], JSON_THROW_ON_ERROR),
+            'payload' => json_encode($payload, JSON_THROW_ON_ERROR),
             'occurred' => date('Y-m-d H:i:s'),
+            'category' => $category,
         ]);
 
         $storage = $this->entityTypeManager->getStorage('mc_event');
