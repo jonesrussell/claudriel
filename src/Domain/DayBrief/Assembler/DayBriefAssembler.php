@@ -109,23 +109,6 @@ final class DayBriefAssembler
         ];
     }
 
-    /** @return array<string, mixed> */
-    private function indexPeopleByEmail(): array
-    {
-        if ($this->personRepo === null) {
-            return [];
-        }
-        $index = [];
-        foreach ($this->personRepo->findBy([]) as $person) {
-            $email = $person->get('email');
-            if ($email) {
-                $index[$email] = $person;
-            }
-        }
-
-        return $index;
-    }
-
     private function buildWorkspaceData(array $recentEvents): array
     {
         if ($this->workspaceRepo === null) {
