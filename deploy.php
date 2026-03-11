@@ -29,8 +29,8 @@ set('allow_anonymous_stats', false);
 // Shared filesystem
 // ---------------------------------------------------------------------------
 
-set('shared_files', ['.env']);
-set('shared_dirs', ['context']);
+set('shared_files', ['.env', 'waaseyaa.sqlite']);
+set('shared_dirs', ['context', 'storage']);
 
 // ---------------------------------------------------------------------------
 // Hosts
