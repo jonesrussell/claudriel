@@ -33,7 +33,6 @@ jobs:
         with:
           repository: waaseyaa/framework
           path: waaseyaa
-          token: ${{ secrets.WAASEYAA_PAT }}
 
       # -------------------------------------------------------------------
       # PHP setup
