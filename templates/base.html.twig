@@ -6,11 +6,43 @@
   {% block head_extras %}{% endblock %}
   <link rel="icon" href="/favicon.ico">
   <title>{% block title %}Claudriel{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap" rel="stylesheet">
   <style>
+    :root {
+      --bg-deep: #0f1117;
+      --bg-surface: #181a24;
+      --bg-elevated: #21232f;
+      --bg-hover: #2b2d3b;
+      --border: #33364a;
+      --border-subtle: #282a38;
+      --text-primary: #f0f0f5;
+      --text-secondary: #9b9cb5;
+      --text-muted: #6b6d82;
+      --accent-blue: #6b9bff;
+      --accent-teal: #2dd4bf;
+      --accent-amber: #f0b040;
+      --accent-red: #f06060;
+      --accent-green: #34d399;
+      --accent-purple: #a78bfa;
+      --font-display: 'Bricolage Grotesque', system-ui, sans-serif;
+      --font-body: 'DM Sans', system-ui, 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif;
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+    }
     * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--font-body);
+      background: var(--bg-deep);
+      color: var(--text-primary);
+      line-height: 1.6;
+    }
     .site-nav {
-      background: #1a1a2e;
-      padding: 0 1rem;
+      background: var(--bg-surface);
+      padding: 0 1.25rem;
+      border-bottom: 1px solid var(--border);
     }
     .site-nav-inner {
       max-width: 720px;
@@ -18,33 +50,35 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      height: 3rem;
+      height: 3.25rem;
     }
     .site-nav .brand {
       color: #fff;
+      font-family: var(--font-display);
       font-weight: 700;
-      font-size: 1rem;
+      font-size: 1.05rem;
       text-decoration: none;
+      letter-spacing: -0.02em;
     }
     .site-nav .nav-links {
       list-style: none;
       display: flex;
-      gap: 1.25rem;
-      padding: 0;
-      margin: 0;
+      gap: 1.5rem;
     }
     .site-nav .nav-links a {
-      color: rgba(255,255,255,0.7);
+      color: var(--text-secondary);
       text-decoration: none;
-      font-size: 0.875rem;
-      padding-bottom: 0.15rem;
+      font-size: 0.85rem;
+      font-weight: 500;
+      padding-bottom: 0.2rem;
+      transition: color 0.2s;
     }
     .site-nav .nav-links a:hover {
-      color: #fff;
+      color: var(--text-primary);
     }
     .site-nav .nav-links a.active {
-      color: #fff;
-      border-bottom: 2px solid #fff;
+      color: var(--text-primary);
+      border-bottom: 2px solid var(--accent-blue);
     }
     {% block styles %}{% endblock %}
   </style>
