@@ -61,4 +61,9 @@
       <span class="status-badge {{ item.badge }}">{{ item.status }}</span>
     </article>
   {% endfor %}
+  <article class="status-bar-card">
+    <div class="status-bar-label">Last System Scan</div>
+    <div class="status-bar-value">{{ data.heartbeat }}</div>
+    <span class="status-badge {{ data.heartbeatBadge }}">{{ data.heartbeatBadge }}</span>
+  </article>
 </section>

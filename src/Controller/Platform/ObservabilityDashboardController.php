@@ -25,6 +25,8 @@ final class ObservabilityDashboardController
         private readonly ?Environment $twig = null,
         private readonly ?string $projectRoot = null,
         private readonly ?string $batchStorageDirectory = null,
+        private readonly ?DateTimeImmutable $referenceDate = null,
+        private readonly ?DateTimeImmutable $heartbeatTimestampOverride = null,
     ) {}
 
     public function index(array $params = [], array $query = [], mixed $account = null, ?Request $httpRequest = null): SsrResponse
@@ -69,8 +71,12 @@ final class ObservabilityDashboardController
         $failureRateStatus = $this->resolveFailureRateStatus($snapshot['low_confidence_rate']);
         $integrityStatus = $this->resolveIntegrityStatus(count($integrityScan['issues']));
         $batchStatus = $batches === [] ? 'yellow' : 'green';
+        $heartbeat = $this->getHeartbeatTimestamp();
+        $heartbeatStatus = $this->resolveHeartbeatStatus($heartbeat);
 
         return [
+            'heartbeat' => $heartbeat,
+            'heartbeatBadge' => $heartbeatStatus,
             'items' => [
                 [
                     'label' => 'Extraction Health',
@@ -106,6 +112,11 @@ final class ObservabilityDashboardController
         ];
     }
 
+    public function getHeartbeatTimestamp(): string
+    {
+        return ($this->heartbeatTimestampOverride ?? $this->referenceDate ?? new DateTimeImmutable)->format(\DateTimeInterface::ATOM);
+    }
+
     /**
      * @return array<string, mixed>
      */
@@ -125,7 +136,7 @@ final class ObservabilityDashboardController
         $recentBatches = $services['batch_generator']->listStoredBatches(10);
 
         $payload = [
-            'generated_at' => (new DateTimeImmutable)->format(\DateTimeInterface::ATOM),
+            'generated_at' => ($this->referenceDate ?? new DateTimeImmutable)->format(\DateTimeInterface::ATOM),
             'window_days' => $days,
             'statusBarData' => $this->getStatusBarData(),
             'extraction_health' => [
@@ -274,6 +285,24 @@ final class ObservabilityDashboardController
         return match (true) {
             $issues === 0 => 'green',
             $issues <= 2 => 'yellow',
+            default => 'red',
+        };
+    }
+
+    private function resolveHeartbeatStatus(string $heartbeatTimestamp): string
+    {
+        try {
+            $heartbeat = new DateTimeImmutable($heartbeatTimestamp);
+        } catch (\Throwable) {
+            return 'red';
+        }
+
+        $reference = $this->referenceDate ?? new DateTimeImmutable;
+        $age = max(0, $reference->getTimestamp() - $heartbeat->getTimestamp());
+
+        return match (true) {
+            $age < 600 => 'green',
+            $age < 3600 => 'yellow',
             default => 'red',
         };
     }
