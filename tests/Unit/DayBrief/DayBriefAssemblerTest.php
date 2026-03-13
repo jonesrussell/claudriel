@@ -80,6 +80,7 @@ final class DayBriefAssemblerTest extends TestCase
 
         self::assertArrayHasKey('schedule', $brief);
         self::assertArrayHasKey('temporal_awareness', $brief);
+        self::assertArrayHasKey('temporal_suggestions', $brief);
         self::assertArrayHasKey('job_hunt', $brief);
         self::assertArrayHasKey('people', $brief);
         self::assertArrayHasKey('triage', $brief);
@@ -145,6 +146,7 @@ final class DayBriefAssemblerTest extends TestCase
         self::assertSame('Current Block', $brief['temporal_awareness']['current_block']['title']);
         self::assertSame('Next Block', $brief['temporal_awareness']['next_block']['title']);
         self::assertCount(1, $brief['temporal_awareness']['gaps']);
+        self::assertSame(['wrap_up'], array_column($brief['temporal_suggestions'], 'type'));
     }
 
     public function test_groups_schedule_events(): void
