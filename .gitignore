@@ -37,6 +37,8 @@ storage/brief-signal.txt
 # Docker
 docker-compose.override.yml
 .superpowers/
+__pycache__/
+*.pyc
 
 # Codex local files
 .codex/*
