@@ -23,6 +23,7 @@ use Claudriel\Controller\CommitmentUpdateController;
 use Claudriel\Controller\ContextController;
 use Claudriel\Controller\DashboardController;
 use Claudriel\Controller\DayBriefController;
+use Claudriel\Controller\Governance\CodifiedContextIntegrityController;
 use Claudriel\Controller\IngestController;
 use Claudriel\Controller\NotFoundController;
 use Claudriel\Controller\WorkspaceApiController;
@@ -348,6 +349,25 @@ final class ClaudrielServiceProvider extends ServiceProvider
             'claudriel.ai.model_update_batch_show',
             RouteBuilder::create('/ai/model-update-batch/{batchId}.json')
                 ->controller(ModelUpdateBatchController::class.'::show')
+                ->allowAll()
+                ->methods('GET')
+                ->build(),
+        );
+
+        $router->addRoute(
+            'claudriel.governance.integrity',
+            RouteBuilder::create('/governance/integrity')
+                ->controller(CodifiedContextIntegrityController::class.'::index')
+                ->allowAll()
+                ->methods('GET')
+                ->render()
+                ->build(),
+        );
+
+        $router->addRoute(
+            'claudriel.governance.integrity_json',
+            RouteBuilder::create('/governance/integrity.json')
+                ->controller(CodifiedContextIntegrityController::class.'::jsonView')
                 ->allowAll()
                 ->methods('GET')
                 ->build(),
