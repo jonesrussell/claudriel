@@ -12,6 +12,11 @@ use Claudriel\Service\Audit\CommitmentExtractionAuditService;
 use Claudriel\Service\Audit\CommitmentExtractionDriftDetector;
 use Claudriel\Service\Audit\CommitmentExtractionFailureClassifier;
 use Claudriel\Service\Governance\CodifiedContextIntegrityScanner;
+use Claudriel\Temporal\AtomicTimeService;
+use Claudriel\Temporal\Clock\SystemWallClock;
+use Claudriel\Temporal\ClockHealthMonitor;
+use Claudriel\Temporal\SystemClockSyncProbe;
+use Claudriel\Temporal\TemporalAwarenessEngine;
 use DateTimeImmutable;
 use Symfony\Component\HttpFoundation\Request;
 use Twig\Environment;
@@ -171,6 +176,7 @@ final class ObservabilityDashboardController
             'model_update_batches' => $recentBatches,
         ];
 
+        $payload['temporal_tooling'] = $this->buildTemporalToolingSignals();
         $payload['call_chain'] = $this->buildCallChain($payload);
         $payload['system_summary'] = $this->buildSystemSummary($payload);
 
@@ -404,6 +410,13 @@ final class ObservabilityDashboardController
                         'expanded' => false,
                         'children' => [],
                     ],
+                    [
+                        'title' => 'Temporal + tooling execution',
+                        'summary' => $payload['temporal_tooling']['summary'],
+                        'status' => $payload['temporal_tooling']['status'],
+                        'expanded' => true,
+                        'children' => $payload['temporal_tooling']['children'],
+                    ],
                 ],
             ],
             'legend' => [
@@ -447,6 +460,231 @@ final class ObservabilityDashboardController
         }
 
         return 'success';
+    }
+
+    /**
+     * @return array{
+     *   summary: string,
+     *   status: string,
+     *   snapshot: array<string, int|string>,
+     *   clock_health: array<string, mixed>,
+     *   awareness: array<string, mixed>,
+     *   children: list<array<string, mixed>>
+     * }
+     */
+    private function buildTemporalToolingSignals(): array
+    {
+        $timeService = new AtomicTimeService;
+        $snapshot = $timeService->now();
+        $clockHealth = (new ClockHealthMonitor(
+            $timeService,
+            new SystemClockSyncProbe,
+            new SystemWallClock,
+        ))->assess('system-wall-clock');
+        $schedule = $this->loadTodaySchedule($snapshot->local());
+        $awareness = (new TemporalAwarenessEngine)->analyze($schedule, $snapshot);
+        $currentBlock = is_array($awareness['current_block']) ? $awareness['current_block'] : null;
+        $nextBlock = is_array($awareness['next_block']) ? $awareness['next_block'] : null;
+
+        $toolingChildren = [
+            [
+                'title' => 'Brief stream fallback transport',
+                'summary' => sprintf('Fallback payload channel available with %d second retry pacing', 30),
+                'status' => 'fallback',
+                'expanded' => false,
+                'children' => [],
+            ],
+            [
+                'title' => 'Chat stream progress transport',
+                'summary' => 'SSE progress channel emits retry cadence and structured progress events',
+                'status' => 'retry',
+                'expanded' => false,
+                'children' => [],
+            ],
+        ];
+
+        $recentOperation = $this->loadRecentOperationSummary();
+        if ($recentOperation !== null) {
+            $toolingChildren[] = [
+                'title' => 'Recent workspace operation',
+                'summary' => $recentOperation['summary'],
+                'status' => $recentOperation['status'],
+                'expanded' => false,
+                'children' => [],
+            ];
+        }
+
+        $children = [
+            [
+                'title' => 'Atomic time snapshot',
+                'summary' => sprintf('Local %s · UTC %s · monotonic %s', $snapshot->local()->format('g:i A T'), $snapshot->utc()->format('H:i:s \\U\\T\\C'), number_format($snapshot->monotonicNanoseconds())),
+                'status' => $clockHealth['safe_for_temporal_reasoning'] ? 'success' : 'fallback',
+                'expanded' => false,
+                'children' => [],
+            ],
+            [
+                'title' => 'Clock health + drift monitor',
+                'summary' => sprintf('%s via %s · drift %.1fs · fallback %s', $clockHealth['state'], $clockHealth['provider'], $clockHealth['drift_seconds'], $clockHealth['fallback_mode']),
+                'status' => $clockHealth['safe_for_temporal_reasoning'] ? 'success' : 'fallback',
+                'expanded' => false,
+                'children' => [],
+            ],
+            [
+                'title' => 'Snapshot injection',
+                'summary' => 'Brief, chat, and schedule flows consume a stable per-interaction now() payload',
+                'status' => 'success',
+                'expanded' => false,
+                'children' => [],
+            ],
+            [
+                'title' => 'Temporal reasoning stages',
+                'summary' => sprintf(
+                    'Current %s · next %s · %d gap%s · %d overrun%s',
+                    $currentBlock['title'] ?? 'none',
+                    $nextBlock['title'] ?? 'none',
+                    count($awareness['gaps']),
+                    count($awareness['gaps']) === 1 ? '' : 's',
+                    count($awareness['overruns']),
+                    count($awareness['overruns']) === 1 ? '' : 's',
+                ),
+                'status' => $schedule === []
+                    ? 'fallback'
+                    : (count($awareness['overruns']) > 0 ? 'retry' : 'success'),
+                'expanded' => true,
+                'children' => [
+                    [
+                        'title' => 'Current block resolution',
+                        'summary' => $currentBlock['title'] ?? 'No active block',
+                        'status' => $currentBlock !== null ? 'success' : 'fallback',
+                        'expanded' => false,
+                        'children' => [],
+                    ],
+                    [
+                        'title' => 'Next block resolution',
+                        'summary' => $nextBlock['title'] ?? 'No upcoming block',
+                        'status' => $nextBlock !== null ? 'success' : 'fallback',
+                        'expanded' => false,
+                        'children' => [],
+                    ],
+                    [
+                        'title' => 'Gap detection',
+                        'summary' => count($awareness['gaps']) === 0 ? 'No active gaps detected' : sprintf('%d scheduling gap%s detected', count($awareness['gaps']), count($awareness['gaps']) === 1 ? '' : 's'),
+                        'status' => count($awareness['gaps']) === 0 ? 'success' : 'retry',
+                        'expanded' => false,
+                        'children' => [],
+                    ],
+                    [
+                        'title' => 'Overrun detection',
+                        'summary' => count($awareness['overruns']) === 0 ? 'No overruns detected' : sprintf('%d overrun%s detected', count($awareness['overruns']), count($awareness['overruns']) === 1 ? '' : 's'),
+                        'status' => count($awareness['overruns']) === 0 ? 'success' : 'retry',
+                        'expanded' => false,
+                        'children' => [],
+                    ],
+                ],
+            ],
+            [
+                'title' => 'Tooling transport signals',
+                'summary' => 'Fallback, retry, and operation signals are wired into the panel',
+                'status' => $recentOperation !== null && $recentOperation['status'] === 'error' ? 'error' : 'retry',
+                'expanded' => false,
+                'children' => $toolingChildren,
+            ],
+        ];
+
+        $status = 'success';
+        foreach ($children as $child) {
+            if ($child['status'] === 'error') {
+                $status = 'error';
+                break;
+            }
+            if (in_array($child['status'], ['retry', 'fallback'], true)) {
+                $status = $status === 'success' ? $child['status'] : $status;
+            }
+        }
+
+        return [
+            'summary' => sprintf('Snapshot %s · clock %s · %d schedule block%s', $snapshot->local()->format('g:i A T'), $clockHealth['state'], count($schedule), count($schedule) === 1 ? '' : 's'),
+            'status' => $status,
+            'snapshot' => $snapshot->toArray(),
+            'clock_health' => $clockHealth,
+            'awareness' => $awareness,
+            'children' => $children,
+        ];
+    }
+
+    /**
+     * @return list<array{title: string, start_time: string, end_time: string, source: string}>
+     */
+    private function loadTodaySchedule(DateTimeImmutable $localNow): array
+    {
+        $schedule = [];
+
+        try {
+            foreach ($this->entityTypeManager->getStorage('schedule_entry')->loadMultiple($this->entityTypeManager->getStorage('schedule_entry')->getQuery()->execute()) as $entry) {
+                $start = $this->getEntityField($entry, 'starts_at');
+                $end = $this->getEntityField($entry, 'ends_at');
+                if (! is_string($start) || ! is_string($end) || $start === '' || $end === '') {
+                    continue;
+                }
+
+                try {
+                    $startAt = new DateTimeImmutable($start);
+                } catch (\Throwable) {
+                    continue;
+                }
+
+                if ($startAt->setTimezone($localNow->getTimezone())->format('Y-m-d') !== $localNow->format('Y-m-d')) {
+                    continue;
+                }
+
+                $schedule[] = [
+                    'title' => (string) ($this->getEntityField($entry, 'title') ?? 'Untitled block'),
+                    'start_time' => $start,
+                    'end_time' => $end,
+                    'source' => (string) ($this->getEntityField($entry, 'source') ?? 'manual'),
+                ];
+            }
+        } catch (\Throwable) {
+        }
+
+        usort($schedule, static fn (array $left, array $right): int => strcmp($left['start_time'], $right['start_time']));
+
+        return $schedule;
+    }
+
+    /**
+     * @return ?array{summary: string, status: string}
+     */
+    private function loadRecentOperationSummary(): ?array
+    {
+        try {
+            $storage = $this->entityTypeManager->getStorage('operation');
+            $operations = $storage->loadMultiple($storage->getQuery()->execute());
+        } catch (\Throwable) {
+            return null;
+        }
+
+        if ($operations === []) {
+            return null;
+        }
+
+        usort($operations, fn ($left, $right): int => strcmp((string) ($this->getEntityField($right, 'created_at') ?? ''), (string) ($this->getEntityField($left, 'created_at') ?? '')));
+        $operation = $operations[0];
+        $status = (string) ($this->getEntityField($operation, 'status') ?? 'pending');
+
+        return [
+            'summary' => sprintf('%s · commit %s', $status, (string) ($this->getEntityField($operation, 'commit_hash') ?? 'n/a')),
+            'status' => $status === 'complete' ? 'success' : ($status === 'failed' ? 'error' : 'retry'),
+        ];
+    }
+
+    private function getEntityField(mixed $entity, string $field): mixed
+    {
+        if (is_object($entity) && method_exists($entity, 'get')) {
+            return $entity->get($field);
+        }
+
+        return null;
     }
 
     /**

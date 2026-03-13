@@ -56,6 +56,9 @@ final class ObservabilityDashboardViewTest extends TestCase
         self::assertStringContainsString('call-chain-status fallback', $response->content);
         self::assertStringContainsString('call-chain-status retry', $response->content);
         self::assertStringContainsString('call-chain-status error', $response->content);
+        self::assertStringContainsString('Temporal + tooling execution', $response->content);
+        self::assertStringContainsString('Atomic time snapshot', $response->content);
+        self::assertStringContainsString('Tooling transport signals', $response->content);
         self::assertStringContainsString('Extraction Health', $response->content);
         self::assertStringContainsString('Drift Overview', $response->content);
         self::assertStringContainsString('Self-Assessment', $response->content);
@@ -86,8 +89,10 @@ final class ObservabilityDashboardViewTest extends TestCase
         self::assertArrayHasKey('overall_score', $payload['self_assessment']);
         self::assertArrayHasKey('daily_sample_count', $payload['training_export_readiness']);
         self::assertArrayHasKey('summary', $payload['governance_integrity']);
+        self::assertArrayHasKey('temporal_tooling', $payload);
         self::assertArrayHasKey('call_chain', $payload);
         self::assertSame('Platform observability scan', $payload['call_chain']['root']['title']);
+        self::assertSame('Atomic time snapshot', $payload['call_chain']['root']['children'][7]['children'][0]['title']);
         self::assertSame('batch-platform-view-001', $payload['model_update_batches'][0]['batch_id']);
     }
 
