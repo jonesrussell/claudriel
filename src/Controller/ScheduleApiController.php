@@ -11,6 +11,8 @@ use Waaseyaa\SSR\SsrResponse;
 
 final class ScheduleApiController
 {
+    private const VALID_STATUSES = ['active', 'cancelled'];
+
     public function __construct(
         private readonly EntityTypeManager $entityTypeManager,
         mixed $twig = null,
@@ -65,6 +67,7 @@ final class ScheduleApiController
             'notes' => is_string($body['notes'] ?? null) ? trim($body['notes']) : '',
             'status' => 'active',
             'tenant_id' => $body['tenant_id'] ?? null,
+            'recurring_series_id' => is_string($body['recurring_series_id'] ?? null) ? $body['recurring_series_id'] : null,
         ]);
 
         $this->entityTypeManager->getStorage('schedule_entry')->save($entry);
@@ -90,7 +93,10 @@ final class ScheduleApiController
         }
 
         $body = json_decode($httpRequest?->getContent() ?? '', true) ?? [];
-        foreach (['title', 'notes', 'status', 'tenant_id'] as $field) {
+        $scope = $this->normalizeScope($query['scope'] ?? $body['scope'] ?? null);
+        $targets = $this->resolveTargets($entry, $scope);
+
+        foreach (['title', 'notes', 'tenant_id', 'recurring_series_id'] as $field) {
             if (! array_key_exists($field, $body)) {
                 continue;
             }
@@ -100,12 +106,26 @@ final class ScheduleApiController
                 if ($title === '') {
                     return $this->json(['error' => 'Field "title" cannot be empty.'], 422);
                 }
-                $entry->set('title', $title);
+                foreach ($targets as $target) {
+                    $target->set('title', $title);
+                }
 
                 continue;
             }
 
-            $entry->set($field, $body[$field]);
+            foreach ($targets as $target) {
+                $target->set($field, $body[$field]);
+            }
+        }
+
+        if (array_key_exists('status', $body)) {
+            $status = $this->normalizeStatus($body['status']);
+            if ($status === null) {
+                return $this->json(['error' => 'Field "status" is invalid.'], 422);
+            }
+            foreach ($targets as $target) {
+                $target->set('status', $status);
+            }
         }
 
         foreach (['starts_at', 'ends_at'] as $field) {
@@ -117,12 +137,20 @@ final class ScheduleApiController
             if ($normalized === null) {
                 return $this->json(['error' => sprintf('Field "%s" must be a valid datetime.', $field)], 422);
             }
-            $entry->set($field, $normalized);
+            foreach ($targets as $target) {
+                $target->set($field, $normalized);
+            }
         }
 
-        $this->entityTypeManager->getStorage('schedule_entry')->save($entry);
+        foreach ($targets as $target) {
+            $this->entityTypeManager->getStorage('schedule_entry')->save($target);
+        }
 
-        return $this->json(['schedule' => $this->serialize($entry)]);
+        return $this->json([
+            'schedule' => $this->serialize($entry),
+            'scope' => $scope,
+            'affected_count' => count($targets),
+        ]);
     }
 
     public function delete(array $params = [], array $query = [], mixed $account = null): SsrResponse
@@ -132,9 +160,28 @@ final class ScheduleApiController
             return $this->json(['error' => 'Schedule entry not found.'], 404);
         }
 
-        $this->entityTypeManager->getStorage('schedule_entry')->delete([$entry]);
+        $scope = $this->normalizeScope($query['scope'] ?? null);
+        $storage = $this->entityTypeManager->getStorage('schedule_entry');
 
-        return $this->json(['deleted' => true]);
+        if (($entry->get('recurring_series_id') ?? null) !== null && $scope !== 'series') {
+            $entry->set('status', 'cancelled');
+            $storage->save($entry);
+
+            return $this->json([
+                'deleted' => true,
+                'scope' => 'occurrence',
+                'affected_count' => 1,
+            ]);
+        }
+
+        $targets = $this->resolveTargets($entry, $scope);
+        $storage->delete($targets);
+
+        return $this->json([
+            'deleted' => true,
+            'scope' => $scope,
+            'affected_count' => count($targets),
+        ]);
     }
 
     /**
@@ -195,6 +242,45 @@ final class ScheduleApiController
         return (new \DateTimeImmutable($startsAt))->modify('+30 minutes')->format(\DateTimeInterface::ATOM);
     }
 
+    private function normalizeStatus(mixed $value): ?string
+    {
+        if (! is_string($value)) {
+            return null;
+        }
+
+        return in_array($value, self::VALID_STATUSES, true) ? $value : null;
+    }
+
+    private function normalizeScope(mixed $value): string
+    {
+        if ($value === 'series') {
+            return 'series';
+        }
+
+        return 'occurrence';
+    }
+
+    /**
+     * @return list<ScheduleEntry>
+     */
+    private function resolveTargets(ScheduleEntry $entry, string $scope): array
+    {
+        if ($scope !== 'series') {
+            return [$entry];
+        }
+
+        $seriesId = $entry->get('recurring_series_id');
+        if (! is_string($seriesId) || $seriesId === '') {
+            return [$entry];
+        }
+
+        $storage = $this->entityTypeManager->getStorage('schedule_entry');
+        $ids = $storage->getQuery()->condition('recurring_series_id', $seriesId)->execute();
+        $entries = $storage->loadMultiple($ids);
+
+        return array_values(array_filter($entries, fn ($candidate): bool => $candidate instanceof ScheduleEntry));
+    }
+
     /**
      * @return array<string, mixed>
      */
@@ -210,6 +296,8 @@ final class ScheduleApiController
             'status' => $entry->get('status') ?? 'active',
             'external_id' => $entry->get('external_id'),
             'calendar_id' => $entry->get('calendar_id'),
+            'recurring_series_id' => $entry->get('recurring_series_id'),
+            'is_recurring' => is_string($entry->get('recurring_series_id')) && $entry->get('recurring_series_id') !== '',
             'tenant_id' => $entry->get('tenant_id'),
             'created_at' => $entry->get('created_at'),
             'updated_at' => $entry->get('updated_at'),

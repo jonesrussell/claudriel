@@ -35,6 +35,9 @@ final class ScheduleEntry extends ContentEntityBase
         if ($this->get('external_id') === null) {
             $this->set('external_id', null);
         }
+        if ($this->get('recurring_series_id') === null) {
+            $this->set('recurring_series_id', null);
+        }
         if ($this->get('tenant_id') === null) {
             $this->set('tenant_id', null);
         }

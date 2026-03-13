@@ -24,6 +24,13 @@ final class SchedulePayloadNormalizer
             $payload['icaluid'] ?? null,
             $payload['iCalUID'] ?? null,
         ]);
+        $recurringSeriesId = $this->firstNonEmptyString([
+            $payload['recurring_event_id'] ?? null,
+            $payload['recurringEventId'] ?? null,
+            $payload['series_id'] ?? null,
+            $payload['seriesId'] ?? null,
+            $payload['parent_event_id'] ?? null,
+        ]);
 
         $start = $this->parseDateTime(
             $payload['start_time'] ?? $payload['starts_at'] ?? $payload['start'] ?? null,
@@ -53,6 +60,7 @@ final class SchedulePayloadNormalizer
             'source' => $source,
             'calendar_id' => $calendarId,
             'external_id' => $externalId,
+            'recurring_series_id' => $recurringSeriesId,
             'start_time' => $start->format(\DateTimeInterface::ATOM),
             'end_time' => $end->format(\DateTimeInterface::ATOM),
             'organizer_name' => $this->normalizeString($payload['from_name'] ?? $payload['organizer_name'] ?? null),
@@ -93,6 +101,13 @@ final class SchedulePayloadNormalizer
                 $payload['ical_uid'] ?? null,
                 $payload['icaluid'] ?? null,
                 $payload['iCalUID'] ?? null,
+            ]),
+            'recurring_series_id' => $this->firstNonEmptyString([
+                $payload['recurring_event_id'] ?? null,
+                $payload['recurringEventId'] ?? null,
+                $payload['series_id'] ?? null,
+                $payload['seriesId'] ?? null,
+                $payload['parent_event_id'] ?? null,
             ]),
             'start_time' => $start->format(\DateTimeInterface::ATOM),
             'end_time' => $end->format(\DateTimeInterface::ATOM),

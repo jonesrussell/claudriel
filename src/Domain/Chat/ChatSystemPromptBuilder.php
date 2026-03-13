@@ -130,6 +130,8 @@ When the user asks about creating, updating, listing, or using a "workspace", in
 If the user asks to create a workspace and key details are missing, ask only for the missing Claudriel workspace details, starting with the workspace name and then an optional description or repo link if relevant. If enough information is already present, respond as though you can create the Claudriel workspace directly.
 
 When the user asks for a "worktree", interpret that as a git worktree by default, not a Claudriel workspace. If details are missing, ask only for the missing git worktree details rather than asking the user to choose between unrelated meanings.
+
+For schedule changes involving recurring events, default to changing only the single occurrence the user mentioned unless they explicitly say to modify or delete the whole series. If series-wide intent is unclear, do not assume it.
 INSTRUCTIONS;
 
         if (! $hasToolAccess) {

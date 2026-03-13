@@ -62,6 +62,76 @@ final class ScheduleApiControllerTest extends TestCase
         self::assertSame(200, $deleteResponse->statusCode);
     }
 
+    public function test_recurring_delete_defaults_to_single_occurrence(): void
+    {
+        $controller = new ScheduleApiController($this->buildEntityTypeManager());
+        $today = new \DateTimeImmutable('today 11:00:00');
+        $tomorrow = $today->modify('+1 day');
+
+        $first = $controller->create(
+            httpRequest: Request::create('/api/schedule', 'POST', server: ['CONTENT_TYPE' => 'application/json'], content: json_encode([
+                'title' => 'Aftercare Support Group',
+                'starts_at' => $today->format(\DateTimeInterface::ATOM),
+                'recurring_series_id' => 'series-aftercare',
+            ], JSON_THROW_ON_ERROR)),
+        );
+        $second = $controller->create(
+            httpRequest: Request::create('/api/schedule', 'POST', server: ['CONTENT_TYPE' => 'application/json'], content: json_encode([
+                'title' => 'Aftercare Support Group',
+                'starts_at' => $tomorrow->format(\DateTimeInterface::ATOM),
+                'recurring_series_id' => 'series-aftercare',
+            ], JSON_THROW_ON_ERROR)),
+        );
+
+        $firstEntry = json_decode($first->content, true, 512, JSON_THROW_ON_ERROR)['schedule'];
+        $secondEntry = json_decode($second->content, true, 512, JSON_THROW_ON_ERROR)['schedule'];
+
+        $delete = $controller->delete(params: ['uuid' => $firstEntry['uuid']]);
+        $payload = json_decode($delete->content, true, 512, JSON_THROW_ON_ERROR);
+
+        self::assertSame('occurrence', $payload['scope']);
+        self::assertSame(1, $payload['affected_count']);
+
+        $showFirst = json_decode($controller->show(params: ['uuid' => $firstEntry['uuid']])->content, true, 512, JSON_THROW_ON_ERROR);
+        $showSecond = json_decode($controller->show(params: ['uuid' => $secondEntry['uuid']])->content, true, 512, JSON_THROW_ON_ERROR);
+
+        self::assertSame('cancelled', $showFirst['schedule']['status']);
+        self::assertSame('active', $showSecond['schedule']['status']);
+    }
+
+    public function test_recurring_delete_with_series_scope_removes_entire_series(): void
+    {
+        $controller = new ScheduleApiController($this->buildEntityTypeManager());
+        $today = new \DateTimeImmutable('today 11:00:00');
+        $tomorrow = $today->modify('+1 day');
+
+        $first = $controller->create(
+            httpRequest: Request::create('/api/schedule', 'POST', server: ['CONTENT_TYPE' => 'application/json'], content: json_encode([
+                'title' => 'Aftercare Support Group',
+                'starts_at' => $today->format(\DateTimeInterface::ATOM),
+                'recurring_series_id' => 'series-aftercare',
+            ], JSON_THROW_ON_ERROR)),
+        );
+        $second = $controller->create(
+            httpRequest: Request::create('/api/schedule', 'POST', server: ['CONTENT_TYPE' => 'application/json'], content: json_encode([
+                'title' => 'Aftercare Support Group',
+                'starts_at' => $tomorrow->format(\DateTimeInterface::ATOM),
+                'recurring_series_id' => 'series-aftercare',
+            ], JSON_THROW_ON_ERROR)),
+        );
+
+        $firstEntry = json_decode($first->content, true, 512, JSON_THROW_ON_ERROR)['schedule'];
+        $secondEntry = json_decode($second->content, true, 512, JSON_THROW_ON_ERROR)['schedule'];
+
+        $delete = $controller->delete(params: ['uuid' => $firstEntry['uuid']], query: ['scope' => 'series']);
+        $payload = json_decode($delete->content, true, 512, JSON_THROW_ON_ERROR);
+
+        self::assertSame('series', $payload['scope']);
+        self::assertSame(2, $payload['affected_count']);
+        self::assertSame(404, $controller->show(params: ['uuid' => $firstEntry['uuid']])->statusCode);
+        self::assertSame(404, $controller->show(params: ['uuid' => $secondEntry['uuid']])->statusCode);
+    }
+
     private function buildEntityTypeManager(): EntityTypeManager
     {
         $db = PdoDatabase::createSqlite(':memory:');

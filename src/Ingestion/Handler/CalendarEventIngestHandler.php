@@ -113,6 +113,7 @@ final class CalendarEventIngestHandler implements IngestHandlerInterface
         $entry->set('source', $source);
         $entry->set('calendar_id', $normalized['calendar_id']);
         $entry->set('external_id', $normalized['external_id']);
+        $entry->set('recurring_series_id', $normalized['recurring_series_id']);
         $entry->set('starts_at', $normalized['start_time']);
         $entry->set('ends_at', $normalized['end_time']);
         $entry->set('organizer_name', $normalized['organizer_name']);
