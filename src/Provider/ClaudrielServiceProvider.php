@@ -13,6 +13,7 @@ use Claudriel\Command\WorkspaceCreateCommand;
 use Claudriel\Command\WorkspacesCommand;
 use Claudriel\Controller\Ai\ExtractionImprovementSuggestionController;
 use Claudriel\Controller\Ai\ExtractionSelfAssessmentController;
+use Claudriel\Controller\Ai\ModelUpdateBatchController;
 use Claudriel\Controller\Ai\TrainingExportController;
 use Claudriel\Controller\Audit\CommitmentExtractionAuditController;
 use Claudriel\Controller\BriefStreamController;
@@ -330,6 +331,23 @@ final class ClaudrielServiceProvider extends ServiceProvider
             'claudriel.ai.improvement_suggestions_json',
             RouteBuilder::create('/ai/improvement-suggestions.json')
                 ->controller(ExtractionImprovementSuggestionController::class.'::jsonView')
+                ->allowAll()
+                ->methods('GET')
+                ->build(),
+        );
+
+        $modelUpdateBatchRoute = RouteBuilder::create('/ai/model-update-batch')
+            ->controller(ModelUpdateBatchController::class.'::create')
+            ->allowAll()
+            ->methods('POST')
+            ->build();
+        $modelUpdateBatchRoute->setOption('_csrf', false);
+        $router->addRoute('claudriel.ai.model_update_batch', $modelUpdateBatchRoute);
+
+        $router->addRoute(
+            'claudriel.ai.model_update_batch_show',
+            RouteBuilder::create('/ai/model-update-batch/{batchId}.json')
+                ->controller(ModelUpdateBatchController::class.'::show')
                 ->allowAll()
                 ->methods('GET')
                 ->build(),

@@ -57,6 +57,29 @@
     text-decoration: none;
     font-weight: 700;
   }
+  .action-row {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-top: 0.9rem;
+  }
+  .inline-form {
+    margin: 0;
+  }
+  .action-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 42px;
+    padding: 0.7rem 0.95rem;
+    border-radius: var(--radius-md);
+    border: 1px solid rgba(124, 196, 255, 0.3);
+    color: var(--accent-blue);
+    background: rgba(29, 91, 142, 0.12);
+    text-decoration: none;
+    font-weight: 700;
+    cursor: pointer;
+  }
   table {
     width: 100%;
     border-collapse: collapse;
@@ -88,7 +111,13 @@
 {% block content %}
   <main class="assessment-page">
     <section class="hero">
-      <p><a class="nav-link" href="/audit/commitment-extraction">Back to audit dashboard</a></p>
+      <div class="action-row">
+        <a class="nav-link" href="/audit/commitment-extraction">Back to audit dashboard</a>
+        <form class="inline-form" method="post" action="/ai/model-update-batch">
+          <input type="hidden" name="days" value="{{ assessment.window_days }}">
+          <button class="action-button" type="submit">Generate Model Update Batch</button>
+        </form>
+      </div>
       <h1>Extraction Self-Assessment</h1>
       <p>Claudriel evaluates recent extraction quality, highlights the most damaging failure patterns, and identifies the senders most likely to need model attention next.</p>
     </section>
