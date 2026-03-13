@@ -120,6 +120,141 @@ final class ChatStreamControllerTest extends TestCase
         }
     }
 
+    public function test_creates_workspace_from_chat_request_with_smart_quotes(): void
+    {
+        $originalKey = getenv('ANTHROPIC_API_KEY');
+        putenv('ANTHROPIC_API_KEY');
+        unset($_ENV['ANTHROPIC_API_KEY']);
+
+        $etm = $this->buildEntityTypeManager();
+
+        $sessionStorage = $etm->getStorage('chat_session');
+        $sessionStorage->save(new ChatSession(['uuid' => 'sess-3', 'title' => 'Test', 'created_at' => date('c')]));
+
+        $msgStorage = $etm->getStorage('chat_message');
+        $msgStorage->save(new ChatMessage([
+            'uuid' => 'msg-3',
+            'session_uuid' => 'sess-3',
+            'role' => 'user',
+            'content' => "create a workspace named \u{201C}Foo\u{201D}",
+            'created_at' => date('c'),
+        ]));
+
+        $controller = new ChatStreamController($etm);
+        $response = $controller->stream(['messageId' => 'msg-3'], [], null, null);
+
+        self::assertInstanceOf(StreamedResponse::class, $response);
+
+        ob_start();
+        $callback = $response->getCallback();
+        self::assertIsCallable($callback);
+        $callback();
+        ob_end_clean();
+
+        $workspaceStorage = $etm->getStorage('workspace');
+        $workspaceIds = $workspaceStorage->getQuery()->condition('name', 'Foo')->execute();
+        self::assertNotEmpty($workspaceIds);
+
+        if ($originalKey !== false) {
+            putenv("ANTHROPIC_API_KEY={$originalKey}");
+        }
+    }
+
+    public function test_deletes_multiple_workspaces_from_chat_request_without_api_key(): void
+    {
+        $originalKey = getenv('ANTHROPIC_API_KEY');
+        putenv('ANTHROPIC_API_KEY');
+        unset($_ENV['ANTHROPIC_API_KEY']);
+
+        $etm = $this->buildEntityTypeManager();
+
+        $workspaceStorage = $etm->getStorage('workspace');
+        $workspaceStorage->save(new Workspace(['name' => 'Bar', 'description' => '']));
+        $workspaceStorage->save(new Workspace(['name' => 'Foo', 'description' => '']));
+
+        $sessionStorage = $etm->getStorage('chat_session');
+        $sessionStorage->save(new ChatSession(['uuid' => 'sess-4', 'title' => 'Test', 'created_at' => date('c')]));
+
+        $msgStorage = $etm->getStorage('chat_message');
+        $msgStorage->save(new ChatMessage([
+            'uuid' => 'msg-4',
+            'session_uuid' => 'sess-4',
+            'role' => 'user',
+            'content' => 'delete workspace Bar and Foo',
+            'created_at' => date('c'),
+        ]));
+
+        $controller = new ChatStreamController($etm);
+        $response = $controller->stream(['messageId' => 'msg-4'], [], null, null);
+
+        self::assertInstanceOf(StreamedResponse::class, $response);
+
+        ob_start();
+        $callback = $response->getCallback();
+        self::assertIsCallable($callback);
+        $callback();
+        ob_end_clean();
+
+        self::assertSame([], $workspaceStorage->getQuery()->condition('name', 'Bar')->execute());
+        self::assertSame([], $workspaceStorage->getQuery()->condition('name', 'Foo')->execute());
+
+        $assistantIds = $msgStorage->getQuery()->condition('role', 'assistant')->execute();
+        $assistantMessage = $msgStorage->load(reset($assistantIds));
+        self::assertInstanceOf(ChatMessage::class, $assistantMessage);
+        self::assertSame('Deleted "Bar" and "Foo".', $assistantMessage->get('content'));
+
+        if ($originalKey !== false) {
+            putenv("ANTHROPIC_API_KEY={$originalKey}");
+        }
+    }
+
+    public function test_delete_workspace_reports_missing_names(): void
+    {
+        $originalKey = getenv('ANTHROPIC_API_KEY');
+        putenv('ANTHROPIC_API_KEY');
+        unset($_ENV['ANTHROPIC_API_KEY']);
+
+        $etm = $this->buildEntityTypeManager();
+
+        $workspaceStorage = $etm->getStorage('workspace');
+        $workspaceStorage->save(new Workspace(['name' => 'Bar', 'description' => '']));
+
+        $sessionStorage = $etm->getStorage('chat_session');
+        $sessionStorage->save(new ChatSession(['uuid' => 'sess-5', 'title' => 'Test', 'created_at' => date('c')]));
+
+        $msgStorage = $etm->getStorage('chat_message');
+        $msgStorage->save(new ChatMessage([
+            'uuid' => 'msg-5',
+            'session_uuid' => 'sess-5',
+            'role' => 'user',
+            'content' => 'delete workspace Bar and Missing',
+            'created_at' => date('c'),
+        ]));
+
+        $controller = new ChatStreamController($etm);
+        $response = $controller->stream(['messageId' => 'msg-5'], [], null, null);
+
+        self::assertInstanceOf(StreamedResponse::class, $response);
+
+        ob_start();
+        $callback = $response->getCallback();
+        self::assertIsCallable($callback);
+        $callback();
+        ob_end_clean();
+
+        self::assertSame([], $workspaceStorage->getQuery()->condition('name', 'Bar')->execute());
+        self::assertSame([], $workspaceStorage->getQuery()->condition('name', 'Missing')->execute());
+
+        $assistantIds = $msgStorage->getQuery()->condition('role', 'assistant')->execute();
+        $assistantMessage = $msgStorage->load(reset($assistantIds));
+        self::assertInstanceOf(ChatMessage::class, $assistantMessage);
+        self::assertSame('Deleted "Bar". Could not find "Missing".', $assistantMessage->get('content'));
+
+        if ($originalKey !== false) {
+            putenv("ANTHROPIC_API_KEY={$originalKey}");
+        }
+    }
+
     private function buildEntityTypeManager(): EntityTypeManager
     {
         $db = PdoDatabase::createSqlite(':memory:');

@@ -76,7 +76,6 @@ final class ChatStreamController
             [
                 'Content-Type' => 'text/event-stream',
                 'Cache-Control' => 'no-cache',
-                'Connection' => 'keep-alive',
                 'X-Accel-Buffering' => 'no',
             ],
         );
@@ -85,13 +84,38 @@ final class ChatStreamController
     private function handleLocalAction(ChatMessage $userMsg, mixed $msgStorage): ?StreamedResponse
     {
         $content = trim((string) $userMsg->get('content'));
+        $workspaceDeletes = $this->extractWorkspaceDeletionNames($content);
+        $workspaceStorage = $this->entityTypeManager->getStorage('workspace');
+
+        if ($workspaceDeletes !== []) {
+            $deleted = [];
+            $missing = [];
+
+            foreach ($workspaceDeletes as $workspaceName) {
+                $existingIds = $workspaceStorage->getQuery()->condition('name', $workspaceName)->execute();
+                if ($existingIds === []) {
+                    $missing[] = $workspaceName;
+                    continue;
+                }
+
+                $workspace = $workspaceStorage->load(reset($existingIds));
+                if ($workspace instanceof Workspace) {
+                    $workspaceStorage->delete([$workspace]);
+                    $deleted[] = (string) $workspace->get('name');
+                }
+            }
+
+            $responseText = $this->buildWorkspaceDeletionResponse($deleted, $missing);
+
+            return $this->buildLocalActionResponse($userMsg, $msgStorage, $responseText);
+        }
+
         $workspaceName = $this->extractWorkspaceName($content);
 
         if ($workspaceName === null) {
             return null;
         }
 
-        $workspaceStorage = $this->entityTypeManager->getStorage('workspace');
         $existingIds = $workspaceStorage->getQuery()->condition('name', $workspaceName)->execute();
 
         if ($existingIds !== []) {
@@ -113,6 +137,11 @@ final class ChatStreamController
             );
         }
 
+        return $this->buildLocalActionResponse($userMsg, $msgStorage, $responseText);
+    }
+
+    private function buildLocalActionResponse(ChatMessage $userMsg, mixed $msgStorage, string $responseText): StreamedResponse
+    {
         return new StreamedResponse(
             function () use ($userMsg, $msgStorage, $responseText): void {
                 echo "retry: 3000\n\n";
@@ -137,10 +166,92 @@ final class ChatStreamController
             [
                 'Content-Type' => 'text/event-stream',
                 'Cache-Control' => 'no-cache',
-                'Connection' => 'keep-alive',
                 'X-Accel-Buffering' => 'no',
             ],
         );
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function extractWorkspaceDeletionNames(string $message): array
+    {
+        $normalized = str_replace(["\u{201C}", "\u{201D}", "\u{2018}", "\u{2019}"], ['"', '"', "'", "'"], $message);
+        $patterns = [
+            '/\b(?:delete|remove)\b.*?\bworkspace\b(?:s)?\s+(.+)$/iu',
+            '/\b(?:delete|remove)\b\s+(.+?)\s+\bworkspace\b(?:s)?$/iu',
+        ];
+
+        $targetSegment = null;
+        foreach ($patterns as $pattern) {
+            if (preg_match($pattern, $normalized, $matches)) {
+                $targetSegment = trim($matches[1]);
+                break;
+            }
+        }
+
+        if ($targetSegment === null || $targetSegment === '') {
+            return [];
+        }
+
+        $parts = preg_split('/\s*(?:,|and)\s*/iu', $targetSegment) ?: [];
+        $names = [];
+
+        foreach ($parts as $part) {
+            $name = trim($part);
+            $name = trim($name, " \t\n\r\0\x0B\"'.,!?;:");
+            if ($name !== '') {
+                $names[] = $name;
+            }
+        }
+
+        return array_values(array_unique($names));
+    }
+
+    /**
+     * @param list<string> $deleted
+     * @param list<string> $missing
+     */
+    private function buildWorkspaceDeletionResponse(array $deleted, array $missing): string
+    {
+        if ($deleted !== [] && $missing === []) {
+            return sprintf(
+                'Deleted %s.',
+                $this->formatWorkspaceNameList($deleted),
+            );
+        }
+
+        if ($deleted === [] && $missing !== []) {
+            return sprintf(
+                'Could not find %s.',
+                $this->formatWorkspaceNameList($missing),
+            );
+        }
+
+        if ($deleted !== [] && $missing !== []) {
+            return sprintf(
+                'Deleted %s. Could not find %s.',
+                $this->formatWorkspaceNameList($deleted),
+                $this->formatWorkspaceNameList($missing),
+            );
+        }
+
+        return 'No workspace names were recognized in that delete request.';
+    }
+
+    /**
+     * @param list<string> $names
+     */
+    private function formatWorkspaceNameList(array $names): string
+    {
+        $quoted = array_map(static fn (string $name): string => sprintf('"%s"', $name), $names);
+
+        return match (count($quoted)) {
+            0 => 'no workspaces',
+            1 => $quoted[0],
+            2 => $quoted[0].' and '.$quoted[1],
+            default => implode(', ', array_slice($quoted, 0, -1)).', and '.$quoted[array_key_last($quoted)],
+        };
     }
 
     private function streamTokens(string $sessionUuid, string $apiKey, mixed $msgStorage): void
@@ -303,12 +414,26 @@ final class ChatStreamController
 
     private function extractWorkspaceName(string $message): ?string
     {
-        if (! preg_match('/\bcreate\b.*\bworkspace\b.*\b(?:named|called)\s+["\']?([^"\']+)["\']?/i', $message, $matches)) {
-            return null;
+        $normalized = str_replace(["\u{201C}", "\u{201D}", "\u{2018}", "\u{2019}"], ['"', '"', "'", "'"], $message);
+        $patterns = [
+            '/\bcreate\b.*?\bworkspace\b.*?\b(?:named|called)\s+["\']?([^"\']+)["\']?/iu',
+            '/\bcreate\b.*?\bworkspace\b\s+["\']?([^"\']+)["\']?/iu',
+            '/\bnew\b.*?\bworkspace\b.*?\b(?:named|called)\s+["\']?([^"\']+)["\']?/iu',
+        ];
+
+        foreach ($patterns as $pattern) {
+            if (! preg_match($pattern, $normalized, $matches)) {
+                continue;
+            }
+
+            $name = trim($matches[1]);
+            $name = trim($name, " \t\n\r\0\x0B.,!?;:");
+
+            if ($name !== '') {
+                return $name;
+            }
         }
 
-        $name = trim($matches[1]);
-
-        return $name !== '' ? $name : null;
+        return null;
     }
 }
