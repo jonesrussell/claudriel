@@ -11,6 +11,7 @@ use Claudriel\Command\RecategorizeEventsCommand;
 use Claudriel\Command\SkillsCommand;
 use Claudriel\Command\WorkspaceCreateCommand;
 use Claudriel\Command\WorkspacesCommand;
+use Claudriel\Controller\Ai\ExtractionSelfAssessmentController;
 use Claudriel\Controller\Ai\TrainingExportController;
 use Claudriel\Controller\Audit\CommitmentExtractionAuditController;
 use Claudriel\Controller\BriefStreamController;
@@ -290,6 +291,25 @@ final class ClaudrielServiceProvider extends ServiceProvider
             'claudriel.ai.export.failures',
             RouteBuilder::create('/ai/export/failures.json')
                 ->controller(TrainingExportController::class.'::failures')
+                ->allowAll()
+                ->methods('GET')
+                ->build(),
+        );
+
+        $router->addRoute(
+            'claudriel.ai.self_assessment',
+            RouteBuilder::create('/ai/self-assessment')
+                ->controller(ExtractionSelfAssessmentController::class.'::index')
+                ->allowAll()
+                ->methods('GET')
+                ->render()
+                ->build(),
+        );
+
+        $router->addRoute(
+            'claudriel.ai.self_assessment_json',
+            RouteBuilder::create('/ai/self-assessment.json')
+                ->controller(ExtractionSelfAssessmentController::class.'::jsonView')
                 ->allowAll()
                 ->methods('GET')
                 ->build(),
