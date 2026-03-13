@@ -79,6 +79,7 @@ final class DayBriefAssemblerTest extends TestCase
         $brief = $this->assembler->assemble('user-1', new \DateTimeImmutable('-24 hours'));
 
         self::assertArrayHasKey('schedule', $brief);
+        self::assertArrayHasKey('temporal_awareness', $brief);
         self::assertArrayHasKey('job_hunt', $brief);
         self::assertArrayHasKey('people', $brief);
         self::assertArrayHasKey('triage', $brief);
@@ -111,6 +112,39 @@ final class DayBriefAssemblerTest extends TestCase
         self::assertSame('2026-03-14T12:00:00+00:00', $brief['generated_at']);
         self::assertSame('America/Toronto', $brief['time_snapshot']['timezone']);
         self::assertSame(1234, $brief['time_snapshot']['monotonic_ns']);
+    }
+
+    public function test_includes_temporal_awareness_for_current_and_next_blocks(): void
+    {
+        $this->scheduleRepo->save(new ScheduleEntry([
+            'seid' => 100,
+            'title' => 'Current Block',
+            'starts_at' => '2026-03-14T09:00:00-04:00',
+            'ends_at' => '2026-03-14T10:30:00-04:00',
+            'source' => 'google-calendar',
+            'tenant_id' => 'user-1',
+        ]));
+        $this->scheduleRepo->save(new ScheduleEntry([
+            'seid' => 101,
+            'title' => 'Next Block',
+            'starts_at' => '2026-03-14T11:00:00-04:00',
+            'ends_at' => '2026-03-14T12:00:00-04:00',
+            'source' => 'google-calendar',
+            'tenant_id' => 'user-1',
+        ]));
+
+        $snapshot = new \Claudriel\Temporal\TimeSnapshot(
+            new \DateTimeImmutable('2026-03-14T14:15:00+00:00'),
+            new \DateTimeImmutable('2026-03-14T10:15:00-04:00'),
+            5678,
+            'America/Toronto',
+        );
+
+        $brief = $this->assembler->assemble('user-1', new \DateTimeImmutable('2026-03-13T14:15:00+00:00'), snapshot: $snapshot);
+
+        self::assertSame('Current Block', $brief['temporal_awareness']['current_block']['title']);
+        self::assertSame('Next Block', $brief['temporal_awareness']['next_block']['title']);
+        self::assertCount(1, $brief['temporal_awareness']['gaps']);
     }
 
     public function test_groups_schedule_events(): void
