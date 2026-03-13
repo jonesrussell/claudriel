@@ -27,6 +27,7 @@ use Claudriel\Entity\Account;
 use Claudriel\Entity\ChatMessage;
 use Claudriel\Entity\ChatSession;
 use Claudriel\Entity\Commitment;
+use Claudriel\Entity\CommitmentExtractionLog;
 use Claudriel\Entity\Integration;
 use Claudriel\Entity\McEvent;
 use Claudriel\Entity\Person;
@@ -83,6 +84,13 @@ final class ClaudrielServiceProvider extends ServiceProvider
             label: 'Commitment',
             class: Commitment::class,
             keys: ['id' => 'cid', 'uuid' => 'uuid', 'label' => 'title'],
+        ));
+
+        $this->entityType(new EntityType(
+            id: 'commitment_extraction_log',
+            label: 'Commitment Extraction Log',
+            class: CommitmentExtractionLog::class,
+            keys: ['id' => 'celid', 'uuid' => 'uuid'],
         ));
 
         $this->entityType(new EntityType(
@@ -279,7 +287,7 @@ final class ClaudrielServiceProvider extends ServiceProvider
         EventDispatcherInterface $dispatcher,
     ): array {
         // Trigger getStorage() for each entity type so SqlSchemaHandler::ensureTable() runs.
-        foreach (['mc_event', 'commitment', 'person', 'account', 'integration', 'skill', 'chat_session', 'chat_message', 'workspace'] as $typeId) {
+        foreach (['mc_event', 'commitment', 'commitment_extraction_log', 'person', 'account', 'integration', 'skill', 'chat_session', 'chat_message', 'workspace'] as $typeId) {
             try {
                 $entityTypeManager->getStorage($typeId);
             } catch (\Throwable) {
