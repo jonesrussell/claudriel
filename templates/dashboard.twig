@@ -140,8 +140,10 @@
             padding: 0.6rem 0.5rem;
             text-align: center;
             cursor: pointer;
-            transition: background 0.2s, transform 0.15s, border-color 0.2s;
+            transition: background 0.2s, transform 0.22s ease, border-color 0.2s, opacity 0.22s ease, box-shadow 0.22s ease;
             border: 2px solid var(--border-subtle);
+            opacity: 1;
+            transform: translateY(0) scale(1);
         }
         .workspace-card:hover {
             background: var(--bg-hover);
@@ -161,6 +163,33 @@
             font-size: 0.68rem;
             color: var(--text-muted);
             letter-spacing: 0.02em;
+        }
+        .workspace-card.workspace-card-enter {
+            opacity: 0;
+            transform: translateY(14px) scale(0.96);
+            box-shadow: 0 0 0 rgba(0, 0, 0, 0);
+        }
+        .workspace-card.workspace-card-enter-active {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+            box-shadow: 0 12px 24px rgba(45, 212, 191, 0.12);
+        }
+        .workspace-card.workspace-card-exit-active {
+            opacity: 0;
+            transform: translateY(-10px) scale(0.96);
+            box-shadow: 0 0 0 rgba(0, 0, 0, 0);
+            pointer-events: none;
+        }
+        .workspace-card.workspace-card-refresh {
+            box-shadow: 0 0 0 1px rgba(107, 155, 255, 0.25), 0 10px 20px rgba(107, 155, 255, 0.12);
+        }
+        #workspaceCount.workspace-count-pulse {
+            animation: workspaceBadgePulse 0.45s ease;
+        }
+        @keyframes workspaceBadgePulse {
+            0% { transform: scale(1); }
+            35% { transform: scale(1.18); }
+            100% { transform: scale(1); }
         }
         .panel-item.drifting {
             border-left-color: var(--accent-red) !important;
@@ -688,8 +717,38 @@
             });
         }
 
+        function formatWorkspaceActivityLabel(activityCount) {
+            return activityCount === 1 ? '1 event' : activityCount + ' events';
+        }
+
+        function createWorkspaceCard(ws) {
+            var activityCount = Number(ws.activity_count || 0);
+            var card = document.createElement('div');
+            card.className = 'workspace-card workspace-card-enter';
+            card.setAttribute('data-workspace-uuid', ws.uuid || '');
+            card.setAttribute('data-workspace-name', ws.name || '');
+            card.innerHTML = '<div class="workspace-name">' + esc(ws.name || 'Untitled workspace') + '</div>'
+                + '<div class="workspace-activity">' + esc(formatWorkspaceActivityLabel(activityCount)) + '</div>';
+            return card;
+        }
+
+        function clearWorkspaceEmptyState(workspaceGrid) {
+            var emptyState = workspaceGrid.querySelector('.panel-empty');
+            if (emptyState) {
+                emptyState.remove();
+            }
+        }
+
+        function renderWorkspaceEmptyState(workspaceGrid) {
+            workspaceGrid.innerHTML = '<div class="panel-empty" style="grid-column: 1/-1;">No workspaces yet.</div>';
+        }
+
         function bindWorkspaceCards() {
             document.querySelectorAll('.workspace-card').forEach(function(card) {
+                if (card.dataset.boundWorkspaceCard === 'true') {
+                    return;
+                }
+                card.dataset.boundWorkspaceCard = 'true';
                 card.addEventListener('click', function() {
                     var uuid = this.getAttribute('data-workspace-uuid');
                     var wsName = this.getAttribute('data-workspace-name');
@@ -718,10 +777,29 @@
                 return;
             }
 
+            var previousCount = Number(workspaceCount.textContent || 0);
             workspaceCount.textContent = workspaces.length;
+            if (previousCount !== workspaces.length) {
+                workspaceCount.classList.remove('workspace-count-pulse');
+                void workspaceCount.offsetWidth;
+                workspaceCount.classList.add('workspace-count-pulse');
+            }
 
             if (workspaces.length === 0) {
-                workspaceGrid.innerHTML = '<div class="panel-empty" style="grid-column: 1/-1;">No workspaces yet.</div>';
+                Array.from(workspaceGrid.querySelectorAll('.workspace-card')).forEach(function(card) {
+                    card.classList.add('workspace-card-exit-active');
+                    setTimeout(function() {
+                        if (card.parentNode) {
+                            card.remove();
+                        }
+                        if (workspaceGrid.querySelectorAll('.workspace-card').length === 0) {
+                            renderWorkspaceEmptyState(workspaceGrid);
+                        }
+                    }, 220);
+                });
+                if (workspaceGrid.querySelectorAll('.workspace-card').length === 0) {
+                    renderWorkspaceEmptyState(workspaceGrid);
+                }
                 if (selectedWorkspace !== null) {
                     selectedWorkspace = null;
                     localStorage.removeItem(workspaceKey);
@@ -729,14 +807,79 @@
                 return;
             }
 
-            workspaceGrid.innerHTML = workspaces.map(function(ws) {
+            clearWorkspaceEmptyState(workspaceGrid);
+
+            var existingCards = Array.from(workspaceGrid.querySelectorAll('.workspace-card'));
+            var existingByUuid = {};
+            existingCards.forEach(function(card) {
+                existingByUuid[card.getAttribute('data-workspace-uuid') || ''] = card;
+            });
+
+            var nextUuids = {};
+            workspaces.forEach(function(ws) {
+                nextUuids[ws.uuid || ''] = true;
+            });
+
+            existingCards.forEach(function(card) {
+                var uuid = card.getAttribute('data-workspace-uuid') || '';
+                if (nextUuids[uuid]) {
+                    return;
+                }
+
+                card.classList.add('workspace-card-exit-active');
+                setTimeout(function() {
+                    if (card.parentNode) {
+                        card.remove();
+                    }
+                    if (workspaceGrid.querySelectorAll('.workspace-card').length === 0 && workspaces.length === 0) {
+                        renderWorkspaceEmptyState(workspaceGrid);
+                    }
+                }, 220);
+            });
+
+            workspaces.forEach(function(ws) {
+                var uuid = ws.uuid || '';
                 var activityCount = Number(ws.activity_count || 0);
-                var activityLabel = activityCount === 1 ? '1 event' : activityCount + ' events';
-                return '<div class="workspace-card" data-workspace-uuid="' + esc(ws.uuid || '') + '" data-workspace-name="' + esc(ws.name || '') + '">'
-                    + '<div class="workspace-name">' + esc(ws.name || 'Untitled workspace') + '</div>'
-                    + '<div class="workspace-activity">' + esc(activityLabel) + '</div>'
-                    + '</div>';
-            }).join('');
+                var existingCard = existingByUuid[uuid];
+
+                if (!existingCard) {
+                    var newCard = createWorkspaceCard(ws);
+                    workspaceGrid.appendChild(newCard);
+                    requestAnimationFrame(function() {
+                        newCard.classList.add('workspace-card-enter-active');
+                        newCard.classList.remove('workspace-card-enter');
+                        setTimeout(function() {
+                            newCard.classList.remove('workspace-card-enter-active');
+                        }, 260);
+                    });
+                    return;
+                }
+
+                existingCard.setAttribute('data-workspace-name', ws.name || '');
+                var nameEl = existingCard.querySelector('.workspace-name');
+                var activityEl = existingCard.querySelector('.workspace-activity');
+                var nextActivityLabel = formatWorkspaceActivityLabel(activityCount);
+                var changed = false;
+
+                if (nameEl && nameEl.textContent !== (ws.name || 'Untitled workspace')) {
+                    nameEl.textContent = ws.name || 'Untitled workspace';
+                    changed = true;
+                }
+                if (activityEl && activityEl.textContent !== nextActivityLabel) {
+                    activityEl.textContent = nextActivityLabel;
+                    changed = true;
+                }
+
+                workspaceGrid.appendChild(existingCard);
+                if (changed) {
+                    existingCard.classList.remove('workspace-card-refresh');
+                    void existingCard.offsetWidth;
+                    existingCard.classList.add('workspace-card-refresh');
+                    setTimeout(function() {
+                        existingCard.classList.remove('workspace-card-refresh');
+                    }, 260);
+                }
+            });
 
             if (selectedWorkspace) {
                 var stillExists = workspaces.some(function(ws) {
@@ -1150,12 +1293,19 @@
                         } catch (err) {}
                     });
 
-                    chatSource.addEventListener('chat-done', function() {
+                    chatSource.addEventListener('chat-done', function(e) {
                         chatSource.close();
                         chatSource = null;
+                        var doneData = null;
+                        try {
+                            doneData = JSON.parse(e.data);
+                        } catch (err) {}
                         if (firstToken) {
                             removeThinking();
                             assistantMsg.style.display = '';
+                            if (doneData && doneData.full_response) {
+                                assistantContent.textContent = doneData.full_response;
+                            }
                         }
                         assistantMsg.classList.remove('streaming');
                         wrapCardsInContent(assistantContent);
