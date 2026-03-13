@@ -11,6 +11,7 @@ use Claudriel\Command\RecategorizeEventsCommand;
 use Claudriel\Command\SkillsCommand;
 use Claudriel\Command\WorkspaceCreateCommand;
 use Claudriel\Command\WorkspacesCommand;
+use Claudriel\Controller\Ai\TrainingExportController;
 use Claudriel\Controller\Audit\CommitmentExtractionAuditController;
 use Claudriel\Controller\BriefStreamController;
 use Claudriel\Controller\ChatController;
@@ -266,6 +267,33 @@ final class ClaudrielServiceProvider extends ServiceProvider
             ->build();
         $deleteRoute->setOption('_csrf', false);
         $router->addRoute('claudriel.api.workspaces.delete', $deleteRoute);
+
+        $router->addRoute(
+            'claudriel.ai.export.daily',
+            RouteBuilder::create('/ai/export/daily.json')
+                ->controller(TrainingExportController::class.'::daily')
+                ->allowAll()
+                ->methods('GET')
+                ->build(),
+        );
+
+        $router->addRoute(
+            'claudriel.ai.export.sender',
+            RouteBuilder::create('/ai/export/sender/{email}.json')
+                ->controller(TrainingExportController::class.'::sender')
+                ->allowAll()
+                ->methods('GET')
+                ->build(),
+        );
+
+        $router->addRoute(
+            'claudriel.ai.export.failures',
+            RouteBuilder::create('/ai/export/failures.json')
+                ->controller(TrainingExportController::class.'::failures')
+                ->allowAll()
+                ->methods('GET')
+                ->build(),
+        );
 
         $router->addRoute(
             'claudriel.audit.commitment_extraction',

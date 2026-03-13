@@ -258,6 +258,33 @@
       </table>
     </section>
 
+    <section class="panel" style="margin-bottom: 1rem;">
+      <h2>Export Training Data</h2>
+      <p class="empty-state" style="font-style: normal;">Generate JSON exports for retraining workflows from recent extraction attempts and known failures.</p>
+      <table>
+        <thead>
+          <tr>
+            <th>Export</th>
+            <th>Endpoint</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Daily training samples</td>
+            <td><a class="log-link" href="/ai/export/daily.json"><code>/ai/export/daily.json</code></a></td>
+          </tr>
+          <tr>
+            <td>Sender training samples</td>
+            <td><a class="log-link" href="/ai/export/sender/alpha%40example.com.json"><code>/ai/export/sender/{email}.json</code></a></td>
+          </tr>
+          <tr>
+            <td>All recent failures</td>
+            <td><a class="log-link" href="/ai/export/failures.json"><code>/ai/export/failures.json</code></a></td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
     <section class="panel">
       <h2>Low-Confidence Log Entries</h2>
       {% if logs.items %}
