@@ -622,6 +622,8 @@
 
     <script>
     (function() {
+        var briefFallbackUrl = {{ brief_fallback_url|json_encode|raw }};
+        var initialFallbackPayload = {{ brief_fallback_payload|raw }};
         var dashboard = document.getElementById('dashboard');
         var panelToggle = document.getElementById('panelToggle');
         var messagesEl = document.getElementById('messages');
@@ -686,25 +688,71 @@
             });
         }
 
-        document.querySelectorAll('.workspace-card').forEach(function(card) {
-            card.addEventListener('click', function() {
-                var uuid = this.getAttribute('data-workspace-uuid');
-                var wsName = this.getAttribute('data-workspace-name');
-                if (selectedWorkspace === uuid) {
+        function bindWorkspaceCards() {
+            document.querySelectorAll('.workspace-card').forEach(function(card) {
+                card.addEventListener('click', function() {
+                    var uuid = this.getAttribute('data-workspace-uuid');
+                    var wsName = this.getAttribute('data-workspace-name');
+                    if (selectedWorkspace === uuid) {
+                        selectedWorkspace = null;
+                        localStorage.removeItem(workspaceKey);
+                    } else {
+                        selectedWorkspace = uuid;
+                        localStorage.setItem(workspaceKey, uuid);
+                        if (inputEl && !inputEl.disabled) {
+                            inputEl.value = 'Show me everything for ' + wsName + '.';
+                            inputEl.focus();
+                            inputEl.dispatchEvent(new Event('input'));
+                        }
+                    }
+                    updateWorkspaceSelection();
+                });
+            });
+        }
+
+        function rebuildWorkspaceSidebar(workspaces) {
+            var workspaceCount = document.getElementById('workspaceCount');
+            var workspaceGrid = document.getElementById('workspaceGrid');
+
+            if (!workspaceCount || !workspaceGrid || !Array.isArray(workspaces)) {
+                return;
+            }
+
+            workspaceCount.textContent = workspaces.length;
+
+            if (workspaces.length === 0) {
+                workspaceGrid.innerHTML = '<div class="panel-empty" style="grid-column: 1/-1;">No workspaces yet.</div>';
+                if (selectedWorkspace !== null) {
                     selectedWorkspace = null;
                     localStorage.removeItem(workspaceKey);
-                } else {
-                    selectedWorkspace = uuid;
-                    localStorage.setItem(workspaceKey, uuid);
-                    if (inputEl && !inputEl.disabled) {
-                        inputEl.value = 'Show me everything for ' + wsName + '.';
-                        inputEl.focus();
-                        inputEl.dispatchEvent(new Event('input'));
-                    }
                 }
-                updateWorkspaceSelection();
-            });
-        });
+                return;
+            }
+
+            workspaceGrid.innerHTML = workspaces.map(function(ws) {
+                var activityCount = Number(ws.activity_count || 0);
+                var activityLabel = activityCount === 1 ? '1 event' : activityCount + ' events';
+                return '<div class="workspace-card" data-workspace-uuid="' + esc(ws.uuid || '') + '" data-workspace-name="' + esc(ws.name || '') + '">'
+                    + '<div class="workspace-name">' + esc(ws.name || 'Untitled workspace') + '</div>'
+                    + '<div class="workspace-activity">' + esc(activityLabel) + '</div>'
+                    + '</div>';
+            }).join('');
+
+            if (selectedWorkspace) {
+                var stillExists = workspaces.some(function(ws) {
+                    return (ws.uuid || '') === selectedWorkspace;
+                });
+                if (!stillExists) {
+                    selectedWorkspace = null;
+                    localStorage.removeItem(workspaceKey);
+                }
+            }
+
+            bindWorkspaceCards();
+            updateWorkspaceSelection();
+        }
+
+        bindWorkspaceCards();
 
         updateWorkspaceSelection();
 
@@ -793,8 +841,25 @@
             contentEl.innerHTML = html;
         }
 
+        function normalizeBriefPayload(payload) {
+            if (!payload || typeof payload !== 'object') {
+                return null;
+            }
+
+            if (payload.briefs && typeof payload.briefs === 'object') {
+                return payload.briefs;
+            }
+
+            return payload;
+        }
+
         // ── Sidebar Rebuild from Brief Data ──
         function rebuildSidebar(data) {
+            data = normalizeBriefPayload(data);
+            if (!data) {
+                return;
+            }
+
             // Schedule
             var scheduleCount = document.getElementById('scheduleCount');
             var scheduleItems = document.getElementById('scheduleItems');
@@ -871,6 +936,8 @@
                 commitmentItems.innerHTML = html;
             }
 
+            rebuildWorkspaceSidebar(data.workspaces);
+
             // Re-attach data-chat click handlers
             document.querySelectorAll('[data-chat]').forEach(function(el) {
                 el.onclick = function() {
@@ -888,39 +955,93 @@
         var briefSource = null;
         var sseRetryDelay = 30000;
         var sseMaxRetryDelay = 300000;
+        var briefTimeoutMs = 15000;
+        var briefTimeout = null;
+        var usingFallbackTransport = false;
+
+        function clearBriefTimeout() {
+            if (briefTimeout) {
+                clearTimeout(briefTimeout);
+                briefTimeout = null;
+            }
+        }
+
+        function scheduleBriefTimeout() {
+            clearBriefTimeout();
+            briefTimeout = setTimeout(function() {
+                switchToFallbackTransport('timeout');
+            }, briefTimeoutMs);
+        }
+
+        function applyFallbackPayload(payload) {
+            var normalized = normalizeBriefPayload(payload);
+            if (normalized) {
+                rebuildSidebar(normalized);
+            }
+        }
+
+        function loadFallbackPayload() {
+            return fetch(briefFallbackUrl, {
+                headers: { 'Accept': 'application/json' },
+                cache: 'no-store',
+            }).then(function(r) {
+                return r.json();
+            }).then(function(data) {
+                applyFallbackPayload(data);
+                return data;
+            }).catch(function() {
+                applyFallbackPayload(initialFallbackPayload);
+                return initialFallbackPayload;
+            });
+        }
+
+        function switchToFallbackTransport(reason) {
+            if (usingFallbackTransport) {
+                return;
+            }
+
+            usingFallbackTransport = true;
+            clearBriefTimeout();
+
+            if (briefSource) {
+                briefSource.close();
+                briefSource = null;
+            }
+
+            loadFallbackPayload().finally(function() {
+                console.warn('Brief stream switched to fallback transport:', reason);
+            });
+        }
 
         function connectBriefSSE() {
+            if (usingFallbackTransport) {
+                return;
+            }
             if (briefSource) {
                 briefSource.close();
             }
             briefSource = new EventSource('/stream/brief');
+            scheduleBriefTimeout();
 
             briefSource.addEventListener('brief-update', function(e) {
                 try {
                     var data = JSON.parse(e.data);
-                    rebuildSidebar(data);
+                    applyFallbackPayload(data);
+                    scheduleBriefTimeout();
                     sseRetryDelay = 30000; // Reset on success
                 } catch (err) {
                     console.warn('SSE brief-update parse error:', err);
+                    switchToFallbackTransport('parse-error');
                 }
             });
 
             briefSource.onerror = function() {
-                briefSource.close();
-                briefSource = null;
-                // Exponential backoff: 30s, 60s, 120s, max 300s
-                setTimeout(connectBriefSSE, sseRetryDelay);
-                sseRetryDelay = Math.min(sseRetryDelay * 2, sseMaxRetryDelay);
+                switchToFallbackTransport('stream-error');
             };
         }
 
         function pollBrief() {
-            fetch('/brief', { headers: { 'Accept': 'application/json' } })
-                .then(function(r) { return r.json(); })
-                .then(function(data) {
-                    rebuildSidebar(data);
-                })
-                .catch(function() {});
+            loadFallbackPayload().catch(function() {});
         }
 
         // Try SSE first, fall back to polling
@@ -928,11 +1049,13 @@
             connectBriefSSE();
             // Reconnect SSE when tab becomes visible again
             document.addEventListener('visibilitychange', function() {
-                if (document.visibilityState === 'visible' && !briefSource) {
+                if (document.visibilityState === 'visible' && !briefSource && !usingFallbackTransport) {
                     connectBriefSSE();
                 }
             });
         } else {
+            usingFallbackTransport = true;
+            pollBrief();
             setInterval(pollBrief, 300000);
         }
 

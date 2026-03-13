@@ -7,6 +7,7 @@ namespace Claudriel\Controller;
 use Claudriel\Domain\DayBrief\Assembler\DayBriefAssembler;
 use Claudriel\Domain\DayBrief\Service\BriefSessionStore;
 use Claudriel\Support\DriftDetector;
+use Symfony\Component\HttpFoundation\Request;
 use Twig\Environment;
 use Waaseyaa\Entity\EntityTypeManager;
 use Waaseyaa\SSR\SsrResponse;
@@ -52,6 +53,13 @@ final class DashboardController
 
         $assembler = new DayBriefAssembler($eventRepo, $commitmentRepo, $driftDetector, $personRepo, $skillRepo, $workspaceRepo);
         $brief = $assembler->assemble('default', $since);
+        $briefPayload = $this->buildBriefPayload($brief);
+        $fallbackPayload = [
+            'workspaces' => $briefPayload['workspaces'] ?? [],
+            'briefs' => $briefPayload,
+            'updated_at' => (new \DateTimeImmutable)->format(\DateTimeInterface::ATOM),
+        ];
+        $requestId = $this->resolveRequestId($httpRequest, $query);
 
         $sessionStore->recordBriefAt(new \DateTimeImmutable);
 
@@ -93,6 +101,8 @@ final class DashboardController
                 'csrf_token' => CsrfMiddleware::token(),
                 'model' => $model,
                 'workspaces' => $brief['workspaces'] ?? [],
+                'brief_fallback_payload' => json_encode($fallbackPayload, JSON_THROW_ON_ERROR),
+                'brief_fallback_url' => '/stream/brief?transport=fallback&request_id='.$requestId,
             ]));
 
             return new SsrResponse(
@@ -103,20 +113,44 @@ final class DashboardController
         }
 
         // JSON fallback
-        $jsonBrief = $brief;
-        $jsonBrief['commitments']['pending'] = array_map(fn ($c) => $c->toArray(), $brief['commitments']['pending']);
-        $jsonBrief['commitments']['drifting'] = array_map(fn ($c) => $c->toArray(), $brief['commitments']['drifting']);
-        $jsonBrief['matched_skills'] = array_map(fn ($s) => $s->toArray(), $brief['matched_skills']);
-
         return new SsrResponse(
             content: json_encode([
-                'brief' => $jsonBrief,
+                'brief' => $briefPayload,
                 'sessions' => $twigSessions,
                 'api_configured' => $apiConfigured,
                 'workspaces' => $brief['workspaces'] ?? [],
+                'brief_fallback' => $fallbackPayload,
+                'brief_fallback_url' => '/stream/brief?transport=fallback&request_id='.$requestId,
             ], JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR),
             statusCode: 200,
             headers: ['Content-Type' => 'application/json'],
         );
+    }
+
+    private function buildBriefPayload(array $brief): array
+    {
+        $payload = $brief;
+        $payload['commitments']['pending'] = array_map(fn ($c) => $c->toArray(), $brief['commitments']['pending']);
+        $payload['commitments']['drifting'] = array_map(fn ($c) => $c->toArray(), $brief['commitments']['drifting']);
+        $payload['matched_skills'] = array_map(fn ($s) => $s->toArray(), $brief['matched_skills']);
+
+        return $payload;
+    }
+
+    private function resolveRequestId(mixed $httpRequest, array $query): string
+    {
+        if ($httpRequest instanceof Request) {
+            $headerId = $httpRequest->headers->get('X-Request-Id');
+            if (is_string($headerId) && $headerId !== '') {
+                return $headerId;
+            }
+        }
+
+        $queryId = $query['request_id'] ?? null;
+        if (is_string($queryId) && $queryId !== '') {
+            return $queryId;
+        }
+
+        return bin2hex(random_bytes(8));
     }
 }
