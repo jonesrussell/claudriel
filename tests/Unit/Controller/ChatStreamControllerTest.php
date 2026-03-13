@@ -20,6 +20,7 @@ use Waaseyaa\Entity\EntityType;
 use Waaseyaa\Entity\EntityTypeManager;
 use Waaseyaa\EntityStorage\SqlEntityStorage;
 use Waaseyaa\EntityStorage\SqlSchemaHandler;
+use Waaseyaa\SSR\SsrResponse;
 
 final class ChatStreamControllerTest extends TestCase
 {
@@ -35,6 +36,7 @@ final class ChatStreamControllerTest extends TestCase
             null,
         );
 
+        self::assertInstanceOf(SsrResponse::class, $response);
         self::assertSame(404, $response->statusCode);
     }
 
@@ -64,6 +66,7 @@ final class ChatStreamControllerTest extends TestCase
         $controller = new ChatStreamController($etm);
         $response = $controller->stream(['messageId' => 'msg-1'], [], null, null);
 
+        self::assertInstanceOf(SsrResponse::class, $response);
         self::assertSame(503, $response->statusCode);
 
         if ($originalKey !== false) {
@@ -109,6 +112,7 @@ final class ChatStreamControllerTest extends TestCase
         $assistantIds = $msgStorage->getQuery()->condition('role', 'assistant')->execute();
         self::assertNotEmpty($assistantIds);
         $assistantMessage = $msgStorage->load(reset($assistantIds));
+        self::assertInstanceOf(ChatMessage::class, $assistantMessage);
         self::assertSame('Created the Claudriel workspace "Foobar". Refresh the sidebar if it is not visible yet.', $assistantMessage->get('content'));
 
         if ($originalKey !== false) {

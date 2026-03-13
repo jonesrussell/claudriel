@@ -41,6 +41,13 @@ final class ChatStreamController
         }
 
         $userMsg = $msgStorage->load(reset($ids));
+        if (! $userMsg instanceof ChatMessage) {
+            return new SsrResponse(
+                content: json_encode(['error' => 'Message not found']),
+                statusCode: 404,
+                headers: ['Content-Type' => 'application/json'],
+            );
+        }
         $sessionUuid = $userMsg->get('session_uuid');
 
         $localActionResponse = $this->handleLocalAction($userMsg, $msgStorage);
@@ -75,7 +82,7 @@ final class ChatStreamController
         );
     }
 
-    private function handleLocalAction(mixed $userMsg, mixed $msgStorage): ?StreamedResponse
+    private function handleLocalAction(ChatMessage $userMsg, mixed $msgStorage): ?StreamedResponse
     {
         $content = trim((string) $userMsg->get('content'));
         $workspaceName = $this->extractWorkspaceName($content);
@@ -91,7 +98,7 @@ final class ChatStreamController
             $existing = $workspaceStorage->load(reset($existingIds));
             $responseText = sprintf(
                 'The workspace "%s" already exists.',
-                (string) ($existing?->get('name') ?? $workspaceName),
+                (string) (($existing instanceof Workspace ? $existing->get('name') : null) ?? $workspaceName),
             );
         } else {
             $workspace = new Workspace([
