@@ -288,6 +288,50 @@
         }
         .sessions-dropdown summary::-webkit-details-marker { display: none; }
         .sessions-dropdown summary:hover { background: var(--bg-hover); }
+        .session-tabs {
+            display: flex;
+            gap: 0.55rem;
+            padding: 0.7rem 1.25rem 0.8rem;
+            border-bottom: 1px solid var(--border);
+            background:
+                linear-gradient(180deg, rgba(91, 141, 239, 0.08), rgba(91, 141, 239, 0)),
+                var(--bg-surface);
+            overflow-x: auto;
+            scrollbar-width: thin;
+            flex-shrink: 0;
+        }
+        .session-tab {
+            border: 1px solid var(--border-subtle);
+            background: var(--bg-elevated);
+            color: var(--text-secondary);
+            border-radius: 999px;
+            padding: 0.42rem 0.8rem;
+            font-family: var(--font-body);
+            font-size: 0.78rem;
+            cursor: pointer;
+            transition: transform 0.15s, background 0.15s, color 0.15s, border-color 0.15s;
+            white-space: nowrap;
+            max-width: 240px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .session-tab:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+        .session-tab.is-active {
+            background: rgba(45, 212, 191, 0.14);
+            border-color: rgba(45, 212, 191, 0.38);
+            color: var(--text-primary);
+            transform: translateY(-1px);
+        }
+        .session-tab.is-new {
+            animation: session-tab-enter 0.38s ease;
+        }
+        @keyframes session-tab-enter {
+            0% { opacity: 0; transform: translateY(10px) scale(0.96); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
         .session-list {
             position: absolute;
             right: 0;
@@ -357,6 +401,50 @@
         }
         .message.assistant .message-content p { margin-bottom: 0.5rem; }
         .message.assistant .message-content p:last-child { margin-bottom: 0; }
+        .message-progress {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.45rem;
+            margin-bottom: 0.75rem;
+        }
+        .message-progress-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            opacity: 0;
+            transform: translateY(6px) scale(0.98);
+            padding: 0.35rem 0.55rem;
+            border-radius: 999px;
+            border: 1px solid rgba(91, 141, 239, 0.22);
+            background: rgba(91, 141, 239, 0.08);
+            color: var(--text-secondary);
+            font-size: 0.72rem;
+            transition: opacity 0.22s ease, transform 0.22s ease, border-color 0.2s ease, background 0.2s ease;
+        }
+        .message-progress-item.is-visible {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+        .message-progress-item.is-warning {
+            border-color: rgba(232, 168, 56, 0.28);
+            background: rgba(232, 168, 56, 0.12);
+        }
+        .message-progress-item.is-error {
+            border-color: rgba(239, 68, 68, 0.28);
+            background: rgba(239, 68, 68, 0.12);
+        }
+        .message-progress-item.is-success {
+            border-color: rgba(45, 212, 191, 0.3);
+            background: rgba(45, 212, 191, 0.12);
+        }
+        .progress-phase {
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-muted);
+        }
+        .progress-summary {
+            color: var(--text-primary);
+        }
         .message-label {
             font-size: 0.68rem;
             text-transform: uppercase;
@@ -627,6 +715,14 @@
                 </div>
             </div>
 
+            {% if sessions|length > 0 %}
+            <div class="session-tabs" id="sessionTabs">
+                {% for s in sessions|slice(0, 8) %}
+                    <button type="button" class="session-tab" data-session-tab="{{ s.uuid }}" title="{{ s.title }}">{{ s.title }}</button>
+                {% endfor %}
+            </div>
+            {% endif %}
+
             {% if not api_configured %}
             <div class="not-configured">
                 Chat is not configured. Set <code>ANTHROPIC_API_KEY</code> in your environment to enable it.
@@ -661,6 +757,8 @@
         var inputEl = document.getElementById('messageInput');
         var sendBtn = document.getElementById('sendBtn');
         var emptyState = document.getElementById('emptyState');
+        var sessionTabsEl = document.getElementById('sessionTabs');
+        var sessionListEl = document.querySelector('.session-list');
 
         var sessionId = null;
         var sending = false;
@@ -1253,6 +1351,217 @@
             return contentDiv;
         }
 
+        function truncateSessionTitle(title) {
+            var trimmed = String(title || '').trim();
+            if (!trimmed) {
+                return 'New Chat';
+            }
+
+            return trimmed.length > 48 ? trimmed.slice(0, 48).trim() + '...' : trimmed;
+        }
+
+        function updateSessionTabState() {
+            if (!sessionTabsEl) return;
+
+            sessionTabsEl.querySelectorAll('[data-session-tab]').forEach(function(tab) {
+                if (tab.getAttribute('data-session-tab') === sessionId) {
+                    tab.classList.add('is-active');
+                } else {
+                    tab.classList.remove('is-active');
+                }
+            });
+        }
+
+        function bindSessionTab(tab) {
+            if (tab.dataset.boundSessionTab === 'true') {
+                return;
+            }
+
+            tab.dataset.boundSessionTab = 'true';
+            tab.addEventListener('click', function() {
+                var uuid = this.getAttribute('data-session-tab');
+                if (uuid) {
+                    loadSession(uuid);
+                }
+            });
+        }
+
+        function bindSessionLink(link) {
+            if (link.dataset.boundSessionLink === 'true') {
+                return;
+            }
+
+            link.dataset.boundSessionLink = 'true';
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                loadSession(this.getAttribute('data-session'));
+            });
+        }
+
+        function upsertSessionListItem(uuid, title) {
+            if (!uuid) return;
+
+            var dropdown = document.querySelector('.sessions-dropdown');
+            if (!dropdown) {
+                var headerActions = document.querySelector('.chat-header-actions');
+                if (headerActions) {
+                    dropdown = document.createElement('details');
+                    dropdown.className = 'sessions-dropdown';
+                    var summary = document.createElement('summary');
+                    summary.textContent = 'Sessions (0)';
+                    dropdown.appendChild(summary);
+                    headerActions.insertBefore(dropdown, document.getElementById('newChatBtn'));
+                }
+            }
+
+            if (!sessionListEl && dropdown) {
+                sessionListEl = document.createElement('ul');
+                sessionListEl.className = 'session-list';
+                dropdown.appendChild(sessionListEl);
+            }
+            if (!sessionListEl) return;
+
+            var label = truncateSessionTitle(title);
+            var existingLink = null;
+            sessionListEl.querySelectorAll('[data-session]').forEach(function(candidate) {
+                if (!existingLink && candidate.getAttribute('data-session') === uuid) {
+                    existingLink = candidate;
+                }
+            });
+
+            if (existingLink) {
+                existingLink.textContent = label;
+                existingLink.title = title;
+                if (existingLink.parentNode && existingLink.parentNode.parentNode) {
+                    existingLink.parentNode.parentNode.insertBefore(existingLink.parentNode, existingLink.parentNode.parentNode.firstChild);
+                }
+                return;
+            }
+
+            var item = document.createElement('li');
+            var link = document.createElement('a');
+            link.href = '#';
+            link.setAttribute('data-session', uuid);
+            link.textContent = label;
+            link.title = title;
+            item.appendChild(link);
+            sessionListEl.insertBefore(item, sessionListEl.firstChild);
+            bindSessionLink(link);
+            if (dropdown) {
+                var summaryEl = dropdown.querySelector('summary');
+                if (summaryEl) {
+                    summaryEl.textContent = 'Sessions (' + sessionListEl.querySelectorAll('[data-session]').length + ')';
+                }
+            }
+        }
+
+        function upsertSessionTab(uuid, title, animate) {
+            if (!uuid) return;
+
+            if (!sessionTabsEl) {
+                sessionTabsEl = document.createElement('div');
+                sessionTabsEl.className = 'session-tabs';
+                sessionTabsEl.id = 'sessionTabs';
+                var chatHeader = document.querySelector('.chat-header');
+                if (chatHeader && chatHeader.parentNode) {
+                    chatHeader.parentNode.insertBefore(sessionTabsEl, chatHeader.nextSibling);
+                }
+            }
+
+            var label = truncateSessionTitle(title);
+            var existing = null;
+            sessionTabsEl.querySelectorAll('[data-session-tab]').forEach(function(candidate) {
+                if (!existing && candidate.getAttribute('data-session-tab') === uuid) {
+                    existing = candidate;
+                }
+            });
+
+            if (existing) {
+                existing.textContent = label;
+                existing.title = title;
+                if (existing.parentNode) {
+                    existing.parentNode.insertBefore(existing, existing.parentNode.firstChild);
+                }
+                updateSessionTabState();
+                return;
+            }
+
+            var tab = document.createElement('button');
+            tab.type = 'button';
+            tab.className = 'session-tab' + (animate ? ' is-new' : '');
+            tab.setAttribute('data-session-tab', uuid);
+            tab.textContent = label;
+            tab.title = title;
+            sessionTabsEl.insertBefore(tab, sessionTabsEl.firstChild);
+            bindSessionTab(tab);
+
+            while (sessionTabsEl.children.length > 8) {
+                sessionTabsEl.removeChild(sessionTabsEl.lastChild);
+            }
+
+            updateSessionTabState();
+            upsertSessionListItem(uuid, title);
+        }
+
+        function formatProgressPhase(phase) {
+            return ({
+                prepare: 'Prepare',
+                connect: 'Connect',
+                tool: 'Tool',
+                respond: 'Respond',
+                finalize: 'Finalize',
+                error: 'Error',
+            })[phase] || 'Update';
+        }
+
+        function ensureProgressRail(messageEl) {
+            var rail = messageEl.querySelector('.message-progress');
+            if (!rail) {
+                rail = document.createElement('div');
+                rail.className = 'message-progress';
+                messageEl.insertBefore(rail, messageEl.querySelector('.message-content'));
+            }
+
+            return rail;
+        }
+
+        function appendProgressSummary(messageEl, payload) {
+            if (!payload || !payload.summary) return;
+
+            var rail = ensureProgressRail(messageEl);
+            var level = ['info', 'success', 'warning', 'error'].indexOf(payload.level) >= 0 ? payload.level : 'info';
+            var key = String(payload.phase || '') + '|' + String(payload.summary || '');
+            var lastItem = rail.lastElementChild;
+            if (lastItem && lastItem.getAttribute('data-progress-key') === key) {
+                return;
+            }
+
+            var item = document.createElement('div');
+            item.className = 'message-progress-item is-' + level;
+            item.setAttribute('data-progress-key', key);
+
+            var phase = document.createElement('span');
+            phase.className = 'progress-phase';
+            phase.textContent = formatProgressPhase(payload.phase || '');
+            item.appendChild(phase);
+
+            var summary = document.createElement('span');
+            summary.className = 'progress-summary';
+            summary.textContent = payload.summary;
+            item.appendChild(summary);
+
+            rail.appendChild(item);
+            window.requestAnimationFrame(function() {
+                item.classList.add('is-visible');
+            });
+
+            while (rail.children.length > 6) {
+                rail.removeChild(rail.firstChild);
+            }
+
+            messagesEl.scrollTop = messagesEl.scrollHeight;
+        }
+
         function showError(text) {
             var div = document.createElement('div');
             div.className = 'error-message';
@@ -1299,26 +1608,39 @@
 
                 sessionId = result.data.session_id;
                 var messageId = result.data.message_id;
+                upsertSessionTab(sessionId, message.slice(0, 60), !payload.session_id);
 
                 if (messageId) {
                     var assistantContent = appendMessage('assistant', '');
                     var assistantMsg = assistantContent.parentElement;
                     assistantMsg.classList.add('streaming');
                     assistantMsg.style.display = 'none';
-                    var firstToken = true;
+                    var assistantVisible = false;
+                    var receivedToken = false;
+
+                    function revealAssistant() {
+                        if (assistantVisible) return;
+                        removeThinking();
+                        assistantMsg.style.display = '';
+                        assistantVisible = true;
+                    }
 
                     chatSource = new EventSource('/stream/chat/' + messageId);
 
                     chatSource.addEventListener('chat-token', function(e) {
                         try {
-                            if (firstToken) {
-                                removeThinking();
-                                assistantMsg.style.display = '';
-                                firstToken = false;
-                            }
+                            revealAssistant();
+                            receivedToken = true;
                             var tokenData = JSON.parse(e.data);
                             assistantContent.textContent += tokenData.token || '';
                             messagesEl.scrollTop = messagesEl.scrollHeight;
+                        } catch (err) {}
+                    });
+
+                    chatSource.addEventListener('chat-progress', function(e) {
+                        try {
+                            revealAssistant();
+                            appendProgressSummary(assistantMsg, JSON.parse(e.data));
                         } catch (err) {}
                     });
 
@@ -1329,9 +1651,10 @@
                         try {
                             doneData = JSON.parse(e.data);
                         } catch (err) {}
-                        if (firstToken) {
-                            removeThinking();
-                            assistantMsg.style.display = '';
+                        if (!assistantVisible) {
+                            revealAssistant();
+                        }
+                        if (!receivedToken) {
                             if (doneData && doneData.full_response) {
                                 assistantContent.textContent = doneData.full_response;
                             }
@@ -1348,12 +1671,21 @@
                         chatSource.close();
                         chatSource = null;
                         assistantMsg.classList.remove('streaming');
-                        removeThinking();
-                        assistantMsg.style.display = '';
+                        revealAssistant();
                         try {
                             var errData = JSON.parse(e.data);
+                            appendProgressSummary(assistantMsg, {
+                                phase: 'error',
+                                summary: errData.error || 'Stream error.',
+                                level: 'error'
+                            });
                             showError(errData.error || 'Stream error.');
                         } catch (err) {
+                            appendProgressSummary(assistantMsg, {
+                                phase: 'error',
+                                summary: 'Stream error.',
+                                level: 'error'
+                            });
                             showError('Stream error.');
                         }
                         sending = false;
@@ -1365,8 +1697,12 @@
                         chatSource.close();
                         chatSource = null;
                         assistantMsg.classList.remove('streaming');
-                        removeThinking();
-                        assistantMsg.style.display = '';
+                        revealAssistant();
+                        appendProgressSummary(assistantMsg, {
+                            phase: 'error',
+                            summary: 'Connection to the chat stream was interrupted.',
+                            level: 'warning'
+                        });
                         sending = false;
                         sendBtn.disabled = false;
                         inputEl.focus();
@@ -1406,6 +1742,7 @@
         // ── Session links ──
         function loadSession(uuid) {
             sessionId = uuid;
+            updateSessionTabState();
             messagesEl.innerHTML = '';
             var loading = document.createElement('div');
             loading.className = 'empty-state';
@@ -1440,16 +1777,16 @@
                 });
         }
 
-        document.querySelectorAll('[data-session]').forEach(function(link) {
-            link.addEventListener('click', function(e) {
-                e.preventDefault();
-                loadSession(this.getAttribute('data-session'));
-            });
-        });
+        document.querySelectorAll('[data-session]').forEach(bindSessionLink);
+
+        if (sessionTabsEl) {
+            sessionTabsEl.querySelectorAll('[data-session-tab]').forEach(bindSessionTab);
+        }
 
         document.getElementById('newChatBtn').addEventListener('click', function(e) {
             e.preventDefault();
             sessionId = null;
+            updateSessionTabState();
             messagesEl.innerHTML = '';
             emptyState = document.createElement('div');
             emptyState.className = 'empty-state';

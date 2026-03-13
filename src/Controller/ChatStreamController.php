@@ -21,6 +21,8 @@ final class ChatStreamController
     public function __construct(
         private readonly EntityTypeManager $entityTypeManager,
         private readonly mixed $twig = null,
+        private readonly mixed $sidecarClientFactory = null,
+        private readonly mixed $anthropicClientFactory = null,
     ) {}
 
     /**
@@ -156,12 +158,7 @@ final class ChatStreamController
                 ]);
                 $msgStorage->save($assistantMsg);
 
-                $data = json_encode(['done' => true, 'full_response' => $responseText], JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
-                echo "event: chat-done\ndata: {$data}\n\n";
-                if (ob_get_level() > 0) {
-                    ob_flush();
-                }
-                flush();
+                $this->emitSseEvent('chat-done', ['done' => true, 'full_response' => $responseText]);
             },
             200,
             [
@@ -318,7 +315,7 @@ final class ChatStreamController
         $sidecarClient = null;
 
         if ($sidecarUrl !== '' && $sidecarKey !== '') {
-            $sidecarClient = new SidecarChatClient($sidecarUrl, $sidecarKey);
+            $sidecarClient = $this->createSidecarClient($sidecarUrl, $sidecarKey);
             $useSidecar = $sidecarClient->isAvailable();
         }
 
@@ -328,12 +325,7 @@ final class ChatStreamController
         $systemPrompt = $promptBuilder->build(hasToolAccess: $useSidecar);
 
         $onToken = function (string $token): void {
-            $data = json_encode(['token' => $token], JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
-            echo "event: chat-token\ndata: {$data}\n\n";
-            if (ob_get_level() > 0) {
-                ob_flush();
-            }
-            flush();
+            $this->emitSseEvent('chat-token', ['token' => $token]);
         };
 
         $onDone = function (string $fullResponse) use ($sessionUuid, $msgStorage): void {
@@ -346,24 +338,28 @@ final class ChatStreamController
             ]);
             $msgStorage->save($assistantMsg);
 
-            $data = json_encode(['done' => true, 'full_response' => $fullResponse], JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
-            echo "event: chat-done\ndata: {$data}\n\n";
-            if (ob_get_level() > 0) {
-                ob_flush();
-            }
-            flush();
+            $this->emitSseEvent('chat-done', ['done' => true, 'full_response' => $fullResponse]);
         };
 
         $onError = function (string $error): void {
-            $data = json_encode(['error' => $error], JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
-            echo "event: chat-error\ndata: {$data}\n\n";
-            if (ob_get_level() > 0) {
-                ob_flush();
+            $this->emitSseEvent('chat-error', ['error' => $error]);
+        };
+
+        $onProgress = function (array $payload): void {
+            $normalized = $this->normalizeProgressPayload($payload);
+            if ($normalized === null) {
+                return;
             }
-            flush();
+
+            $this->emitSseEvent('chat-progress', $normalized);
         };
 
         if ($useSidecar) {
+            $this->emitSseEvent('chat-progress', [
+                'phase' => 'prepare',
+                'summary' => 'Connecting Claude Code sidecar',
+                'level' => 'info',
+            ]);
             $sidecarClient->stream(
                 $systemPrompt,
                 $apiMessages,
@@ -371,11 +367,12 @@ final class ChatStreamController
                 $onDone,
                 $onError,
                 sessionId: $sessionUuid,
+                onProgress: $onProgress,
             );
         } else {
             // Fallback: direct Anthropic API (no Gmail/Calendar)
             $model = $_ENV['ANTHROPIC_MODEL'] ?? getenv('ANTHROPIC_MODEL') ?: 'claude-sonnet-4-20250514';
-            $client = new AnthropicChatClient($apiKey, $model);
+            $client = $this->createAnthropicClient($apiKey, $model);
 
             $client->stream(
                 $systemPrompt,
@@ -383,6 +380,7 @@ final class ChatStreamController
                 onToken: $onToken,
                 onDone: $onDone,
                 onError: $onError,
+                onProgress: $onProgress,
             );
         }
     }
@@ -392,6 +390,39 @@ final class ChatStreamController
         $key = $_ENV['ANTHROPIC_API_KEY'] ?? getenv('ANTHROPIC_API_KEY') ?: null;
 
         return is_string($key) && $key !== '' ? $key : null;
+    }
+
+    private function emitSseEvent(string $event, array $payload): void
+    {
+        $data = json_encode($payload, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
+        echo "event: {$event}\ndata: {$data}\n\n";
+        if (ob_get_level() > 0) {
+            ob_flush();
+        }
+        flush();
+    }
+
+    private function normalizeProgressPayload(array $payload): ?array
+    {
+        $phase = trim((string) ($payload['phase'] ?? ''));
+        $summary = preg_replace('/\s+/u', ' ', trim((string) ($payload['summary'] ?? '')));
+        $level = trim((string) ($payload['level'] ?? 'info'));
+
+        if ($phase === '' || $summary === '') {
+            return null;
+        }
+
+        $summary = mb_substr($summary, 0, 140);
+        $allowedLevels = ['info', 'success', 'warning', 'error'];
+        if (! in_array($level, $allowedLevels, true)) {
+            $level = 'info';
+        }
+
+        return [
+            'phase' => $phase,
+            'summary' => $summary,
+            'level' => $level,
+        ];
     }
 
     private function resolveProjectRoot(): string
@@ -431,6 +462,24 @@ final class ChatStreamController
         $assembler = new DayBriefAssembler($eventRepo, $commitmentRepo, $driftDetector, $personRepo, $skillRepo);
 
         return new ChatSystemPromptBuilder($assembler, $projectRoot);
+    }
+
+    private function createSidecarClient(string $sidecarUrl, string $sidecarKey): SidecarChatClient
+    {
+        if (is_callable($this->sidecarClientFactory)) {
+            return ($this->sidecarClientFactory)($sidecarUrl, $sidecarKey);
+        }
+
+        return new SidecarChatClient($sidecarUrl, $sidecarKey);
+    }
+
+    private function createAnthropicClient(string $apiKey, string $model): AnthropicChatClient
+    {
+        if (is_callable($this->anthropicClientFactory)) {
+            return ($this->anthropicClientFactory)($apiKey, $model);
+        }
+
+        return new AnthropicChatClient($apiKey, $model);
     }
 
     private function generateUuid(): string

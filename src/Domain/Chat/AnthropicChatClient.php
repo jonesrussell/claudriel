@@ -82,6 +82,7 @@ final class AnthropicChatClient
         \Closure $onToken,
         \Closure $onDone,
         \Closure $onError,
+        ?\Closure $onProgress = null,
     ): void {
         $payload = json_encode([
             'model' => $this->model,
@@ -93,6 +94,13 @@ final class AnthropicChatClient
 
         $ch = curl_init('https://api.anthropic.com/v1/messages');
         if ($ch === false) {
+            if ($onProgress !== null) {
+                $onProgress([
+                    'phase' => 'error',
+                    'summary' => 'Failed to initialize direct Claude client',
+                    'level' => 'error',
+                ]);
+            }
             $onError('Failed to initialize cURL');
 
             return;
@@ -100,6 +108,13 @@ final class AnthropicChatClient
 
         $fullResponse = '';
         $buffer = '';
+        if ($onProgress !== null) {
+            $onProgress([
+                'phase' => 'prepare',
+                'summary' => 'Preparing direct Claude response mode',
+                'level' => 'info',
+            ]);
+        }
 
         curl_setopt_array($ch, [
             CURLOPT_POST => true,
@@ -111,7 +126,7 @@ final class AnthropicChatClient
             CURLOPT_POSTFIELDS => $payload,
             CURLOPT_RETURNTRANSFER => false,
             CURLOPT_TIMEOUT => 300,
-            CURLOPT_WRITEFUNCTION => function ($ch, $data) use (&$buffer, &$fullResponse, $onToken, $onError): int {
+            CURLOPT_WRITEFUNCTION => function ($ch, $data) use (&$buffer, &$fullResponse, $onToken, $onError, $onProgress): int {
                 $buffer .= $data;
 
                 while (($pos = strpos($buffer, "\n")) !== false) {
@@ -142,6 +157,13 @@ final class AnthropicChatClient
                     if ($type === 'content_block_delta') {
                         $text = $event['delta']['text'] ?? '';
                         if ($text !== '') {
+                            if ($onProgress !== null && $fullResponse === '') {
+                                $onProgress([
+                                    'phase' => 'respond',
+                                    'summary' => 'Streaming Claude response',
+                                    'level' => 'info',
+                                ]);
+                            }
                             $fullResponse .= $text;
                             $onToken($text);
                         }
@@ -170,6 +192,14 @@ final class AnthropicChatClient
             $onError("Anthropic API error: HTTP {$httpCode}");
 
             return;
+        }
+
+        if ($onProgress !== null) {
+            $onProgress([
+                'phase' => 'finalize',
+                'summary' => 'Finalizing Claude response',
+                'level' => 'info',
+            ]);
         }
 
         $onDone($fullResponse);

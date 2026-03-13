@@ -32,7 +32,14 @@ class ErrorEvent:
     error: str
 
 
-StreamEvent = TokenEvent | DoneEvent | ErrorEvent
+@dataclass
+class ProgressEvent:
+    phase: str
+    summary: str
+    level: str = "info"
+
+
+StreamEvent = TokenEvent | DoneEvent | ErrorEvent | ProgressEvent
 
 # Restrict Claude to Gmail, Calendar, and Bash (for curl ingestion) tools.
 # No file system or code editing access.
@@ -61,22 +68,32 @@ async def stream_chat(
     )
 
     full_text = ""
+    yielded_response_progress = False
 
     try:
+        yield ProgressEvent(phase="prepare", summary="Preparing Claude Code session")
         logger.info("Starting query with model=%s, prompt_len=%d", model, len(prompt))
+        yield ProgressEvent(phase="connect", summary="Connecting Claude Code tools")
         async for message in query(prompt=prompt, options=options):
             msg_type = type(message).__name__
             logger.info("Received message type: %s", msg_type)
             if isinstance(message, AssistantMessage):
                 for block in message.content:
                     if isinstance(block, TextBlock):
+                        if not yielded_response_progress:
+                            yielded_response_progress = True
+                            yield ProgressEvent(phase="respond", summary="Streaming Claude response")
                         logger.info("TextBlock: %s...", block.text[:80])
                         full_text += block.text
                         yield TokenEvent(text=block.text)
                     else:
                         logger.info("Skipping block type: %s", type(block).__name__)
+                        progress_event = _progress_event_from_block(block)
+                        if progress_event is not None:
+                            yield progress_event
             elif isinstance(message, ResultMessage):
                 logger.info("ResultMessage received (query complete)")
+                yield ProgressEvent(phase="finalize", summary="Finalizing Claude response")
 
         yield DoneEvent(full_text=full_text)
         logger.info("Stream complete, full_text_len=%d", len(full_text))
@@ -101,3 +118,42 @@ def _format_messages(messages: list[dict[str, str]]) -> str:
 
     parts.append(f"\nUser: {messages[-1]['content']}")
     return "\n".join(parts)
+
+
+def _progress_event_from_block(block: object) -> ProgressEvent | None:
+    tool_name = _extract_tool_name(block)
+    if tool_name:
+        return ProgressEvent(
+            phase="tool",
+            summary=_tool_summary(tool_name),
+        )
+
+    block_type = type(block).__name__.lower()
+    if "tool" in block_type:
+        return ProgressEvent(
+            phase="tool",
+            summary="Using Claude Code tools",
+        )
+
+    return None
+
+
+def _extract_tool_name(block: object) -> str | None:
+    for attr in ("name", "tool_name"):
+        value = getattr(block, attr, None)
+        if isinstance(value, str) and value.strip():
+            return value.strip()
+
+    return None
+
+
+def _tool_summary(tool_name: str) -> str:
+    normalized = tool_name.lower()
+    if "gmail" in normalized:
+        return "Checking Gmail context"
+    if "calendar" in normalized:
+        return "Checking calendar context"
+    if normalized == "bash" or normalized.endswith("__bash"):
+        return "Running an allowlisted shell command"
+
+    return "Using Claude Code tools"

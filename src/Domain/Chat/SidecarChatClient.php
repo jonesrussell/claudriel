@@ -25,6 +25,7 @@ class SidecarChatClient
         Closure $onDone,
         Closure $onError,
         ?string $sessionId = null,
+        ?Closure $onProgress = null,
     ): void {
         $payload = json_encode([
             'session_id' => $sessionId ?? 'default',
@@ -44,9 +45,9 @@ class SidecarChatClient
             ],
             CURLOPT_RETURNTRANSFER => false,
             CURLOPT_TIMEOUT => 300,
-            CURLOPT_WRITEFUNCTION => function ($curlHandle, $data) use ($onToken, $onDone, $onError) {
+            CURLOPT_WRITEFUNCTION => function ($curlHandle, $data) use ($onToken, $onDone, $onError, $onProgress) {
                 error_log('[Sidecar] WRITEFUNCTION received '.strlen($data).' bytes');
-                $this->handleSseChunk($data, $onToken, $onDone, $onError);
+                $this->handleSseChunk($data, $onToken, $onDone, $onError, $onProgress);
 
                 return strlen($data);
             },
@@ -88,6 +89,7 @@ class SidecarChatClient
         Closure $onToken,
         Closure $onDone,
         Closure $onError,
+        ?Closure $onProgress = null,
     ): void {
         $this->sseBuffer .= $data;
 
@@ -122,6 +124,7 @@ class SidecarChatClient
                     'chat-token' => $onToken($payload['token'] ?? ''),
                     'chat-done' => $onDone($payload['full_response'] ?? ''),
                     'chat-error' => $onError($payload['error'] ?? 'Unknown error'),
+                    'chat-progress' => $onProgress !== null ? $onProgress($payload) : null,
                     default => null,
                 };
             }

@@ -9,7 +9,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from app.auth import verify_api_key
-from app.claude_client import DoneEvent, ErrorEvent, TokenEvent, stream_chat
+from app.claude_client import DoneEvent, ErrorEvent, ProgressEvent, TokenEvent, stream_chat
 from app.session_manager import SessionManager
 
 logging.basicConfig(level=logging.INFO)
@@ -104,6 +104,15 @@ async def chat(
                     yield _sse("chat-done", {"done": True, "full_response": event.full_text})
                 elif isinstance(event, ErrorEvent):
                     yield _sse("chat-error", {"error": event.error})
+                elif isinstance(event, ProgressEvent):
+                    yield _sse(
+                        "chat-progress",
+                        {
+                            "phase": event.phase,
+                            "summary": event.summary,
+                            "level": event.level,
+                        },
+                    )
 
         except Exception as e:
             logger.error("Event stream error: %s", e, exc_info=True)
@@ -117,7 +126,6 @@ async def chat(
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",
-            "Connection": "keep-alive",
             "X-Accel-Buffering": "no",
         },
     )

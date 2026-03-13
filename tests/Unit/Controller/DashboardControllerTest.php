@@ -76,6 +76,8 @@ final class DashboardControllerTest extends TestCase
     {
         $etm = $this->buildEntityTypeManager();
         $this->seedWorkspace($etm, 'workspace-dashboard-2', 'Fallback Render Workspace');
+        $this->seedSession($etm, 'sess-tabs-1', 'Daily Brief Follow-up', '2026-03-13T12:00:00+00:00');
+        $this->seedSession($etm, 'sess-tabs-2', 'Calendar cleanup', '2026-03-13T13:00:00+00:00');
 
         $controller = new DashboardController(
             $etm,
@@ -90,6 +92,9 @@ final class DashboardControllerTest extends TestCase
         self::assertStringContainsString('transport=fallback', $response->content);
         self::assertStringContainsString('dashboard-fallback-req', $response->content);
         self::assertStringContainsString('"briefs"', $response->content);
+        self::assertStringContainsString('id="sessionTabs"', $response->content);
+        self::assertStringContainsString('data-session-tab="sess-tabs-2"', $response->content);
+        self::assertStringContainsString('chat-progress', $response->content);
     }
 
     private function buildEntityTypeManager(): EntityTypeManager

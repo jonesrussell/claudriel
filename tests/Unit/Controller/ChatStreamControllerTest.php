@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Claudriel\Tests\Unit\Controller;
 
 use Claudriel\Controller\ChatStreamController;
+use Claudriel\Domain\Chat\SidecarChatClient;
 use Claudriel\Entity\ChatMessage;
 use Claudriel\Entity\ChatSession;
 use Claudriel\Entity\Commitment;
@@ -252,6 +253,102 @@ final class ChatStreamControllerTest extends TestCase
 
         if ($originalKey !== false) {
             putenv("ANTHROPIC_API_KEY={$originalKey}");
+        }
+    }
+
+    public function test_stream_forwards_sanitized_progress_events_from_sidecar(): void
+    {
+        $originalKey = getenv('ANTHROPIC_API_KEY');
+        $originalSidecarUrl = getenv('SIDECAR_URL');
+        $originalSidecarKey = getenv('CLAUDRIEL_SIDECAR_KEY');
+        putenv('ANTHROPIC_API_KEY=test-key');
+        putenv('SIDECAR_URL=http://sidecar.test');
+        putenv('CLAUDRIEL_SIDECAR_KEY=test-sidecar-key');
+
+        $etm = $this->buildEntityTypeManager();
+
+        $sessionStorage = $etm->getStorage('chat_session');
+        $sessionStorage->save(new ChatSession(['uuid' => 'sess-6', 'title' => 'Telemetry', 'created_at' => date('c')]));
+
+        $msgStorage = $etm->getStorage('chat_message');
+        $msgStorage->save(new ChatMessage([
+            'uuid' => 'msg-6',
+            'session_uuid' => 'sess-6',
+            'role' => 'user',
+            'content' => 'What is on my calendar today?',
+            'created_at' => date('c'),
+        ]));
+
+        $controller = new ChatStreamController(
+            $etm,
+            null,
+            sidecarClientFactory: static fn (): SidecarChatClient => new class extends SidecarChatClient
+            {
+                public function __construct()
+                {
+                    parent::__construct('http://sidecar.test', 'test-key');
+                }
+
+                public function isAvailable(): bool
+                {
+                    return true;
+                }
+
+                public function stream(
+                    string $systemPrompt,
+                    array $messages,
+                    \Closure $onToken,
+                    \Closure $onDone,
+                    \Closure $onError,
+                    ?string $sessionId = null,
+                    ?\Closure $onProgress = null,
+                ): void {
+                    if ($onProgress !== null) {
+                        $onProgress([
+                            'phase' => 'tool',
+                            'summary' => "  Checking   calendar   context  \n",
+                            'level' => 'info',
+                        ]);
+                    }
+
+                    $onToken('Today looks clear.');
+                    $onDone('Today looks clear.');
+                }
+            },
+        );
+
+        $response = $controller->stream(['messageId' => 'msg-6'], [], null, null);
+
+        self::assertInstanceOf(StreamedResponse::class, $response);
+
+        ob_start();
+        ob_start();
+        $callback = $response->getCallback();
+        self::assertIsCallable($callback);
+        $callback();
+        ob_end_flush();
+        $output = ob_get_clean();
+
+        self::assertIsString($output);
+        self::assertStringContainsString('event: chat-progress', $output);
+        self::assertStringContainsString('"summary":"Checking calendar context"', $output);
+        self::assertStringContainsString('event: chat-token', $output);
+        self::assertStringContainsString('event: chat-done', $output);
+
+        if ($originalKey !== false) {
+            putenv("ANTHROPIC_API_KEY={$originalKey}");
+        } else {
+            putenv('ANTHROPIC_API_KEY');
+        }
+        if ($originalSidecarUrl !== false) {
+            putenv("SIDECAR_URL={$originalSidecarUrl}");
+        } else {
+            putenv('SIDECAR_URL');
+        }
+        if ($originalSidecarKey !== false) {
+            putenv("CLAUDRIEL_SIDECAR_KEY={$originalSidecarKey}");
+        } else {
+            putenv('CLAUDRIEL_SIDECAR_KEY');
         }
     }
 
