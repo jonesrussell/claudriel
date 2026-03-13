@@ -331,6 +331,63 @@
         }
         .timeline-event-state.current { color: var(--accent-blue); }
         .timeline-event-state.future { color: var(--accent-teal); }
+        .timeline-event-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.45rem;
+            margin-top: 0.7rem;
+        }
+        .timeline-event-action {
+            border: 1px solid rgba(107, 155, 255, 0.2);
+            background: rgba(107, 155, 255, 0.08);
+            color: var(--text-primary);
+            border-radius: 999px;
+            padding: 0.32rem 0.68rem;
+            font-size: 0.72rem;
+            font-family: var(--font-body);
+            cursor: pointer;
+            transition: background 0.16s ease, border-color 0.16s ease, transform 0.16s ease, opacity 0.16s ease;
+        }
+        .timeline-event-action:hover {
+            background: rgba(107, 155, 255, 0.16);
+            border-color: rgba(107, 155, 255, 0.35);
+            transform: translateY(-1px);
+        }
+        .timeline-event-action:disabled {
+            cursor: wait;
+            opacity: 0.7;
+            transform: none;
+        }
+        .timeline-event-action--primary {
+            background: rgba(45, 212, 191, 0.12);
+            border-color: rgba(45, 212, 191, 0.26);
+        }
+        .timeline-event-action--primary:hover {
+            background: rgba(45, 212, 191, 0.2);
+            border-color: rgba(45, 212, 191, 0.38);
+        }
+        .timeline-event-action-status {
+            display: inline-flex;
+            align-items: center;
+            min-height: 1.3rem;
+            margin-top: 0.55rem;
+            font-size: 0.68rem;
+            letter-spacing: 0.03em;
+            color: var(--text-muted);
+        }
+        .timeline-event-action-status[data-state="pending"] {
+            color: var(--accent-blue);
+        }
+        .timeline-event-action-status[data-state="success"] {
+            color: var(--accent-teal);
+        }
+        .timeline-event-action-status[data-state="error"] {
+            color: var(--accent-red);
+        }
+        .timeline-event.is-action-pending {
+            border-color: rgba(107, 155, 255, 0.4);
+            box-shadow: 0 0 0 1px rgba(107, 155, 255, 0.2);
+        }
 
         /* ── Chat Area ── */
         .chat-area {
@@ -738,6 +795,23 @@
                                     <div class="timeline-event-body">
                                         <div>{{ item.source|default('manual')|replace({'-': ' '})|title }}</div>
                                         <div class="timeline-event-state {{ state }}">{{ state == 'current' ? 'Current block' : (state == 'future' ? 'Upcoming block' : 'Past block') }}</div>
+                                        <div class="timeline-event-actions">
+                                            <button class="timeline-event-action timeline-event-action--primary" type="button" data-schedule-action="{{ state == 'past'
+                                                ? 'Capture follow-up actions from ' ~ item.title ~ ' at ' ~ item.start_time|date('g:i A') ~ (item.end_time ? ' through ' ~ item.end_time|date('g:i A') : '') ~ '.'
+                                                : 'Prep me for ' ~ item.title ~ ' at ' ~ item.start_time|date('g:i A') ~ (item.end_time ? ' through ' ~ item.end_time|date('g:i A') : '') ~ '.'
+                                            }}">
+                                                {{ state == 'past' ? 'Capture follow-up' : 'Prep me' }}
+                                            </button>
+                                            <button class="timeline-event-action" type="button" data-schedule-action="{{ state == 'past'
+                                                ? 'Summarize the outcome of ' ~ item.title ~ ' at ' ~ item.start_time|date('g:i A') ~ (item.end_time ? ' through ' ~ item.end_time|date('g:i A') : '') ~ '.'
+                                                : (state == 'current'
+                                                    ? 'Help me shift ' ~ item.title ~ ' at ' ~ item.start_time|date('g:i A') ~ (item.end_time ? ' through ' ~ item.end_time|date('g:i A') : '') ~ '.'
+                                                    : 'Tell me about ' ~ item.title ~ ' at ' ~ item.start_time|date('g:i A') ~ (item.end_time ? ' through ' ~ item.end_time|date('g:i A') : '') ~ '.')
+                                            }}">
+                                                {{ state == 'past' ? 'Wrap-up' : (state == 'current' ? 'Shift plan' : 'Open in chat') }}
+                                            </button>
+                                        </div>
+                                        <div class="timeline-event-action-status" data-state="idle">Ready</div>
                                     </div>
                                 </div>
                             {% endfor %}
@@ -900,17 +974,92 @@
             updatePanel();
         });
 
-        // ── Panel Click-to-Chat ──
-        document.querySelectorAll('[data-chat]').forEach(function(el) {
-            el.addEventListener('click', function() {
-                var prompt = this.getAttribute('data-chat');
-                if (prompt && inputEl && !inputEl.disabled) {
-                    inputEl.value = prompt;
-                    inputEl.focus();
-                    inputEl.dispatchEvent(new Event('input'));
+        function primeChatInput(prompt) {
+            if (!prompt || !inputEl || inputEl.disabled) {
+                return false;
+            }
+
+            inputEl.value = prompt;
+            inputEl.focus();
+            inputEl.dispatchEvent(new Event('input'));
+
+            return true;
+        }
+
+        function bindChatPrompts(root) {
+            (root || document).querySelectorAll('[data-chat]').forEach(function(el) {
+                if (el.dataset.boundChatPrompt === 'true') {
+                    return;
                 }
+
+                el.dataset.boundChatPrompt = 'true';
+                el.addEventListener('click', function() {
+                    primeChatInput(this.getAttribute('data-chat'));
+                });
             });
-        });
+        }
+
+        function setScheduleActionStatus(eventEl, state, label) {
+            if (!eventEl) {
+                return;
+            }
+
+            var statusEl = eventEl.querySelector('.timeline-event-action-status');
+            if (!statusEl) {
+                return;
+            }
+
+            statusEl.dataset.state = state;
+            statusEl.textContent = label;
+
+            if (state === 'pending') {
+                eventEl.classList.add('is-action-pending');
+                return;
+            }
+
+            eventEl.classList.remove('is-action-pending');
+        }
+
+        function bindScheduleActions(root) {
+            (root || document).querySelectorAll('.timeline-event-action[data-schedule-action]').forEach(function(button) {
+                if (button.dataset.boundScheduleAction === 'true') {
+                    return;
+                }
+
+                button.dataset.boundScheduleAction = 'true';
+                button.addEventListener('click', function(event) {
+                    event.preventDefault();
+                    event.stopPropagation();
+
+                    var prompt = this.getAttribute('data-schedule-action');
+                    var eventEl = this.closest('.timeline-event');
+                    if (!prompt || !eventEl) {
+                        return;
+                    }
+
+                    setScheduleActionStatus(eventEl, 'pending', 'Sending to chat...');
+                    eventEl.querySelectorAll('.timeline-event-action').forEach(function(action) {
+                        action.disabled = true;
+                    });
+
+                    sendMessage(prompt)
+                        .then(function() {
+                            setScheduleActionStatus(eventEl, 'success', 'Queued in chat');
+                        })
+                        .catch(function() {
+                            setScheduleActionStatus(eventEl, 'error', 'Failed to send');
+                        })
+                        .finally(function() {
+                            eventEl.querySelectorAll('.timeline-event-action').forEach(function(action) {
+                                action.disabled = false;
+                            });
+                        });
+                });
+            });
+        }
+
+        bindChatPrompts(document);
+        bindScheduleActions(document);
 
         // ── Workspace Selection ──
         var workspaceKey = 'claudriel_workspace';
@@ -1266,12 +1415,29 @@
                             var end = new Date(item.end_time || '');
                             var state = end <= nowLocal ? 'past' : (start <= nowLocal && end > nowLocal ? 'current' : 'future');
                             var expanded = state !== 'future' || index === 0 ? ' is-expanded' : '';
+                            var scheduleTime = formatScheduleTime(item.start_time || '', item.end_time || '');
+                            var primaryLabel = state === 'past' ? 'Capture follow-up' : 'Prep me';
+                            var secondaryLabel = state === 'past' ? 'Wrap-up' : (state === 'current' ? 'Shift plan' : 'Open in chat');
+                            var primaryPrompt = state === 'past'
+                                ? 'Capture follow-up actions from ' + String(item.title || 'this block') + ' at ' + scheduleTime + '.'
+                                : 'Prep me for ' + String(item.title || 'this block') + ' at ' + scheduleTime + '.';
+                            var secondaryPrompt = state === 'past'
+                                ? 'Summarize the outcome of ' + String(item.title || 'this block') + ' at ' + scheduleTime + '.'
+                                : (state === 'current'
+                                    ? 'Help me shift ' + String(item.title || 'this block') + ' at ' + scheduleTime + '.'
+                                    : 'Tell me about ' + String(item.title || 'this block') + ' at ' + scheduleTime + '.');
                             return '<div class="timeline-event timeline-event--' + state + expanded + '" data-chat="Tell me about ' + esc(item.title) + '">'
                                 + '<div class="timeline-event-head"><div class="timeline-event-title">' + esc(item.title) + '</div>'
-                                + '<div class="timeline-event-time">' + esc(formatScheduleTime(item.start_time || '', item.end_time || '')) + '</div></div>'
+                                + '<div class="timeline-event-time">' + esc(scheduleTime) + '</div></div>'
                                 + '<div class="timeline-event-body"><div>' + esc(formatSourceLabel(item.source || 'manual')) + '</div>'
-                                + '<div class="timeline-event-state ' + state + '">' + esc(state === 'current' ? 'Current block' : (state === 'future' ? 'Upcoming block' : 'Past block')) + '</div></div></div>';
+                                + '<div class="timeline-event-state ' + state + '">' + esc(state === 'current' ? 'Current block' : (state === 'future' ? 'Upcoming block' : 'Past block')) + '</div>'
+                                + '<div class="timeline-event-actions">'
+                                + '<button class="timeline-event-action timeline-event-action--primary" type="button" data-schedule-action="' + esc(primaryPrompt) + '">' + esc(primaryLabel) + '</button>'
+                                + '<button class="timeline-event-action" type="button" data-schedule-action="' + esc(secondaryPrompt) + '">' + esc(secondaryLabel) + '</button>'
+                                + '</div><div class="timeline-event-action-status" data-state="idle">Ready</div></div></div>';
                         }).join('') + '</div>';
+                    bindScheduleActions(scheduleItems);
+                    bindChatPrompts(scheduleItems);
                 } else {
                     scheduleItems.innerHTML = '<div class="panel-empty">' + esc(data.schedule_summary || 'Your day is clear') + '</div>';
                 }
@@ -1339,17 +1505,8 @@
 
             rebuildWorkspaceSidebar(data.workspaces);
 
-            // Re-attach data-chat click handlers
-            document.querySelectorAll('[data-chat]').forEach(function(el) {
-                el.onclick = function() {
-                    var prompt = this.getAttribute('data-chat');
-                    if (prompt && inputEl && !inputEl.disabled) {
-                        inputEl.value = prompt;
-                        inputEl.focus();
-                        inputEl.dispatchEvent(new Event('input'));
-                    }
-                };
-            });
+            bindChatPrompts(document);
+            bindScheduleActions(document);
         }
 
         // ── SSE Brief Updates (with polling fallback) ──
@@ -1705,7 +1862,12 @@
 
         function sendMessage(messageOverride) {
             var message = messageOverride || inputEl.value.trim();
-            if (!message || sending) return;
+            if (!message) {
+                return Promise.resolve(false);
+            }
+            if (sending) {
+                return Promise.reject(new Error('busy'));
+            }
 
             sending = true;
             sendBtn.disabled = true;
@@ -1718,7 +1880,7 @@
             var payload = { message: message };
             if (sessionId) payload.session_id = sessionId;
 
-            fetch('/api/chat/send', {
+            return fetch('/api/chat/send', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -1736,14 +1898,25 @@
                     sending = false;
                     sendBtn.disabled = false;
                     inputEl.focus();
-                    return;
+                    throw new Error(result.data.error || 'send_failed');
                 }
 
                 sessionId = result.data.session_id;
                 var messageId = result.data.message_id;
                 upsertSessionTab(sessionId, message.slice(0, 60), !payload.session_id);
 
-                if (messageId) {
+                if (!messageId) {
+                    removeThinking();
+                    var contentEl = appendMessage('assistant', result.data.response);
+                    wrapCardsInContent(contentEl);
+                    sending = false;
+                    sendBtn.disabled = false;
+                    inputEl.focus();
+
+                    return result.data;
+                }
+
+                return new Promise(function(resolve, reject) {
                     var assistantContent = appendMessage('assistant', '');
                     var assistantMsg = assistantContent.parentElement;
                     assistantMsg.classList.add('streaming');
@@ -1756,6 +1929,12 @@
                         removeThinking();
                         assistantMsg.style.display = '';
                         assistantVisible = true;
+                    }
+
+                    function finish() {
+                        sending = false;
+                        sendBtn.disabled = false;
+                        inputEl.focus();
                     }
 
                     chatSource = new EventSource('/stream/chat/' + messageId);
@@ -1787,18 +1966,15 @@
                         if (!assistantVisible) {
                             revealAssistant();
                         }
-                        if (!receivedToken) {
-                            if (doneData && doneData.full_response) {
-                                assistantContent.textContent = doneData.full_response;
-                            }
+                        if (!receivedToken && doneData && doneData.full_response) {
+                            assistantContent.textContent = doneData.full_response;
                         }
                         assistantMsg.classList.remove('streaming');
                         wrapCardsInContent(assistantContent);
-                        sending = false;
-                        sendBtn.disabled = false;
-                        inputEl.focus();
+                        finish();
                         pollBrief();
-                    });
+                        resolve(result.data);
+                    }, { once: true });
 
                     chatSource.addEventListener('chat-error', function(e) {
                         chatSource.close();
@@ -1821,10 +1997,9 @@
                             });
                             showError('Stream error.');
                         }
-                        sending = false;
-                        sendBtn.disabled = false;
-                        inputEl.focus();
-                    });
+                        finish();
+                        reject(new Error('stream_error'));
+                    }, { once: true });
 
                     chatSource.onerror = function() {
                         chatSource.close();
@@ -1836,25 +2011,22 @@
                             summary: 'Connection to the chat stream was interrupted.',
                             level: 'warning'
                         });
-                        sending = false;
-                        sendBtn.disabled = false;
-                        inputEl.focus();
+                        finish();
+                        reject(new Error('stream_connection_error'));
                     };
-                } else {
-                    removeThinking();
-                    var contentEl = appendMessage('assistant', result.data.response);
-                    wrapCardsInContent(contentEl);
-                    sending = false;
-                    sendBtn.disabled = false;
-                    inputEl.focus();
-                }
+                });
             })
-            .catch(function() {
+            .catch(function(error) {
+                if (error && (error.message === 'busy' || error.message === 'stream_error' || error.message === 'stream_connection_error' || error.message === 'send_failed')) {
+                    throw error;
+                }
+
                 removeThinking();
                 showError('Network error: could not reach the server.');
                 sending = false;
                 sendBtn.disabled = false;
                 inputEl.focus();
+                throw error;
             });
         }
 

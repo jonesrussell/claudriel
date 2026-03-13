@@ -97,6 +97,9 @@ final class DashboardControllerTest extends TestCase
         self::assertStringContainsString('data-session-tab="sess-tabs-2"', $response->content);
         self::assertStringContainsString('chat-progress', $response->content);
         self::assertStringContainsString('schedule-timeline', $response->content);
+        self::assertStringContainsString('timeline-event-action', $response->content);
+        self::assertStringContainsString('timeline-event-action-status', $response->content);
+        self::assertStringContainsString('Queued in chat', $response->content);
     }
 
     private function buildEntityTypeManager(): EntityTypeManager
