@@ -50,10 +50,13 @@ final class ObservabilityDashboardAggregationTest extends TestCase
         self::assertArrayHasKey('training_export_readiness', $payload);
         self::assertArrayHasKey('governance_integrity', $payload);
         self::assertArrayHasKey('model_update_batches', $payload);
+        self::assertArrayHasKey('call_chain', $payload);
         self::assertArrayHasKey('system_summary', $payload);
         self::assertSame('batch-observability-001', $payload['model_update_batches'][0]['batch_id']);
         self::assertGreaterThan(0, $payload['training_export_readiness']['daily_sample_count']);
         self::assertNotEmpty($payload['self_assessment']['recommended_focus_areas']);
+        self::assertSame('Platform observability scan', $payload['call_chain']['root']['title']);
+        self::assertCount(7, $payload['call_chain']['root']['children']);
     }
 
     private function buildController(): ObservabilityDashboardController

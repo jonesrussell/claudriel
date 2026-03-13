@@ -171,6 +171,7 @@ final class ObservabilityDashboardController
             'model_update_batches' => $recentBatches,
         ];
 
+        $payload['call_chain'] = $this->buildCallChain($payload);
         $payload['system_summary'] = $this->buildSystemSummary($payload);
 
         return $payload;
@@ -305,6 +306,147 @@ final class ObservabilityDashboardController
             $age < 3600 => 'yellow',
             default => 'red',
         };
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array{
+     *   root: array<string, mixed>,
+     *   legend: list<array{status: string, label: string}>
+     * }
+     */
+    private function buildCallChain(array $payload): array
+    {
+        $extractionStatus = $this->mapHealthStatusToCallChain(
+            $this->resolveFailureRateStatus((float) $payload['extraction_health']['low_confidence_rate']),
+        );
+        $driftStatus = $this->mapHealthStatusToCallChain(
+            $this->resolveDriftStatus((string) $payload['drift_overview']['classification']),
+        );
+        $assessmentStatus = $this->mapHealthStatusToCallChain(
+            $this->resolveScoreStatus((int) $payload['self_assessment']['overall_score']),
+        );
+        $governanceStatus = $this->mapHealthStatusToCallChain(
+            $this->resolveIntegrityStatus(count($payload['governance_integrity']['issues'])),
+        );
+        $batchStatus = $payload['model_update_batches'] === [] ? 'fallback' : 'success';
+        $trainingStatus = ((int) $payload['training_export_readiness']['daily_sample_count'] > 0 && (int) $payload['training_export_readiness']['failure_sample_count'] > 0)
+            ? 'success'
+            : 'fallback';
+        $suggestionStatus = $this->resolveSuggestionStatus($payload['improvement_suggestions']);
+        $rootStatus = in_array('error', [$extractionStatus, $driftStatus, $assessmentStatus, $governanceStatus, $suggestionStatus], true)
+            ? 'error'
+            : (in_array('retry', [$extractionStatus, $driftStatus, $assessmentStatus, $governanceStatus, $suggestionStatus], true) ? 'retry' : 'success');
+
+        return [
+            'root' => [
+                'title' => 'Platform observability scan',
+                'summary' => sprintf('Window: %d days · generated %s', $payload['window_days'], $payload['generated_at']),
+                'status' => $rootStatus,
+                'expanded' => true,
+                'children' => [
+                    [
+                        'title' => 'Extraction health',
+                        'summary' => sprintf('Confidence %.2f · low-confidence %.1f%%', $payload['extraction_health']['average_confidence'], $payload['extraction_health']['low_confidence_rate'] * 100),
+                        'status' => $extractionStatus,
+                        'expanded' => true,
+                        'children' => [
+                            [
+                                'title' => 'Failure categories',
+                                'summary' => ($payload['extraction_health']['top_failure_categories'][0]['category'] ?? 'none').' leading',
+                                'status' => $payload['extraction_health']['top_failure_categories'] === [] ? 'fallback' : 'success',
+                                'expanded' => false,
+                                'children' => [],
+                            ],
+                        ],
+                    ],
+                    [
+                        'title' => 'Drift overview',
+                        'summary' => sprintf('%s drift · avg delta %.1f%%', ucfirst((string) $payload['drift_overview']['classification']), $payload['drift_overview']['delta']['avg_confidence_delta'] * 100),
+                        'status' => $driftStatus,
+                        'expanded' => false,
+                        'children' => [],
+                    ],
+                    [
+                        'title' => 'Self-assessment',
+                        'summary' => sprintf('Score %d/100 · hotspot %s', $payload['self_assessment']['overall_score'], $payload['self_assessment']['sender_hotspots'][0]['sender'] ?? 'none'),
+                        'status' => $assessmentStatus,
+                        'expanded' => false,
+                        'children' => [],
+                    ],
+                    [
+                        'title' => 'Improvement suggestions',
+                        'summary' => sprintf('%d suggestion%s ready', count($payload['improvement_suggestions']), count($payload['improvement_suggestions']) === 1 ? '' : 's'),
+                        'status' => $suggestionStatus,
+                        'expanded' => false,
+                        'children' => [],
+                    ],
+                    [
+                        'title' => 'Training export readiness',
+                        'summary' => sprintf('%d daily samples · %d failure samples', $payload['training_export_readiness']['daily_sample_count'], $payload['training_export_readiness']['failure_sample_count']),
+                        'status' => $trainingStatus,
+                        'expanded' => false,
+                        'children' => [],
+                    ],
+                    [
+                        'title' => 'Governance integrity',
+                        'summary' => sprintf('%d issue%s detected', count($payload['governance_integrity']['issues']), count($payload['governance_integrity']['issues']) === 1 ? '' : 's'),
+                        'status' => $governanceStatus,
+                        'expanded' => false,
+                        'children' => [],
+                    ],
+                    [
+                        'title' => 'Model update batches',
+                        'summary' => $payload['model_update_batches'] === []
+                            ? 'No stored batches available'
+                            : sprintf('%d stored batch%s', count($payload['model_update_batches']), count($payload['model_update_batches']) === 1 ? '' : 'es'),
+                        'status' => $batchStatus,
+                        'expanded' => false,
+                        'children' => [],
+                    ],
+                ],
+            ],
+            'legend' => [
+                ['status' => 'success', 'label' => 'Success'],
+                ['status' => 'fallback', 'label' => 'Fallback'],
+                ['status' => 'retry', 'label' => 'Retry'],
+                ['status' => 'error', 'label' => 'Error'],
+            ],
+        ];
+    }
+
+    private function mapHealthStatusToCallChain(string $status): string
+    {
+        return match ($status) {
+            'green' => 'success',
+            'yellow' => 'retry',
+            default => 'error',
+        };
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $suggestions
+     */
+    private function resolveSuggestionStatus(array $suggestions): string
+    {
+        if ($suggestions === []) {
+            return 'fallback';
+        }
+
+        $severities = array_map(
+            static fn (array $suggestion): string => (string) ($suggestion['severity'] ?? 'info'),
+            $suggestions,
+        );
+
+        if (array_intersect($severities, ['high', 'critical']) !== []) {
+            return 'error';
+        }
+
+        if (array_intersect($severities, ['medium', 'warning']) !== []) {
+            return 'retry';
+        }
+
+        return 'success';
     }
 
     /**

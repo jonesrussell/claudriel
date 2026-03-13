@@ -50,6 +50,12 @@ final class ObservabilityDashboardViewTest extends TestCase
 
         self::assertSame(200, $response->statusCode);
         self::assertStringContainsString('Platform Observability Dashboard', $response->content);
+        self::assertStringContainsString('Observability Call Chain', $response->content);
+        self::assertStringContainsString('call-chain-node', $response->content);
+        self::assertStringContainsString('call-chain-status success', $response->content);
+        self::assertStringContainsString('call-chain-status fallback', $response->content);
+        self::assertStringContainsString('call-chain-status retry', $response->content);
+        self::assertStringContainsString('call-chain-status error', $response->content);
         self::assertStringContainsString('Extraction Health', $response->content);
         self::assertStringContainsString('Drift Overview', $response->content);
         self::assertStringContainsString('Self-Assessment', $response->content);
@@ -80,6 +86,8 @@ final class ObservabilityDashboardViewTest extends TestCase
         self::assertArrayHasKey('overall_score', $payload['self_assessment']);
         self::assertArrayHasKey('daily_sample_count', $payload['training_export_readiness']);
         self::assertArrayHasKey('summary', $payload['governance_integrity']);
+        self::assertArrayHasKey('call_chain', $payload);
+        self::assertSame('Platform observability scan', $payload['call_chain']['root']['title']);
         self::assertSame('batch-platform-view-001', $payload['model_update_batches'][0]['batch_id']);
     }
 

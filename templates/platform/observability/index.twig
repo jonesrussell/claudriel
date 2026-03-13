@@ -1,4 +1,22 @@
 {% extends "base.html.twig" %}
+{% macro call_chain_node(node, depth) %}
+  <details class="call-chain-node depth-{{ depth }}{% if node.children is empty %} is-leaf{% endif %}" {% if node.expanded %}open{% endif %}>
+    <summary>
+      <span class="call-chain-status {{ node.status }}">{{ node.status }}</span>
+      <span class="call-chain-copy">
+        <span class="call-chain-title">{{ node.title }}</span>
+        <span class="call-chain-summary">{{ node.summary }}</span>
+      </span>
+    </summary>
+    {% if node.children is not empty %}
+      <div class="call-chain-children">
+        {% for child in node.children %}
+          {{ _self.call_chain_node(child, depth + 1) }}
+        {% endfor %}
+      </div>
+    {% endif %}
+  </details>
+{% endmacro %}
 
 {% block title %}Platform Observability Dashboard{% endblock %}
 
@@ -45,6 +63,112 @@
   }
   .metric-card {
     padding: 0.95rem 1rem;
+  }
+  .call-chain-panel {
+    padding: 1.15rem 1.1rem 1.2rem;
+  }
+  .call-chain-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    align-items: flex-start;
+  }
+  .call-chain-header h2 {
+    margin-bottom: 0.35rem;
+  }
+  .call-chain-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+  }
+  .call-chain-status {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 78px;
+    padding: 0.22rem 0.55rem;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 0.7rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    border: 1px solid transparent;
+  }
+  .call-chain-status.success {
+    color: #ccf3dd;
+    background: rgba(26, 122, 73, 0.18);
+    border-color: rgba(87, 199, 138, 0.28);
+  }
+  .call-chain-status.fallback {
+    color: #dce9ff;
+    background: rgba(37, 91, 165, 0.18);
+    border-color: rgba(107, 155, 255, 0.26);
+  }
+  .call-chain-status.retry {
+    color: #ffe2b3;
+    background: rgba(177, 110, 16, 0.18);
+    border-color: rgba(241, 180, 78, 0.28);
+  }
+  .call-chain-status.error {
+    color: #ffd0d0;
+    background: rgba(181, 52, 52, 0.18);
+    border-color: rgba(240, 96, 96, 0.32);
+  }
+  .call-chain-tree {
+    margin-top: 1rem;
+    border-left: 1px solid rgba(124, 196, 255, 0.14);
+    padding-left: 1rem;
+  }
+  .call-chain-node {
+    position: relative;
+    margin-top: 0.75rem;
+    border: 1px solid rgba(124, 196, 255, 0.08);
+    border-radius: var(--radius-md);
+    background: rgba(17, 22, 31, 0.72);
+  }
+  .call-chain-node::before {
+    content: '';
+    position: absolute;
+    left: -1.25rem;
+    top: 1.05rem;
+    width: 0.7rem;
+    height: 1px;
+    background: rgba(124, 196, 255, 0.18);
+  }
+  .call-chain-node summary {
+    list-style: none;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.85rem;
+    padding: 0.85rem 0.95rem;
+    cursor: pointer;
+  }
+  .call-chain-node summary::-webkit-details-marker {
+    display: none;
+  }
+  .call-chain-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 0.18rem;
+  }
+  .call-chain-title {
+    font-weight: 700;
+  }
+  .call-chain-summary {
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+  }
+  .call-chain-children {
+    padding: 0 0.9rem 0.85rem 1rem;
+    margin-left: 1rem;
+    border-left: 1px dashed rgba(124, 196, 255, 0.12);
+  }
+  .call-chain-node.depth-0 {
+    background: linear-gradient(180deg, rgba(31, 40, 58, 0.96) 0%, rgba(18, 23, 34, 0.96) 100%);
+    border-color: rgba(124, 196, 255, 0.18);
+  }
+  .call-chain-node.is-leaf summary {
+    cursor: default;
   }
   .metric-label {
     color: var(--text-secondary);
@@ -116,6 +240,9 @@
     .two-column {
       grid-template-columns: 1fr;
     }
+    .call-chain-header {
+      flex-direction: column;
+    }
   }
 {% endblock %}
 
@@ -126,6 +253,23 @@
       <p><a class="nav-link" href="/audit/commitment-extraction">Back to audit dashboard</a></p>
       <h1>Platform Observability Dashboard</h1>
       <p class="muted">{{ system_summary }}</p>
+    </section>
+
+    <section class="panel call-chain-panel">
+      <div class="call-chain-header">
+        <div>
+          <h2>Observability Call Chain</h2>
+          <p class="muted">Hierarchical view of the product observability scan, with expandable nodes and explicit execution states.</p>
+        </div>
+        <div class="call-chain-legend" aria-label="Call chain status legend">
+          {% for item in call_chain.legend %}
+            <span class="call-chain-status {{ item.status }}">{{ item.label }}</span>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="call-chain-tree" aria-label="Observability call chain">
+        {{ _self.call_chain_node(call_chain.root, 0) }}
+      </div>
     </section>
 
     <section class="panel">
