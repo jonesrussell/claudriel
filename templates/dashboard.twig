@@ -539,7 +539,9 @@
                         {% for item in schedule %}
                             <div class="panel-item schedule" data-chat="Tell me about {{ item.title }}">
                                 {{ item.title }}
-                                <span class="item-meta">{{ item.start_time }}</span>
+                                <span class="item-meta">
+                                    {{ item.start_time|date('g:i A') }}{% if item.end_time %} - {{ item.end_time|date('g:i A') }}{% endif %}
+                                </span>
                             </div>
                         {% endfor %}
                     {% else %}
@@ -996,6 +998,31 @@
             return payload;
         }
 
+        function formatScheduleTime(startTime, endTime) {
+            if (!startTime) {
+                return '';
+            }
+
+            var start = new Date(startTime);
+            if (isNaN(start.getTime())) {
+                return startTime;
+            }
+
+            var options = { hour: 'numeric', minute: '2-digit' };
+            var label = start.toLocaleTimeString([], options);
+
+            if (!endTime) {
+                return label;
+            }
+
+            var end = new Date(endTime);
+            if (isNaN(end.getTime())) {
+                return label;
+            }
+
+            return label + ' - ' + end.toLocaleTimeString([], options);
+        }
+
         // ── Sidebar Rebuild from Brief Data ──
         function rebuildSidebar(data) {
             data = normalizeBriefPayload(data);
@@ -1012,7 +1039,7 @@
                     scheduleItems.innerHTML = data.schedule.map(function(item) {
                         return '<div class="panel-item schedule" data-chat="Tell me about ' + esc(item.title) + '">'
                             + esc(item.title)
-                            + '<span class="item-meta">' + esc(item.start_time || '') + '</span></div>';
+                            + '<span class="item-meta">' + esc(formatScheduleTime(item.start_time || '', item.end_time || '')) + '</span></div>';
                     }).join('');
                 } else {
                     scheduleItems.innerHTML = '<div class="panel-empty">No schedule items.</div>';
