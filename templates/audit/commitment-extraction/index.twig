@@ -235,6 +235,28 @@
       </article>
     </section>
 
+    <section class="panel" style="margin-bottom: 1rem;">
+      <h2>Failure Categories</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Category</th>
+            <th>Count</th>
+            <th>Rate</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for category in failure_category_distribution %}
+            <tr>
+              <td><code>{{ category.category }}</code></td>
+              <td>{{ category.count }}</td>
+              <td>{{ (category.rate * 100)|round(1) }}%</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </section>
+
     <section class="panel">
       <h2>Low-Confidence Log Entries</h2>
       {% if logs.items %}
@@ -244,6 +266,7 @@
               <th>ID</th>
               <th>Sender</th>
               <th>Confidence</th>
+              <th>Failure category</th>
               <th>Created</th>
               <th>Action</th>
             </tr>
@@ -254,6 +277,7 @@
                 <td>{{ log.id }}</td>
                 <td>{{ log.sender ?? 'unknown' }}</td>
                 <td>{{ (log.confidence * 100)|round(1) }}%</td>
+                <td><code>{{ log.failure_category }}</code></td>
                 <td>{{ log.created_at ?? 'n/a' }}</td>
                 <td><a class="log-link" href="/audit/commitment-extraction/log/{{ log.id }}">Inspect log</a></td>
               </tr>

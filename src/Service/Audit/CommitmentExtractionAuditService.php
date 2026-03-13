@@ -136,6 +136,58 @@ final class CommitmentExtractionAuditService
     }
 
     /**
+     * @return array<string, int>
+     */
+    public function getFailureCategoryCounts(): array
+    {
+        $counts = $this->initializeFailureCategoryCounts();
+
+        foreach ($this->getLogEntries() as $log) {
+            $category = $this->normalizeFailureCategory($log->get('failure_category'));
+            $counts[$category]++;
+        }
+
+        return $counts;
+    }
+
+    /**
+     * @return list<array{category: string, count: int, rate: float}>
+     */
+    public function getFailureCategoryDistribution(): array
+    {
+        return $this->buildFailureCategoryDistribution($this->getFailureCategoryCounts());
+    }
+
+    /**
+     * @return array{
+     *   sender: string,
+     *   total_low_confidence_logs: int,
+     *   categories: list<array{category: string, count: int, rate: float}>
+     * }
+     */
+    public function getSenderFailureCategories(string $email): array
+    {
+        $sender = $this->normalizeSender($email) ?? strtolower(trim($email));
+        $counts = $this->initializeFailureCategoryCounts();
+        $total = 0;
+
+        foreach ($this->getLogEntries() as $log) {
+            if ($this->resolveSenderForLog($log) !== $sender) {
+                continue;
+            }
+
+            $counts[$this->normalizeFailureCategory($log->get('failure_category'))]++;
+            $total++;
+        }
+
+        return [
+            'sender' => $sender,
+            'total_low_confidence_logs' => $total,
+            'categories' => $this->buildFailureCategoryDistribution($counts),
+        ];
+    }
+
+    /**
      * @return array{
      *   window_days: int,
      *   generated_at: string,
@@ -143,7 +195,8 @@ final class CommitmentExtractionAuditService
      *     total_attempts: int,
      *     successful_extractions: int,
      *     low_confidence_logs: int,
-     *     average_confidence: float
+     *     average_confidence: float,
+     *     failure_categories: array<string, int>
      *   },
      *   series: list<array{
      *     date: string,
@@ -195,7 +248,7 @@ final class CommitmentExtractionAuditService
         return [
             'window_days' => $days,
             'generated_at' => gmdate(DateTimeInterface::ATOM),
-            'summary' => $this->buildTrendSummary($series),
+            'summary' => $this->buildTrendSummary($series, $this->getFailureCategoryCounts()),
             'series' => $this->finalizeSeries($series),
         ];
     }
@@ -208,7 +261,8 @@ final class CommitmentExtractionAuditService
      *     total_attempts: int,
      *     successful_extractions: int,
      *     low_confidence_logs: int,
-     *     average_confidence: float
+     *     average_confidence: float,
+     *     failure_categories: array<string, int>
      *   },
      *   series: list<array{
      *     month: string,
@@ -260,7 +314,7 @@ final class CommitmentExtractionAuditService
         return [
             'window_months' => $months,
             'generated_at' => gmdate(DateTimeInterface::ATOM),
-            'summary' => $this->buildTrendSummary($series),
+            'summary' => $this->buildTrendSummary($series, $this->getFailureCategoryCounts()),
             'series' => $this->finalizeSeries($series),
         ];
     }
@@ -275,9 +329,11 @@ final class CommitmentExtractionAuditService
      *     successful_extractions: int,
      *     low_confidence_logs: int,
      *     low_confidence_rate: float,
-     *     average_confidence: float
+     *     average_confidence: float,
+     *     failure_categories: array<string, int>
      *   },
      *   confidence_distribution: list<array{label: string, count: int}>,
+     *   failure_categories: list<array{category: string, count: int, rate: float}>,
      *   daily_trends: list<array{
      *     date: string,
      *     label: string,
@@ -295,6 +351,7 @@ final class CommitmentExtractionAuditService
         $days = max(1, $days);
         $end = new DateTimeImmutable('today');
         $start = $end->sub(new DateInterval(sprintf('P%dD', $days - 1)));
+        $failureCategoryCounts = $this->initializeFailureCategoryCounts();
 
         $distribution = [];
         foreach (array_keys(self::CONFIDENCE_BUCKETS) as $label) {
@@ -322,6 +379,9 @@ final class CommitmentExtractionAuditService
             }
 
             $distribution[$this->resolveBucketLabel($attempt['confidence'])]++;
+            if ($attempt['is_low_confidence']) {
+                $failureCategoryCounts[$this->normalizeFailureCategory($attempt['failure_category'])]++;
+            }
 
             $occurredAt = $this->parseDateTime($attempt['occurred_at']);
             if ($occurredAt === null) {
@@ -388,8 +448,10 @@ final class CommitmentExtractionAuditService
                 'average_confidence' => $totals['total_attempts'] > 0
                     ? round($totals['_confidence_total'] / $totals['total_attempts'], 4)
                     : 0.0,
+                'failure_categories' => $failureCategoryCounts,
             ],
             'confidence_distribution' => $confidenceDistribution,
+            'failure_categories' => $this->buildFailureCategoryDistribution($failureCategoryCounts),
             'daily_trends' => $dailyTrends,
         ];
     }
@@ -479,6 +541,7 @@ final class CommitmentExtractionAuditService
      *   confidence: float,
      *   sender: string|null,
      *   occurred_at: string|null,
+     *   failure_category: string|null,
      *   is_successful: bool,
      *   is_low_confidence: bool
      * }>
@@ -492,6 +555,7 @@ final class CommitmentExtractionAuditService
                 'confidence' => (float) ($commitment->get('confidence') ?? 0.0),
                 'sender' => $this->resolveSenderForCommitment($commitment),
                 'occurred_at' => $this->resolveOccurredAtForCommitment($commitment),
+                'failure_category' => null,
                 'is_successful' => true,
                 'is_low_confidence' => false,
             ];
@@ -502,6 +566,7 @@ final class CommitmentExtractionAuditService
                 'confidence' => (float) ($log->get('confidence') ?? 0.0),
                 'sender' => $this->resolveSenderForLog($log),
                 'occurred_at' => $this->resolveOccurredAtForLog($log),
+                'failure_category' => $this->normalizeFailureCategory($log->get('failure_category')),
                 'is_successful' => false,
                 'is_low_confidence' => true,
             ];
@@ -515,6 +580,7 @@ final class CommitmentExtractionAuditService
      *   confidence: float,
      *   sender: string|null,
      *   occurred_at: string|null,
+     *   failure_category: string|null,
      *   is_successful: bool,
      *   is_low_confidence: bool
      * }>
@@ -661,10 +727,11 @@ final class CommitmentExtractionAuditService
      *   total_attempts: int,
      *   successful_extractions: int,
      *   low_confidence_logs: int,
-     *   average_confidence: float
+     *   average_confidence: float,
+     *   failure_categories: array<string, int>
      * }
      */
-    private function buildTrendSummary(array $series): array
+    private function buildTrendSummary(array $series, array $failureCategories): array
     {
         $totalAttempts = 0;
         $successfulExtractions = 0;
@@ -683,6 +750,7 @@ final class CommitmentExtractionAuditService
             'successful_extractions' => $successfulExtractions,
             'low_confidence_logs' => $lowConfidenceLogs,
             'average_confidence' => $totalAttempts > 0 ? round($confidenceTotal / $totalAttempts, 4) : 0.0,
+            'failure_categories' => $failureCategories,
         ];
     }
 
@@ -720,6 +788,48 @@ final class CommitmentExtractionAuditService
     }
 
     /**
+     * @return array<string, int>
+     */
+    private function initializeFailureCategoryCounts(): array
+    {
+        $counts = [];
+        foreach (CommitmentExtractionLog::FAILURE_CATEGORIES as $category) {
+            $counts[$category] = 0;
+        }
+
+        return $counts;
+    }
+
+    private function normalizeFailureCategory(mixed $category): string
+    {
+        if (is_string($category) && in_array($category, CommitmentExtractionLog::FAILURE_CATEGORIES, true)) {
+            return $category;
+        }
+
+        return 'unknown';
+    }
+
+    /**
+     * @param  array<string, int>  $counts
+     * @return list<array{category: string, count: int, rate: float}>
+     */
+    private function buildFailureCategoryDistribution(array $counts): array
+    {
+        $total = array_sum($counts);
+        $distribution = [];
+
+        foreach ($counts as $category => $count) {
+            $distribution[] = [
+                'category' => $category,
+                'count' => $count,
+                'rate' => $total > 0 ? round($count / $total, 4) : 0.0,
+            ];
+        }
+
+        return $distribution;
+    }
+
+    /**
      * @return array<string, mixed>
      */
     private function normalizeLog(CommitmentExtractionLog $log): array
@@ -731,6 +841,7 @@ final class CommitmentExtractionAuditService
             'raw_event_payload' => $log->get('raw_event_payload'),
             'extracted_commitment_payload' => $log->get('extracted_commitment_payload'),
             'confidence' => (float) ($log->get('confidence') ?? 0.0),
+            'failure_category' => $this->normalizeFailureCategory($log->get('failure_category')),
             'created_at' => $log->get('created_at'),
             'sender' => $this->resolveSenderForLog($log),
         ];

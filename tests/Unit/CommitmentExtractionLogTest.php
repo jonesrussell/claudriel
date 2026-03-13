@@ -50,6 +50,7 @@ final class CommitmentExtractionLogTest extends TestCase
         self::assertSame('{"subject":"Need help","body":"Can you maybe send this later?"}', $logs[0]->get('raw_event_payload'));
         self::assertSame('{"title":"Send this later","confidence":0.5}', $logs[0]->get('extracted_commitment_payload'));
         self::assertSame(0.5, $logs[0]->get('confidence'));
+        self::assertSame('insufficient_context', $logs[0]->get('failure_category'));
         self::assertNotEmpty($logs[0]->get('created_at'));
     }
 }

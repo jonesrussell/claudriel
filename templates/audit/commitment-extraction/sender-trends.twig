@@ -145,6 +145,28 @@
     </section>
 
     <section class="panel">
+      <h2>Failure Category Breakdown</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Category</th>
+            <th>Count</th>
+            <th>Rate</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for category in sender_failure_categories.categories %}
+            <tr>
+              <td><code>{{ category.category }}</code></td>
+              <td>{{ category.count }}</td>
+              <td>{{ (category.rate * 100)|round(1) }}%</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </section>
+
+    <section class="panel">
       <h2>Daily Trend</h2>
       <table>
         <thead>

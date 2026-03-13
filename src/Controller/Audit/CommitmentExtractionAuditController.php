@@ -26,6 +26,8 @@ final class CommitmentExtractionAuditController
         $payload = [
             'metrics' => $service->getSummaryMetrics(),
             'confidence_distribution' => $service->getConfidenceDistribution(),
+            'failure_category_counts' => $service->getFailureCategoryCounts(),
+            'failure_category_distribution' => $service->getFailureCategoryDistribution(),
             'top_senders' => $service->getTopSenders(),
             'logs' => $service->getPaginatedLogs($page, $perPage),
         ];
@@ -105,10 +107,12 @@ final class CommitmentExtractionAuditController
         $service = new CommitmentExtractionAuditService($this->entityTypeManager);
         $senderEmail = rawurldecode((string) ($params['email'] ?? ''));
         $senderTrends = $service->getSenderTrends($senderEmail, 30);
+        $senderFailureCategories = $service->getSenderFailureCategories($senderEmail);
 
         if ($this->twig !== null) {
             $html = $this->twig->render('audit/commitment-extraction/sender-trends.twig', [
                 'sender_trends' => $senderTrends,
+                'sender_failure_categories' => $senderFailureCategories,
             ]);
 
             return new SsrResponse(
@@ -118,7 +122,10 @@ final class CommitmentExtractionAuditController
             );
         }
 
-        return $this->json(['sender_trends' => $senderTrends]);
+        return $this->json([
+            'sender_trends' => $senderTrends,
+            'sender_failure_categories' => $senderFailureCategories,
+        ]);
     }
 
     /**
@@ -134,12 +141,17 @@ final class CommitmentExtractionAuditController
             'daily_trends_7' => $service->getDailyTrends(7),
             'daily_trends_30' => $service->getDailyTrends(30),
             'monthly_trends' => $service->getMonthlyTrends(3),
+            'failure_category_counts' => $service->getFailureCategoryCounts(),
+            'failure_category_distribution' => $service->getFailureCategoryDistribution(),
             'sender_lookup' => $senderLookup,
             'sender_lookup_url' => $senderLookup !== ''
                 ? sprintf('/audit/commitment-extraction/sender/%s', rawurlencode($senderLookup))
                 : null,
             'sender_preview' => $senderLookup !== ''
                 ? $service->getSenderTrends($senderLookup, 30)
+                : null,
+            'sender_failure_categories_preview' => $senderLookup !== ''
+                ? $service->getSenderFailureCategories($senderLookup)
                 : null,
         ];
     }

@@ -296,6 +296,26 @@
             <div class="summary-value">{{ (sender_preview.summary.average_confidence * 100)|round(1) }}%</div>
           </div>
         </div>
+        {% if sender_failure_categories_preview %}
+          <table style="margin-top: 1rem;">
+            <thead>
+              <tr>
+                <th>Failure category</th>
+                <th>Count</th>
+                <th>Rate</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for category in sender_failure_categories_preview.categories %}
+                <tr>
+                  <td><code>{{ category.category }}</code></td>
+                  <td>{{ category.count }}</td>
+                  <td>{{ (category.rate * 100)|round(1) }}%</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        {% endif %}
         <p class="muted">Previewing the last {{ sender_preview.window_days }} days for <strong>{{ sender_preview.sender }}</strong>.</p>
         {% if sender_lookup_url %}
           <p><a class="sender-link" href="{{ sender_lookup_url }}">Open sender trend detail</a></p>
@@ -306,6 +326,25 @@
     </section>
 
     <section class="panel" style="margin-top: 1rem;">
+      <h3>Failure Category Distribution</h3>
+      <table style="margin-bottom: 1rem;">
+        <thead>
+          <tr>
+            <th>Category</th>
+            <th>Count</th>
+            <th>Rate</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for category in failure_category_distribution %}
+            <tr>
+              <td><code>{{ category.category }}</code></td>
+              <td>{{ category.count }}</td>
+              <td>{{ (category.rate * 100)|round(1) }}%</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
       <h3>Monthly Rollup</h3>
       <p class="muted">Monthly aggregation is included for longer-term tuning baselines and API consumers.</p>
       <table>
