@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Claudriel\Controller\Audit;
 
 use Claudriel\Service\Audit\CommitmentExtractionAuditService;
+use Claudriel\Service\Audit\CommitmentExtractionDriftDetector;
 use Symfony\Component\HttpFoundation\Request;
 use Twig\Environment;
 use Waaseyaa\Entity\EntityTypeManager;
@@ -128,6 +129,50 @@ final class CommitmentExtractionAuditController
         ]);
     }
 
+    public function drift(array $params = [], array $query = [], mixed $account = null, ?Request $httpRequest = null): SsrResponse
+    {
+        $payload = $this->buildDriftPayload($query, $httpRequest);
+
+        if ($this->twig !== null) {
+            $html = $this->twig->render('audit/commitment-extraction/drift.twig', $payload);
+
+            return new SsrResponse(
+                content: $html,
+                statusCode: 200,
+                headers: ['Content-Type' => 'text/html; charset=UTF-8'],
+            );
+        }
+
+        return $this->json($payload);
+    }
+
+    public function driftJson(array $params = [], array $query = [], mixed $account = null, ?Request $httpRequest = null): SsrResponse
+    {
+        return $this->json($this->buildDriftPayload($query, $httpRequest));
+    }
+
+    public function senderDrift(array $params = [], array $query = [], mixed $account = null, ?Request $httpRequest = null): SsrResponse
+    {
+        $service = new CommitmentExtractionAuditService($this->entityTypeManager);
+        $detector = new CommitmentExtractionDriftDetector($service);
+        $senderEmail = rawurldecode((string) ($params['email'] ?? ''));
+        $senderDrift = $detector->detectSenderDrift($senderEmail, 30);
+
+        if ($this->twig !== null) {
+            $html = $this->twig->render('audit/commitment-extraction/sender-drift.twig', [
+                'sender_drift' => $senderDrift,
+            ]);
+
+            return new SsrResponse(
+                content: $html,
+                statusCode: 200,
+                headers: ['Content-Type' => 'text/html; charset=UTF-8'],
+            );
+        }
+
+        return $this->json(['sender_drift' => $senderDrift]);
+    }
+
     /**
      * @return array<string, mixed>
      */
@@ -152,6 +197,28 @@ final class CommitmentExtractionAuditController
                 : null,
             'sender_failure_categories_preview' => $senderLookup !== ''
                 ? $service->getSenderFailureCategories($senderLookup)
+                : null,
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function buildDriftPayload(array $query = [], ?Request $httpRequest = null): array
+    {
+        $service = new CommitmentExtractionAuditService($this->entityTypeManager);
+        $detector = new CommitmentExtractionDriftDetector($service);
+        $senderLookup = trim((string) ($query['sender_email'] ?? $httpRequest?->query->get('sender_email', '')));
+        $senderLookup = $senderLookup !== '' ? strtolower($senderLookup) : '';
+
+        return [
+            'drift' => $detector->detectDailyDrift(14),
+            'sender_lookup' => $senderLookup,
+            'sender_lookup_url' => $senderLookup !== ''
+                ? sprintf('/audit/commitment-extraction/drift/sender/%s', rawurlencode($senderLookup))
+                : null,
+            'sender_drift_preview' => $senderLookup !== ''
+                ? $detector->detectSenderDrift($senderLookup, 30)
                 : null,
         ];
     }

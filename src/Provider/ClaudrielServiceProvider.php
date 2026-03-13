@@ -316,6 +316,35 @@ final class ClaudrielServiceProvider extends ServiceProvider
                 ->build(),
         );
 
+        $router->addRoute(
+            'claudriel.audit.commitment_extraction.drift',
+            RouteBuilder::create('/audit/commitment-extraction/drift')
+                ->controller(CommitmentExtractionAuditController::class.'::drift')
+                ->allowAll()
+                ->methods('GET')
+                ->render()
+                ->build(),
+        );
+
+        $router->addRoute(
+            'claudriel.audit.commitment_extraction.drift_json',
+            RouteBuilder::create('/audit/commitment-extraction/drift.json')
+                ->controller(CommitmentExtractionAuditController::class.'::driftJson')
+                ->allowAll()
+                ->methods('GET')
+                ->build(),
+        );
+
+        $router->addRoute(
+            'claudriel.audit.commitment_extraction.sender_drift',
+            RouteBuilder::create('/audit/commitment-extraction/drift/sender/{email}')
+                ->controller(CommitmentExtractionAuditController::class.'::senderDrift')
+                ->allowAll()
+                ->methods('GET')
+                ->render()
+                ->build(),
+        );
+
         // Catch-all: renders 404 for any unmatched path, preventing the
         // foundation render pipeline from failing on PathAliasResolver.
         // @see https://github.com/jonesrussell/claudriel/issues/21

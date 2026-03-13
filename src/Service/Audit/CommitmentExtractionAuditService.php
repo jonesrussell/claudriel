@@ -189,6 +189,70 @@ final class CommitmentExtractionAuditService
 
     /**
      * @return array{
+     *   start_date: string,
+     *   end_date: string,
+     *   total_attempts: int,
+     *   successful_extractions: int,
+     *   low_confidence_logs: int,
+     *   average_confidence: float,
+     *   low_confidence_rate: float,
+     *   failure_category_counts: array<string, int>,
+     *   failure_category_distribution: list<array{category: string, count: int, rate: float}>
+     * }
+     */
+    public function getQualitySnapshot(int $days, ?DateTimeImmutable $endDate = null, ?string $senderEmail = null): array
+    {
+        $days = max(1, $days);
+        $endDate = ($endDate ?? new DateTimeImmutable('today'))->setTime(0, 0);
+        $startDate = $endDate->sub(new DateInterval(sprintf('P%dD', $days - 1)));
+        $sender = $senderEmail !== null ? ($this->normalizeSender($senderEmail) ?? strtolower(trim($senderEmail))) : null;
+
+        $totalAttempts = 0;
+        $successfulExtractions = 0;
+        $lowConfidenceLogs = 0;
+        $confidenceTotal = 0.0;
+        $failureCategoryCounts = $this->initializeFailureCategoryCounts();
+
+        foreach ($this->getNormalizedAttempts() as $attempt) {
+            if ($sender !== null && $attempt['sender'] !== $sender) {
+                continue;
+            }
+
+            $occurredAt = $this->parseDateTime($attempt['occurred_at']);
+            if ($occurredAt === null) {
+                continue;
+            }
+
+            $occurredDate = $occurredAt->setTime(0, 0);
+            if ($occurredDate < $startDate || $occurredDate > $endDate) {
+                continue;
+            }
+
+            $totalAttempts++;
+            $successfulExtractions += $attempt['is_successful'] ? 1 : 0;
+            $lowConfidenceLogs += $attempt['is_low_confidence'] ? 1 : 0;
+            $confidenceTotal += $attempt['confidence'];
+
+            if ($attempt['is_low_confidence']) {
+                $failureCategoryCounts[$this->normalizeFailureCategory($attempt['failure_category'])]++;
+            }
+        }
+
+        return [
+            'start_date' => $startDate->format('Y-m-d'),
+            'end_date' => $endDate->format('Y-m-d'),
+            'total_attempts' => $totalAttempts,
+            'successful_extractions' => $successfulExtractions,
+            'low_confidence_logs' => $lowConfidenceLogs,
+            'average_confidence' => $totalAttempts > 0 ? round($confidenceTotal / $totalAttempts, 4) : 0.0,
+            'low_confidence_rate' => $totalAttempts > 0 ? round($lowConfidenceLogs / $totalAttempts, 4) : 0.0,
+            'failure_category_counts' => $failureCategoryCounts,
+            'failure_category_distribution' => $this->buildFailureCategoryDistribution($failureCategoryCounts),
+        ];
+    }
+
+    /**
+     * @return array{
      *   window_days: int,
      *   generated_at: string,
      *   summary: array{
