@@ -633,7 +633,7 @@
                             </div>
                         {% endfor %}
                     {% else %}
-                        <div class="panel-empty">No schedule items.</div>
+                        <div class="panel-empty">{{ schedule_summary|default('Your day is clear') }}</div>
                     {% endif %}
                 </div>
             </div>
@@ -1140,7 +1140,7 @@
                             + '<span class="item-meta">' + esc(formatScheduleTime(item.start_time || '', item.end_time || '')) + '</span></div>';
                     }).join('');
                 } else {
-                    scheduleItems.innerHTML = '<div class="panel-empty">No schedule items.</div>';
+                    scheduleItems.innerHTML = '<div class="panel-empty">' + esc(data.schedule_summary || 'Your day is clear') + '</div>';
                 }
             }
 

@@ -67,6 +67,7 @@ final class DayBriefControllerTest extends TestCase
         $body = json_decode($response->content, true);
         self::assertIsArray($body);
         self::assertArrayHasKey('schedule', $body);
+        self::assertArrayHasKey('schedule_summary', $body);
         self::assertArrayHasKey('job_hunt', $body);
         self::assertArrayHasKey('people', $body);
         self::assertArrayHasKey('creators', $body);

@@ -211,6 +211,9 @@ TOOLS;
             foreach (array_slice($brief['schedule'], 0, 5) as $item) {
                 $lines[] = "  - {$item['title']} ({$item['start_time']})";
             }
+        } elseif (($brief['schedule_summary'] ?? '') !== '') {
+            $lines[] = "\nSchedule:";
+            $lines[] = '  - '.$brief['schedule_summary'];
         }
 
         if (! empty($brief['job_hunt'])) {

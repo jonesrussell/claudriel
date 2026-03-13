@@ -12,6 +12,10 @@ use Claudriel\Entity\ScheduleEntry;
 use Claudriel\Entity\TriageEntry;
 use Claudriel\Entity\Workspace;
 use Claudriel\Support\DriftDetector;
+use Claudriel\Temporal\AtomicTimeService;
+use Claudriel\Temporal\Clock\MonotonicClockInterface;
+use Claudriel\Temporal\Clock\WallClockInterface;
+use Claudriel\Temporal\RequestTimeSnapshotStore;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Waaseyaa\Entity\EntityType;
@@ -71,6 +75,24 @@ final class DayBriefAssemblerTest extends TestCase
             $this->scheduleRepo,
             null,
             $this->triageRepo,
+            new AtomicTimeService(
+                wallClock: new class implements WallClockInterface
+                {
+                    public function now(): \DateTimeImmutable
+                    {
+                        return new \DateTimeImmutable('today 08:00:00', new \DateTimeZone('UTC'));
+                    }
+                },
+                monotonicClock: new class implements MonotonicClockInterface
+                {
+                    public function now(): int
+                    {
+                        return 1000;
+                    }
+                },
+                snapshotStore: new RequestTimeSnapshotStore,
+                defaultTimezone: 'UTC',
+            ),
         );
     }
 
@@ -79,6 +101,7 @@ final class DayBriefAssemblerTest extends TestCase
         $brief = $this->assembler->assemble('user-1', new \DateTimeImmutable('-24 hours'));
 
         self::assertArrayHasKey('schedule', $brief);
+        self::assertArrayHasKey('schedule_summary', $brief);
         self::assertArrayHasKey('temporal_awareness', $brief);
         self::assertArrayHasKey('temporal_suggestions', $brief);
         self::assertArrayHasKey('job_hunt', $brief);
@@ -113,6 +136,7 @@ final class DayBriefAssemblerTest extends TestCase
         self::assertSame('2026-03-14T12:00:00+00:00', $brief['generated_at']);
         self::assertSame('America/Toronto', $brief['time_snapshot']['timezone']);
         self::assertSame(1234, $brief['time_snapshot']['monotonic_ns']);
+        self::assertSame('Your day is clear', $brief['schedule_summary']);
     }
 
     public function test_includes_temporal_awareness_for_current_and_next_blocks(): void

@@ -7,6 +7,8 @@ namespace Claudriel\Controller;
 use Claudriel\Entity\ScheduleEntry;
 use Claudriel\Routing\RequestScopeViolation;
 use Claudriel\Routing\TenantWorkspaceResolver;
+use Claudriel\Temporal\RelativeScheduleQueryService;
+use Claudriel\Temporal\TemporalContextFactory;
 use Symfony\Component\HttpFoundation\Request;
 use Waaseyaa\Entity\EntityTypeManager;
 use Waaseyaa\SSR\SsrResponse;
@@ -26,6 +28,13 @@ final class ScheduleApiController
     {
         $resolver = new TenantWorkspaceResolver($this->entityTypeManager);
         $scope = $resolver->resolve($query, $account);
+        $snapshot = (new TemporalContextFactory($this->entityTypeManager))->snapshotForInteraction(
+            scopeKey: 'schedule-api:'.(is_string($query['request_id'] ?? null) ? $query['request_id'] : 'list'),
+            tenantId: $scope->tenantId,
+            workspaceUuid: $scope->workspaceId(),
+            account: $account,
+            requestTimezone: is_string($query['timezone'] ?? null) ? $query['timezone'] : null,
+        );
         $entries = array_values(array_filter(
             $this->loadAll(),
             function (ScheduleEntry $entry) use ($query, $resolver, $scope): bool {
@@ -51,9 +60,20 @@ final class ScheduleApiController
         ));
 
         usort($entries, fn (ScheduleEntry $a, ScheduleEntry $b): int => ((string) $a->get('starts_at')) <=> ((string) $b->get('starts_at')));
+        $relative = (new RelativeScheduleQueryService)->filter(
+            array_map(fn (ScheduleEntry $entry): array => [
+                'title' => (string) ($entry->get('title') ?? ''),
+                'start_time' => (string) ($entry->get('starts_at') ?? ''),
+                'end_time' => (string) ($entry->get('ends_at') ?? ''),
+                'source' => (string) ($entry->get('source') ?? 'manual'),
+            ], $entries),
+            $snapshot,
+        );
 
         return $this->json([
-            'schedule' => array_map(fn (ScheduleEntry $entry) => $this->serialize($entry), $entries),
+            'schedule' => $relative['schedule'],
+            'schedule_summary' => $relative['schedule_summary'],
+            'time_snapshot' => $snapshot->toArray(),
         ]);
     }
 
