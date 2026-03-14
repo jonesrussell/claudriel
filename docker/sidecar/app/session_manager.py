@@ -18,6 +18,7 @@ class Session:
 class SessionManager:
     def __init__(self, timeout_minutes: int = 15):
         self._sessions: dict[str, Session] = {}
+        self._workspace_bootstraps: dict[tuple[str, str], float] = {}
         self._timeout_seconds = timeout_minutes * 60
         self._cleanup_task: asyncio.Task | None = None
 
@@ -32,6 +33,14 @@ class SessionManager:
 
     def remove(self, session_id: str) -> bool:
         return self._sessions.pop(session_id, None) is not None
+
+    def bootstrap_workspace(self, tenant_id: str, workspace_id: str) -> str:
+        key = (tenant_id, workspace_id)
+        if key in self._workspace_bootstraps:
+            return "existing"
+
+        self._workspace_bootstraps[key] = time.time()
+        return "created"
 
     def cleanup_expired(self) -> list[str]:
         expired = [
@@ -61,3 +70,7 @@ class SessionManager:
     @property
     def active_count(self) -> int:
         return len(self._sessions)
+
+    @property
+    def workspace_bootstrap_count(self) -> int:
+        return len(self._workspace_bootstraps)

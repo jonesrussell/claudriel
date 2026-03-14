@@ -16,6 +16,9 @@
 namespace Deployer;
 
 require 'recipe/common.php';
+require_once __DIR__.'/vendor/autoload.php';
+
+use Claudriel\Support\PublicAccountDeployValidationScript;
 
 // ---------------------------------------------------------------------------
 // Project
@@ -110,6 +113,9 @@ task('deploy:validate', function (): void {
         writeln('Running public brief JSON smoke probe');
         run("curl --silent --show-error --fail --header 'Accept: application/json' {$baseUrl}/brief > {$briefJsonFile}");
         run("grep -q '\"counts\"' {$briefJsonFile}");
+
+        writeln('Running public signup and login probes');
+        run((new PublicAccountDeployValidationScript)->build($baseUrl));
 
         writeln('Running public chat SSE smoke probe');
         run(strtr(<<<'BASH'

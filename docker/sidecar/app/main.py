@@ -44,9 +44,18 @@ class ChatRequest(BaseModel):
     workspace_id: str | None = None
 
 
+class WorkspaceBootstrapRequest(BaseModel):
+    tenant_id: str
+    workspace_id: str
+
+
 @app.get("/health")
 async def health():
-    return {"status": "ok", "active_sessions": session_manager.active_count if session_manager else 0}
+    return {
+        "status": "ok",
+        "active_sessions": session_manager.active_count if session_manager else 0,
+        "bootstrapped_workspaces": session_manager.workspace_bootstrap_count if session_manager else 0,
+    }
 
 
 @app.post("/chat")
@@ -137,6 +146,22 @@ async def chat(
             "X-Accel-Buffering": "no",
         },
     )
+
+
+@app.post("/bootstrap/workspace")
+async def bootstrap_workspace(
+    request: WorkspaceBootstrapRequest,
+    _key: str = Depends(verify_api_key),
+):
+    if not session_manager:
+        raise HTTPException(status_code=503, detail="Service not ready")
+
+    state = session_manager.bootstrap_workspace(request.tenant_id, request.workspace_id)
+    return {
+        "state": state,
+        "tenant_id": request.tenant_id,
+        "workspace_id": request.workspace_id,
+    }
 
 
 @app.delete("/chat/{session_id}")

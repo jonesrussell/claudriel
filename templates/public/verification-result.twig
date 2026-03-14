@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Email Verification</title>
+</head>
+<body>
+    <main>
+        <h1>Email verification {{ status }}</h1>
+        {% if tenant %}
+            <p>Tenant ready: {{ tenant.get('name') }}</p>
+        {% endif %}
+        {% if workspace %}
+            <p>Workspace ready: {{ workspace.get('name') }}</p>
+            {% if workspace_sidecar_state %}
+                <p>Sidecar ready: {{ workspace_sidecar_state.state }}</p>
+            {% endif %}
+        {% endif %}
+    </main>
+</body>
+</html>

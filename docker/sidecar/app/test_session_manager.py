@@ -41,3 +41,12 @@ def test_touch_refreshes_activity():
     session.last_activity = time.time() - 100
     session.touch()
     assert not session.is_expired(1)
+
+
+def test_workspace_bootstrap_is_idempotent_per_tenant_and_workspace():
+    manager = SessionManager(timeout_minutes=15)
+    assert manager.bootstrap_workspace("tenant-1", "workspace-a") == "created"
+    assert manager.bootstrap_workspace("tenant-1", "workspace-a") == "existing"
+    assert manager.bootstrap_workspace("tenant-1", "workspace-b") == "created"
+    assert manager.bootstrap_workspace("tenant-2", "workspace-a") == "created"
+    assert manager.workspace_bootstrap_count == 3

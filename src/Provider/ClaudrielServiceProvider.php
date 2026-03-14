@@ -38,6 +38,9 @@ use Claudriel\Controller\IngestController;
 use Claudriel\Controller\NotFoundController;
 use Claudriel\Controller\PeopleApiController;
 use Claudriel\Controller\Platform\ObservabilityDashboardController;
+use Claudriel\Controller\PublicAccountController;
+use Claudriel\Controller\PublicPasswordResetController;
+use Claudriel\Controller\PublicSessionController;
 use Claudriel\Controller\ScheduleApiController;
 use Claudriel\Controller\TemporalNotificationApiController;
 use Claudriel\Controller\TriageApiController;
@@ -45,6 +48,8 @@ use Claudriel\Controller\WorkspaceApiController;
 use Claudriel\Domain\DayBrief\Assembler\DayBriefAssembler;
 use Claudriel\Domain\DayBrief\Service\BriefSessionStore;
 use Claudriel\Entity\Account;
+use Claudriel\Entity\AccountPasswordResetToken;
+use Claudriel\Entity\AccountVerificationToken;
 use Claudriel\Entity\Artifact;
 use Claudriel\Entity\ChatMessage;
 use Claudriel\Entity\ChatSession;
@@ -57,6 +62,7 @@ use Claudriel\Entity\Person;
 use Claudriel\Entity\ScheduleEntry;
 use Claudriel\Entity\Skill;
 use Claudriel\Entity\TemporalNotification;
+use Claudriel\Entity\Tenant;
 use Claudriel\Entity\TriageEntry;
 use Claudriel\Entity\Workspace;
 use Claudriel\Ingestion\EventCategorizer;
@@ -84,6 +90,27 @@ final class ClaudrielServiceProvider extends ServiceProvider
             label: 'Account',
             class: Account::class,
             keys: ['id' => 'aid', 'uuid' => 'uuid', 'label' => 'name'],
+        ));
+
+        $this->entityType(new EntityType(
+            id: 'account_verification_token',
+            label: 'Account Verification Token',
+            class: AccountVerificationToken::class,
+            keys: ['id' => 'avtid', 'uuid' => 'uuid'],
+        ));
+
+        $this->entityType(new EntityType(
+            id: 'account_password_reset_token',
+            label: 'Account Password Reset Token',
+            class: AccountPasswordResetToken::class,
+            keys: ['id' => 'aprtid', 'uuid' => 'uuid'],
+        ));
+
+        $this->entityType(new EntityType(
+            id: 'tenant',
+            label: 'Tenant',
+            class: Tenant::class,
+            keys: ['id' => 'tid', 'uuid' => 'uuid', 'label' => 'name'],
         ));
 
         $this->entityType(new EntityType(
@@ -192,6 +219,154 @@ final class ClaudrielServiceProvider extends ServiceProvider
             'claudriel.dashboard',
             RouteBuilder::create('/')
                 ->controller(DashboardController::class.'::show')
+                ->allowAll()
+                ->methods('GET')
+                ->render()
+                ->build(),
+        );
+
+        $router->addRoute(
+            'claudriel.public.signup_form',
+            RouteBuilder::create('/signup')
+                ->controller(PublicAccountController::class.'::signupForm')
+                ->allowAll()
+                ->methods('GET')
+                ->render()
+                ->build(),
+        );
+
+        $router->addRoute(
+            'claudriel.public.login_form',
+            RouteBuilder::create('/login')
+                ->controller(PublicSessionController::class.'::loginForm')
+                ->allowAll()
+                ->methods('GET')
+                ->render()
+                ->build(),
+        );
+
+        $router->addRoute(
+            'claudriel.public.password_reset_request_form',
+            RouteBuilder::create('/forgot-password')
+                ->controller(PublicPasswordResetController::class.'::requestForm')
+                ->allowAll()
+                ->methods('GET')
+                ->render()
+                ->build(),
+        );
+
+        $forgotPasswordRoute = RouteBuilder::create('/forgot-password')
+            ->controller(PublicPasswordResetController::class.'::requestReset')
+            ->allowAll()
+            ->methods('POST')
+            ->render()
+            ->build();
+        $router->addRoute('claudriel.public.password_reset_request', $forgotPasswordRoute);
+
+        $router->addRoute(
+            'claudriel.public.password_reset_check_email',
+            RouteBuilder::create('/forgot-password/check-email')
+                ->controller(PublicPasswordResetController::class.'::checkEmail')
+                ->allowAll()
+                ->methods('GET')
+                ->render()
+                ->build(),
+        );
+
+        $router->addRoute(
+            'claudriel.public.password_reset_form',
+            RouteBuilder::create('/reset-password/{token}')
+                ->controller(PublicPasswordResetController::class.'::resetForm')
+                ->allowAll()
+                ->methods('GET')
+                ->render()
+                ->build(),
+        );
+
+        $passwordResetRoute = RouteBuilder::create('/reset-password/{token}')
+            ->controller(PublicPasswordResetController::class.'::resetPassword')
+            ->allowAll()
+            ->methods('POST')
+            ->render()
+            ->build();
+        $router->addRoute('claudriel.public.password_reset_submit', $passwordResetRoute);
+
+        $router->addRoute(
+            'claudriel.public.password_reset_complete',
+            RouteBuilder::create('/reset-password/complete')
+                ->controller(PublicPasswordResetController::class.'::resetComplete')
+                ->allowAll()
+                ->methods('GET')
+                ->render()
+                ->build(),
+        );
+
+        $loginRoute = RouteBuilder::create('/login')
+            ->controller(PublicSessionController::class.'::login')
+            ->allowAll()
+            ->methods('POST')
+            ->render()
+            ->build();
+        $router->addRoute('claudriel.public.login_submit', $loginRoute);
+
+        $logoutRoute = RouteBuilder::create('/logout')
+            ->controller(PublicSessionController::class.'::logout')
+            ->allowAll()
+            ->methods('POST')
+            ->render()
+            ->build();
+        $router->addRoute('claudriel.public.logout', $logoutRoute);
+
+        $router->addRoute(
+            'claudriel.public.session_state',
+            RouteBuilder::create('/account/session')
+                ->controller(PublicSessionController::class.'::sessionState')
+                ->allowAll()
+                ->methods('GET')
+                ->build(),
+        );
+
+        $router->addRoute(
+            'claudriel.public.signup_check_email',
+            RouteBuilder::create('/signup/check-email')
+                ->controller(PublicAccountController::class.'::checkEmail')
+                ->allowAll()
+                ->methods('GET')
+                ->render()
+                ->build(),
+        );
+
+        $signupRoute = RouteBuilder::create('/signup')
+            ->controller(PublicAccountController::class.'::signup')
+            ->allowAll()
+            ->methods('POST')
+            ->render()
+            ->build();
+        $router->addRoute('claudriel.public.signup_submit', $signupRoute);
+
+        $router->addRoute(
+            'claudriel.public.verify_email',
+            RouteBuilder::create('/verify-email/{token}')
+                ->controller(PublicAccountController::class.'::verifyEmail')
+                ->allowAll()
+                ->methods('GET')
+                ->build(),
+        );
+
+        $router->addRoute(
+            'claudriel.public.verification_result',
+            RouteBuilder::create('/signup/verification-result')
+                ->controller(PublicAccountController::class.'::verificationResult')
+                ->allowAll()
+                ->methods('GET')
+                ->render()
+                ->build(),
+        );
+
+        $router->addRoute(
+            'claudriel.public.onboarding_bootstrap',
+            RouteBuilder::create('/onboarding/bootstrap')
+                ->controller(PublicAccountController::class.'::onboardingBootstrap')
                 ->allowAll()
                 ->methods('GET')
                 ->render()
@@ -740,7 +915,7 @@ final class ClaudrielServiceProvider extends ServiceProvider
         EventDispatcherInterface $dispatcher,
     ): array {
         // Trigger getStorage() for each entity type so SqlSchemaHandler::ensureTable() runs.
-        foreach (['mc_event', 'commitment', 'commitment_extraction_log', 'person', 'account', 'integration', 'skill', 'chat_session', 'chat_message', 'workspace', 'schedule_entry', 'artifact', 'operation'] as $typeId) {
+        foreach (['mc_event', 'commitment', 'commitment_extraction_log', 'person', 'account', 'account_verification_token', 'account_password_reset_token', 'tenant', 'integration', 'skill', 'chat_session', 'chat_message', 'workspace', 'schedule_entry', 'artifact', 'operation'] as $typeId) {
             try {
                 $entityTypeManager->getStorage($typeId);
             } catch (\Throwable) {
