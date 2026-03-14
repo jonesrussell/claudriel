@@ -13,6 +13,9 @@
         {% endif %}
         <form method="post" action="/login">
             <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
+            {% if redirect %}
+                <input type="hidden" name="redirect" value="{{ redirect }}">
+            {% endif %}
             <label>
                 Email
                 <input type="email" name="email" value="{{ email }}" required>

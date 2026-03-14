@@ -24,13 +24,16 @@ final class PublicSessionController
 
     public function loginForm(array $params = [], array $query = []): RedirectResponse|SsrResponse
     {
+        $redirect = $this->sanitizeRedirectTarget($query['redirect'] ?? null);
+
         if ($account = $this->authenticatedAccountFromSession()) {
-            return new RedirectResponse($this->appUrl((string) $account->getTenantId(), $this->defaultWorkspaceUuidForTenant((string) $account->getTenantId())), 302);
+            return new RedirectResponse($redirect ?? $this->appUrl((string) $account->getTenantId(), $this->defaultWorkspaceUuidForTenant((string) $account->getTenantId())), 302);
         }
 
         return $this->render('public/login.twig', [
             'csrf_token' => CsrfMiddleware::token(),
             'email' => (string) ($query['email'] ?? ''),
+            'redirect' => $redirect,
             'error' => null,
         ]);
     }
@@ -40,11 +43,13 @@ final class PublicSessionController
         $request = $httpRequest ?? Request::create('/login', 'POST');
         $email = strtolower(trim((string) $request->request->get('email', '')));
         $password = (string) $request->request->get('password', '');
+        $redirect = $this->sanitizeRedirectTarget($request->request->get('redirect'));
 
         if ($email === '' || $password === '') {
             return $this->render('public/login.twig', [
                 'csrf_token' => CsrfMiddleware::token(),
                 'email' => $email,
+                'redirect' => $redirect,
                 'error' => 'Email and password are required.',
             ], 422);
         }
@@ -54,6 +59,7 @@ final class PublicSessionController
             return $this->render('public/login.twig', [
                 'csrf_token' => CsrfMiddleware::token(),
                 'email' => $email,
+                'redirect' => $redirect,
                 'error' => 'Invalid credentials.',
             ], 401);
         }
@@ -74,6 +80,10 @@ final class PublicSessionController
         }
         if ($workspaceUuid !== null) {
             $query['workspace_uuid'] = $workspaceUuid;
+        }
+
+        if ($redirect !== null) {
+            return new RedirectResponse($redirect, 302);
         }
 
         return new RedirectResponse('/app?'.http_build_query($query), 302);
@@ -211,5 +221,23 @@ final class PublicSessionController
         }
 
         return '/app'.($query === [] ? '' : '?'.http_build_query($query));
+    }
+
+    private function sanitizeRedirectTarget(mixed $value): ?string
+    {
+        if (! is_string($value)) {
+            return null;
+        }
+
+        $candidate = trim($value);
+        if ($candidate === '' || ! str_starts_with($candidate, '/')) {
+            return null;
+        }
+
+        if (str_starts_with($candidate, '//')) {
+            return null;
+        }
+
+        return $candidate;
     }
 }

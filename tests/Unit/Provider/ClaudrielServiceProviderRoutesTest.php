@@ -11,7 +11,7 @@ use Waaseyaa\Routing\WaaseyaaRouter;
 
 final class ClaudrielServiceProviderRoutesTest extends TestCase
 {
-    public function test_routes_register_public_homepage_and_authenticated_app_shell(): void
+    public function test_routes_register_public_homepage_app_shell_and_admin_surface(): void
     {
         $provider = new ClaudrielServiceProvider;
         $provider->setKernelContext(dirname(__DIR__, 3), []);
@@ -23,6 +23,8 @@ final class ClaudrielServiceProviderRoutesTest extends TestCase
 
         $homepage = $routes->get('claudriel.homepage');
         $appShell = $routes->get('claudriel.app');
+        $admin = $routes->get('claudriel.admin');
+        $adminSession = $routes->get('claudriel.admin.session');
 
         self::assertInstanceOf(Route::class, $homepage);
         self::assertSame('/', $homepage->getPath());
@@ -31,5 +33,13 @@ final class ClaudrielServiceProviderRoutesTest extends TestCase
         self::assertInstanceOf(Route::class, $appShell);
         self::assertSame('/app', $appShell->getPath());
         self::assertSame('Claudriel\\Controller\\AppShellController::show', $appShell->getDefault('_controller'));
+
+        self::assertInstanceOf(Route::class, $admin);
+        self::assertSame('/admin', $admin->getPath());
+        self::assertSame('Claudriel\\Controller\\AdminUiController::show', $admin->getDefault('_controller'));
+
+        self::assertInstanceOf(Route::class, $adminSession);
+        self::assertSame('/admin/session', $adminSession->getPath());
+        self::assertSame('Claudriel\\Controller\\AdminSessionController::state', $adminSession->getDefault('_controller'));
     }
 }

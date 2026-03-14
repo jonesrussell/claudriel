@@ -20,6 +20,8 @@ use Claudriel\Command\WorkspaceCloneCommand;
 use Claudriel\Command\WorkspaceCreateCommand;
 use Claudriel\Command\WorkspacePullCommand;
 use Claudriel\Command\WorkspacesCommand;
+use Claudriel\Controller\AdminSessionController;
+use Claudriel\Controller\AdminUiController;
 use Claudriel\Controller\Ai\ExtractionImprovementSuggestionController;
 use Claudriel\Controller\Ai\ExtractionSelfAssessmentController;
 use Claudriel\Controller\Ai\ModelUpdateBatchController;
@@ -234,6 +236,44 @@ final class ClaudrielServiceProvider extends ServiceProvider
                 ->allowAll()
                 ->methods('GET')
                 ->render()
+                ->build(),
+        );
+
+        $router->addRoute(
+            'claudriel.admin',
+            RouteBuilder::create('/admin')
+                ->controller(AdminUiController::class.'::show')
+                ->allowAll()
+                ->methods('GET')
+                ->render()
+                ->build(),
+        );
+
+        $router->addRoute(
+            'claudriel.admin.session',
+            RouteBuilder::create('/admin/session')
+                ->controller(AdminSessionController::class.'::state')
+                ->allowAll()
+                ->methods('GET')
+                ->build(),
+        );
+
+        $adminLogoutRoute = RouteBuilder::create('/admin/logout')
+            ->controller(AdminSessionController::class.'::logout')
+            ->allowAll()
+            ->methods('POST')
+            ->build();
+        $adminLogoutRoute->setOption('_csrf', false);
+        $router->addRoute('claudriel.admin.logout', $adminLogoutRoute);
+
+        $router->addRoute(
+            'claudriel.admin.catchall',
+            RouteBuilder::create('/admin/{path}')
+                ->controller(AdminUiController::class.'::show')
+                ->allowAll()
+                ->methods('GET')
+                ->render()
+                ->requirement('path', '.+')
                 ->build(),
         );
 

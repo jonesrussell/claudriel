@@ -59,6 +59,18 @@ final class PublicSessionControllerTest extends TestCase
         self::assertSame('/app?tenant_id=tenant-123&workspace_uuid=workspace-abc', $response->getTargetUrl());
     }
 
+    public function test_login_form_honors_safe_redirect_targets_for_authenticated_sessions(): void
+    {
+        $entityTypeManager = $this->buildEntityTypeManager();
+        $account = $this->seedVerifiedAccount($entityTypeManager);
+        $_SESSION['claudriel_account_uuid'] = $account->get('uuid');
+
+        $response = $this->controller($entityTypeManager)->loginForm(query: ['redirect' => '/admin']);
+
+        self::assertInstanceOf(RedirectResponse::class, $response);
+        self::assertSame('/admin', $response->getTargetUrl());
+    }
+
     public function test_verified_account_can_log_in_and_logout(): void
     {
         $entityTypeManager = $this->buildEntityTypeManager();
@@ -89,6 +101,24 @@ final class PublicSessionControllerTest extends TestCase
         $logout = $controller->logout();
         self::assertSame('/?logged_out=1', $logout->getTargetUrl());
         self::assertArrayNotHasKey('claudriel_account_uuid', $_SESSION);
+    }
+
+    public function test_login_redirects_to_safe_redirect_target_when_provided(): void
+    {
+        $entityTypeManager = $this->buildEntityTypeManager();
+        $this->seedVerifiedAccount($entityTypeManager);
+        $controller = $this->controller($entityTypeManager);
+
+        $login = $controller->login(
+            httpRequest: Request::create('/login', 'POST', [
+                'email' => 'test@example.com',
+                'password' => 'correct horse battery staple',
+                'redirect' => '/admin',
+            ]),
+        );
+
+        self::assertInstanceOf(RedirectResponse::class, $login);
+        self::assertSame('/admin', $login->getTargetUrl());
     }
 
     public function test_session_state_uses_authenticated_session_when_account_argument_is_missing(): void
