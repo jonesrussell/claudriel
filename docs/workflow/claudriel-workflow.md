@@ -11,6 +11,7 @@ This document is the canonical workflow guide for the v1.0 multi-tenant foundati
 - Smoke surfaces: [v1.0-smoke-matrix.md](/home/fsd42/dev/claudriel/tests/smoke/v1.0-smoke-matrix.md)
 - Temporal agent runtime and operations: [temporal-agents.md](/home/fsd42/dev/claudriel/docs/specs/temporal-agents.md)
 - Public account lifecycle and operations: [public-accounts.md](/home/fsd42/dev/claudriel/docs/specs/public-accounts.md)
+- Public homepage and app-entry contract: [public-entry-funnel.md](/home/fsd42/dev/claudriel/docs/specs/public-entry-funnel.md)
 - Production deploy orchestration: [deploy.php](/home/fsd42/dev/claudriel/deploy.php)
 - CI and production entrypoint: [deploy.yml](/home/fsd42/dev/claudriel/.github/workflows/deploy.yml)
 
