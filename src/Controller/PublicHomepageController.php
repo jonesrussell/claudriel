@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Claudriel\Controller;
 
+use Claudriel\Access\AuthenticatedAccount;
+use Symfony\Component\HttpFoundation\RedirectResponse;
 use Twig\Environment;
 use Waaseyaa\SSR\SsrResponse;
 
@@ -13,8 +15,12 @@ final class PublicHomepageController
         private readonly ?Environment $twig = null,
     ) {}
 
-    public function show(array $params = [], array $query = [], mixed $account = null, mixed $httpRequest = null): SsrResponse
+    public function show(array $params = [], array $query = [], mixed $account = null, mixed $httpRequest = null): RedirectResponse|SsrResponse
     {
+        if ($account instanceof AuthenticatedAccount) {
+            return new RedirectResponse($this->appUrl($account), 302);
+        }
+
         $context = [
             'primary_cta_href' => '/signup',
             'secondary_cta_href' => '/login',
@@ -40,5 +46,17 @@ final class PublicHomepageController
             statusCode: 200,
             headers: ['Content-Type' => 'text/html; charset=UTF-8'],
         );
+    }
+
+    private function appUrl(AuthenticatedAccount $account): string
+    {
+        $query = [];
+        if ($account->getTenantId() !== null && $account->getTenantId() !== '') {
+            $query['tenant_id'] = $account->getTenantId();
+        }
+
+        $queryString = $query === [] ? '' : '?'.http_build_query($query);
+
+        return '/app'.$queryString;
     }
 }

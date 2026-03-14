@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Claudriel\Tests\Unit\Controller;
 
+use Claudriel\Access\AuthenticatedAccount;
 use Claudriel\Controller\PublicHomepageController;
+use Claudriel\Entity\Account;
 use PHPUnit\Framework\TestCase;
 use Twig\Environment;
 use Twig\Loader\FilesystemLoader;
@@ -36,5 +38,21 @@ final class PublicHomepageControllerTest extends TestCase
         self::assertStringContainsString('href="/login"', $response->content);
         self::assertStringContainsString('Schedule Intelligence For Real Work', $response->content);
         self::assertStringContainsString('Public Entry Surface', $response->content);
+    }
+
+    public function test_show_redirects_authenticated_accounts_into_app_shell(): void
+    {
+        $account = new Account([
+            'name' => 'Signed In User',
+            'email' => 'signed-in@example.com',
+            'status' => 'active',
+            'email_verified_at' => '2026-03-14T15:00:00+00:00',
+            'tenant_id' => 'tenant-123',
+        ]);
+
+        $response = (new PublicHomepageController)->show(account: new AuthenticatedAccount($account));
+
+        self::assertSame(302, $response->getStatusCode());
+        self::assertSame('/app?tenant_id=tenant-123', $response->headers->get('Location'));
     }
 }
