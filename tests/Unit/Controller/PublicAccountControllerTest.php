@@ -8,6 +8,7 @@ use Claudriel\Controller\PublicAccountController;
 use Claudriel\Entity\Account;
 use Claudriel\Entity\AccountVerificationToken;
 use Claudriel\Entity\Tenant;
+use Claudriel\Entity\Workspace;
 use Claudriel\Service\Mail\MailTransportInterface;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\EventDispatcher\EventDispatcher;
@@ -112,16 +113,28 @@ final class PublicAccountControllerTest extends TestCase
         self::assertSame($tenant->get('uuid'), $account->get('tenant_id'));
         self::assertSame('tenant_ready', $tenant->get('metadata')['bootstrap_state']);
 
+        $workspaceStorage = $entityTypeManager->getStorage('workspace');
+        $workspaces = $workspaceStorage->loadMultiple($workspaceStorage->getQuery()->execute());
+        $workspace = array_values($workspaces)[0] ?? null;
+        self::assertInstanceOf(Workspace::class, $workspace);
+        self::assertSame($tenant->get('uuid'), $workspace->get('tenant_id'));
+        self::assertSame('Main Workspace', $workspace->get('name'));
+        self::assertSame('default', json_decode((string) $workspace->get('metadata'), true, 512, JSON_THROW_ON_ERROR)['bootstrap_kind']);
+        self::assertSame($workspace->get('uuid'), $tenant->get('metadata')['default_workspace_uuid']);
+
         $onboarding = $controller->onboardingBootstrap(query: [
             'verified' => '1',
             'account' => (string) $account->get('uuid'),
             'tenant' => (string) $tenant->get('uuid'),
+            'workspace' => (string) $workspace->get('uuid'),
         ]);
         self::assertStringContainsString('Tenant ready', $onboarding->content);
+        self::assertStringContainsString('Workspace ready', $onboarding->content);
 
         $second = $controller->verifyEmail(['token' => $token]);
         self::assertSame('/signup/verification-result?status=invalid', $second->getTargetUrl());
         self::assertCount(1, $tenantStorage->getQuery()->execute());
+        self::assertCount(1, $workspaceStorage->getQuery()->execute());
     }
 
     private function controller(?EntityTypeManager $entityTypeManager = null, ?MailTransportInterface $transport = null): PublicAccountController
@@ -162,6 +175,12 @@ final class PublicAccountControllerTest extends TestCase
             label: 'Tenant',
             class: Tenant::class,
             keys: ['id' => 'tid', 'uuid' => 'uuid', 'label' => 'name'],
+        ));
+        $entityTypeManager->registerEntityType(new EntityType(
+            id: 'workspace',
+            label: 'Workspace',
+            class: Workspace::class,
+            keys: ['id' => 'wid', 'uuid' => 'uuid', 'label' => 'name'],
         ));
 
         return $entityTypeManager;

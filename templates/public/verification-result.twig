@@ -11,6 +11,9 @@
         {% if tenant %}
             <p>Tenant ready: {{ tenant.get('name') }}</p>
         {% endif %}
+        {% if workspace %}
+            <p>Workspace ready: {{ workspace.get('name') }}</p>
+        {% endif %}
     </main>
 </body>
 </html>

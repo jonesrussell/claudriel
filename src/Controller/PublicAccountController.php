@@ -8,6 +8,7 @@ use Claudriel\Entity\Account;
 use Claudriel\Service\Mail\MailTransportInterface;
 use Claudriel\Service\PublicAccountSignupService;
 use Claudriel\Service\TenantBootstrapService;
+use Claudriel\Service\WorkspaceBootstrapService;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Twig\Environment;
@@ -97,9 +98,10 @@ final class PublicAccountController
 
         $account = $result['account'];
         $tenant = $this->tenantBootstrapService()->bootstrapForAccount($account);
+        $workspace = $this->workspaceBootstrapService()->bootstrapDefaultWorkspace($tenant);
         $redirect = $result['redirect_path'];
 
-        return new RedirectResponse($redirect.'?verified=1&account='.rawurlencode((string) $account->get('uuid')).'&tenant='.rawurlencode((string) $tenant->get('uuid')), 302);
+        return new RedirectResponse($redirect.'?verified=1&account='.rawurlencode((string) $account->get('uuid')).'&tenant='.rawurlencode((string) $tenant->get('uuid')).'&workspace='.rawurlencode((string) $workspace->get('uuid')), 302);
     }
 
     public function verificationResult(array $params = [], array $query = []): SsrResponse
@@ -113,11 +115,16 @@ final class PublicAccountController
     {
         $account = $this->findAccountByUuid((string) ($query['account'] ?? ''));
         $tenant = $this->tenantBootstrapService()->findByUuid((string) ($query['tenant'] ?? ''));
+        $workspace = $this->workspaceBootstrapService()->findWorkspaceByUuidForTenant(
+            (string) ($query['workspace'] ?? ''),
+            (string) ($query['tenant'] ?? ''),
+        );
 
         return $this->render('public/verification-result.twig', [
             'status' => ((string) ($query['verified'] ?? '0')) === '1' ? 'verified' : 'pending',
             'account' => $account,
             'tenant' => $tenant,
+            'workspace' => $workspace,
         ]);
     }
 
@@ -134,6 +141,11 @@ final class PublicAccountController
     private function tenantBootstrapService(): TenantBootstrapService
     {
         return new TenantBootstrapService($this->entityTypeManager);
+    }
+
+    private function workspaceBootstrapService(): WorkspaceBootstrapService
+    {
+        return new WorkspaceBootstrapService($this->entityTypeManager);
     }
 
     private function findAccountByUuid(string $uuid): ?Account
