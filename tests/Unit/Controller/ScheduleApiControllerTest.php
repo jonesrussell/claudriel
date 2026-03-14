@@ -20,7 +20,7 @@ final class ScheduleApiControllerTest extends TestCase
     public function test_crud_and_today_filtering_for_schedule_entries(): void
     {
         $controller = new ScheduleApiController($this->buildEntityTypeManager());
-        $today = new \DateTimeImmutable('2026-03-13T22:00:00-04:00');
+        $today = new \DateTimeImmutable('today 10:00:00', new \DateTimeZone('America/Toronto'));
         $tomorrow = $today->modify('+1 day');
 
         $createToday = $controller->create(
