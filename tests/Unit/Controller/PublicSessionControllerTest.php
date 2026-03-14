@@ -19,6 +19,7 @@ use Waaseyaa\Entity\EntityType;
 use Waaseyaa\Entity\EntityTypeManager;
 use Waaseyaa\EntityStorage\SqlEntityStorage;
 use Waaseyaa\EntityStorage\SqlSchemaHandler;
+use Waaseyaa\SSR\SsrResponse;
 
 final class PublicSessionControllerTest extends TestCase
 {
@@ -36,6 +37,7 @@ final class PublicSessionControllerTest extends TestCase
     {
         $response = $this->controller()->loginForm();
 
+        self::assertInstanceOf(SsrResponse::class, $response);
         self::assertSame(200, $response->statusCode);
         self::assertStringContainsString('Log in to Claudriel', $response->content);
     }
@@ -87,6 +89,24 @@ final class PublicSessionControllerTest extends TestCase
         $logout = $controller->logout();
         self::assertSame('/?logged_out=1', $logout->getTargetUrl());
         self::assertArrayNotHasKey('claudriel_account_uuid', $_SESSION);
+    }
+
+    public function test_session_state_uses_authenticated_session_when_account_argument_is_missing(): void
+    {
+        $entityTypeManager = $this->buildEntityTypeManager();
+        $account = $this->seedVerifiedAccount($entityTypeManager);
+        $entityTypeManager->getStorage('tenant')->save(new Tenant([
+            'uuid' => 'tenant-123',
+            'name' => 'Tenant One',
+            'metadata' => ['default_workspace_uuid' => 'workspace-abc'],
+        ]));
+        $_SESSION['claudriel_account_uuid'] = $account->get('uuid');
+
+        $response = $this->controller($entityTypeManager)->sessionState();
+
+        self::assertSame(200, $response->statusCode);
+        self::assertStringContainsString('test@example.com', $response->content);
+        self::assertStringContainsString('workspace-abc', $response->content);
     }
 
     private function controller(?EntityTypeManager $entityTypeManager = null): PublicSessionController

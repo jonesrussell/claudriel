@@ -12,6 +12,7 @@ use Claudriel\Service\PublicAccountSignupService;
 use Claudriel\Service\SidecarWorkspaceBootstrapService;
 use Claudriel\Service\TenantBootstrapService;
 use Claudriel\Service\WorkspaceBootstrapService;
+use Claudriel\Support\AuthenticatedAccountSessionResolver;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Twig\Environment;
@@ -32,8 +33,12 @@ final class PublicAccountController
 
     public function signupForm(array $params = [], array $query = [], mixed $account = null): RedirectResponse|SsrResponse
     {
-        if ($account instanceof AuthenticatedAccount) {
-            return new RedirectResponse($this->appUrl((string) $account->getTenantId()), 302);
+        $resolvedAccount = $account instanceof AuthenticatedAccount
+            ? $account
+            : (new AuthenticatedAccountSessionResolver($this->entityTypeManager))->resolve();
+
+        if ($resolvedAccount instanceof AuthenticatedAccount) {
+            return new RedirectResponse($this->appUrl((string) $resolvedAccount->getTenantId()), 302);
         }
 
         return $this->render('public/signup.twig', [
