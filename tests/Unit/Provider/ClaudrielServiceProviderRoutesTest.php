@@ -30,6 +30,6 @@ final class ClaudrielServiceProviderRoutesTest extends TestCase
 
         self::assertInstanceOf(Route::class, $appShell);
         self::assertSame('/app', $appShell->getPath());
-        self::assertSame('Claudriel\\Controller\\DashboardController::show', $appShell->getDefault('_controller'));
+        self::assertSame('Claudriel\\Controller\\AppShellController::show', $appShell->getDefault('_controller'));
     }
 }

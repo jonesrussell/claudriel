@@ -24,6 +24,7 @@ use Claudriel\Controller\Ai\ExtractionImprovementSuggestionController;
 use Claudriel\Controller\Ai\ExtractionSelfAssessmentController;
 use Claudriel\Controller\Ai\ModelUpdateBatchController;
 use Claudriel\Controller\Ai\TrainingExportController;
+use Claudriel\Controller\AppShellController;
 use Claudriel\Controller\Audit\CommitmentExtractionAuditController;
 use Claudriel\Controller\BriefStreamController;
 use Claudriel\Controller\ChatController;
@@ -229,7 +230,7 @@ final class ClaudrielServiceProvider extends ServiceProvider
         $router->addRoute(
             'claudriel.app',
             RouteBuilder::create('/app')
-                ->controller(DashboardController::class.'::show')
+                ->controller(AppShellController::class.'::show')
                 ->allowAll()
                 ->methods('GET')
                 ->render()
