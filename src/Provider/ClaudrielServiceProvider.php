@@ -39,6 +39,7 @@ use Claudriel\Controller\NotFoundController;
 use Claudriel\Controller\PeopleApiController;
 use Claudriel\Controller\Platform\ObservabilityDashboardController;
 use Claudriel\Controller\PublicAccountController;
+use Claudriel\Controller\PublicHomepageController;
 use Claudriel\Controller\PublicPasswordResetController;
 use Claudriel\Controller\PublicSessionController;
 use Claudriel\Controller\ScheduleApiController;
@@ -214,11 +215,11 @@ final class ClaudrielServiceProvider extends ServiceProvider
 
     public function routes(WaaseyaaRouter $router): void
     {
-        // Dashboard (replaces separate brief and chat pages)
+        // Public homepage
         $router->addRoute(
-            'claudriel.dashboard',
+            'claudriel.homepage',
             RouteBuilder::create('/')
-                ->controller(DashboardController::class.'::show')
+                ->controller(PublicHomepageController::class.'::show')
                 ->allowAll()
                 ->methods('GET')
                 ->render()
