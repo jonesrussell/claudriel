@@ -26,9 +26,20 @@ use Waaseyaa\Entity\EntityType;
 use Waaseyaa\Entity\EntityTypeManager;
 use Waaseyaa\EntityStorage\SqlEntityStorage;
 use Waaseyaa\EntityStorage\SqlSchemaHandler;
+use Waaseyaa\SSR\SsrResponse;
 
 final class AppShellControllerTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        $this->resetSession();
+    }
+
+    protected function tearDown(): void
+    {
+        $this->resetSession();
+    }
+
     public function test_show_redirects_anonymous_requests_to_login(): void
     {
         $response = $this->controller()->show();
@@ -57,9 +68,40 @@ final class AppShellControllerTest extends TestCase
 
         $response = $this->controller($entityTypeManager)->show(account: new AuthenticatedAccount($account));
 
+        self::assertInstanceOf(SsrResponse::class, $response);
         self::assertSame(200, $response->statusCode);
         self::assertStringContainsString('App Workspace', $response->content);
         self::assertStringContainsString('guidance-panel', $response->content);
+    }
+
+    public function test_show_renders_dashboard_for_authenticated_session(): void
+    {
+        $entityTypeManager = $this->buildEntityTypeManager();
+        $entityTypeManager->getStorage('workspace')->save(new Workspace([
+            'uuid' => 'workspace-session-shell',
+            'name' => 'Session Workspace',
+            'description' => 'Session-authenticated shell coverage',
+            'tenant_id' => 'tenant-session',
+        ]));
+
+        $account = new Account([
+            'name' => 'Session User',
+            'email' => 'session@example.com',
+            'status' => 'active',
+            'email_verified_at' => '2026-03-14T15:00:00+00:00',
+            'tenant_id' => 'tenant-session',
+        ]);
+        $entityTypeManager->getStorage('account')->save($account);
+        $_SESSION['claudriel_account_uuid'] = $account->get('uuid');
+
+        $response = $this->controller($entityTypeManager)->show(query: [
+            'tenant_id' => 'tenant-session',
+            'workspace_uuid' => 'workspace-session-shell',
+        ]);
+
+        self::assertInstanceOf(SsrResponse::class, $response);
+        self::assertSame(200, $response->statusCode);
+        self::assertStringContainsString('Session Workspace', $response->content);
     }
 
     private function controller(?EntityTypeManager $entityTypeManager = null): AppShellController
@@ -102,5 +144,17 @@ final class AppShellControllerTest extends TestCase
             new EntityType(id: 'triage_entry', label: 'Triage Entry', class: TriageEntry::class, keys: ['id' => 'teid', 'uuid' => 'uuid', 'label' => 'sender_name']),
             new EntityType(id: 'workspace', label: 'Workspace', class: Workspace::class, keys: ['id' => 'wid', 'uuid' => 'uuid', 'label' => 'name']),
         ];
+    }
+
+    private function resetSession(): void
+    {
+        if (session_status() === \PHP_SESSION_ACTIVE) {
+            session_unset();
+            session_destroy();
+        }
+
+        $_SESSION = [];
+        session_id('claudriel-app-shell-'.bin2hex(random_bytes(4)));
+        session_start();
     }
 }

@@ -7,6 +7,7 @@ namespace Claudriel\Controller;
 use Claudriel\Access\AuthenticatedAccount;
 use Claudriel\Entity\Account;
 use Claudriel\Entity\Tenant;
+use Claudriel\Support\AuthenticatedAccountSessionResolver;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Twig\Environment;
@@ -93,7 +94,11 @@ final class PublicSessionController
 
     public function sessionState(array $params = [], array $query = [], mixed $account = null): SsrResponse
     {
-        if (! $account instanceof AuthenticatedAccount) {
+        $resolvedAccount = $account instanceof AuthenticatedAccount
+            ? $account
+            : $this->authenticatedAccountFromSession();
+
+        if (! $resolvedAccount instanceof AuthenticatedAccount) {
             return new SsrResponse(
                 content: json_encode(['error' => 'Not authenticated.'], JSON_THROW_ON_ERROR),
                 statusCode: 401,
@@ -104,11 +109,11 @@ final class PublicSessionController
         return new SsrResponse(
             content: json_encode([
                 'account' => [
-                    'uuid' => $account->getUuid(),
-                    'email' => $account->getEmail(),
-                    'tenant_id' => $account->getTenantId(),
-                    'roles' => $account->getRoles(),
-                    'default_workspace_uuid' => $this->defaultWorkspaceUuidForTenant((string) $account->getTenantId()),
+                    'uuid' => $resolvedAccount->getUuid(),
+                    'email' => $resolvedAccount->getEmail(),
+                    'tenant_id' => $resolvedAccount->getTenantId(),
+                    'roles' => $resolvedAccount->getRoles(),
+                    'default_workspace_uuid' => $this->defaultWorkspaceUuidForTenant((string) $resolvedAccount->getTenantId()),
                 ],
             ], JSON_THROW_ON_ERROR),
             statusCode: 200,
@@ -192,30 +197,7 @@ final class PublicSessionController
 
     private function authenticatedAccountFromSession(): ?AuthenticatedAccount
     {
-        if (session_status() !== \PHP_SESSION_ACTIVE) {
-            session_start();
-        }
-
-        $accountUuid = $_SESSION['claudriel_account_uuid'] ?? null;
-        if (! is_string($accountUuid) || $accountUuid === '') {
-            return null;
-        }
-
-        $ids = $this->entityTypeManager->getStorage('account')->getQuery()
-            ->condition('uuid', $accountUuid)
-            ->range(0, 1)
-            ->execute();
-
-        if ($ids === []) {
-            return null;
-        }
-
-        $account = $this->entityTypeManager->getStorage('account')->load(reset($ids));
-        if (! $account instanceof Account || ! $account->isVerified()) {
-            return null;
-        }
-
-        return new AuthenticatedAccount($account);
+        return (new AuthenticatedAccountSessionResolver($this->entityTypeManager))->resolve();
     }
 
     private function appUrl(string $tenantId, ?string $workspaceUuid): string
