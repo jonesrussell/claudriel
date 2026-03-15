@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Tests\Unit\Temporal;
+namespace Claudriel\Tests\Unit\Temporal;
 
 use Claudriel\Temporal\AtomicTimeService;
 use Claudriel\Temporal\Clock\MonotonicClockInterface;

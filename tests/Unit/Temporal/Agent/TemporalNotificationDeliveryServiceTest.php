@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Tests\Unit\Temporal\Agent;
+namespace Claudriel\Tests\Unit\Temporal\Agent;
 
 use Claudriel\Entity\TemporalNotification;
 use Claudriel\Temporal\Agent\OverrunAlertAgent;
