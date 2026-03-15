@@ -1,22 +1,32 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Email Verification</title>
-</head>
-<body>
-    <main>
-        <h1>Email verification {{ status }}</h1>
-        {% if tenant %}
-            <p>Tenant ready: {{ tenant.get('name') }}</p>
+{% extends "public/auth-layout.twig" %}
+
+{% block auth_page_title %}{% if status == 'verified' %}Email Verified{% elseif status == 'invalid' %}Verification Failed{% else %}Verification Pending{% endif %}{% endblock %}
+
+{% block auth_eyebrow %}{% if status == 'verified' %}You're verified{% elseif status == 'invalid' %}Something went wrong{% else %}Almost there{% endif %}{% endblock %}
+{% block auth_headline %}{% if status == 'verified' %}Account ready.{% elseif status == 'invalid' %}That verification link is invalid or expired.{% else %}Check your email for the verification link.{% endif %}{% endblock %}
+{% block auth_subtext %}{% if status == 'verified' %}Your tenant and workspace have been set up.{% elseif status == 'invalid' %}Try signing up again.{% else %}We sent it when you signed up.{% endif %}{% endblock %}
+
+{% block auth_form %}
+    <div class="auth-message">
+        {% if status == 'verified' %}
+            <h2>Welcome aboard</h2>
+            <p>Your account is verified and ready to use.</p>
+        {% elseif status == 'invalid' %}
+            <h2>Verification failed</h2>
+            <p>The link may have expired or already been used.</p>
+        {% else %}
+            <h2>Waiting for verification</h2>
+            <p>Check your inbox for the verification email we sent.</p>
         {% endif %}
-        {% if workspace %}
-            <p>Workspace ready: {{ workspace.get('name') }}</p>
-            {% if workspace_sidecar_state %}
-                <p>Sidecar ready: {{ workspace_sidecar_state.state }}</p>
-            {% endif %}
-        {% endif %}
-    </main>
-</body>
-</html>
+    </div>
+{% endblock %}
+
+{% block auth_links %}
+    {% if status == 'verified' %}
+        <a href="/login">Log in</a>
+    {% elseif status == 'invalid' %}
+        <a href="/signup">Sign up again</a>
+    {% else %}
+        <a href="/login">Log in</a>
+    {% endif %}
+{% endblock %}

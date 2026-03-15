@@ -33,7 +33,7 @@ final class PublicAccountControllerTest extends TestCase
         $response = $controller->signupForm();
 
         self::assertSame(200, $response->statusCode);
-        self::assertStringContainsString('Create Your Claudriel Account', $response->content);
+        self::assertStringContainsString('Create your account', $response->content);
         self::assertStringContainsString('Create account', $response->content);
     }
 

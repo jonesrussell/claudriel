@@ -1,14 +1,18 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Check Your Email</title>
-</head>
-<body>
-    <main>
-        <h1>Check your email</h1>
-        <p>We sent a verification link to {{ email }}.</p>
-    </main>
-</body>
-</html>
+{% extends "public/auth-layout.twig" %}
+
+{% block auth_page_title %}Check Your Email{% endblock %}
+
+{% block auth_eyebrow %}Check your inbox{% endblock %}
+{% block auth_headline %}We sent you a link.{% endblock %}
+{% block auth_subtext %}Follow the link in your email to continue.{% endblock %}
+
+{% block auth_form %}
+    <div class="auth-message">
+        <h2>Check {{ email|default('your email') }}</h2>
+        <p>If an account exists for that address, you'll receive an email shortly.</p>
+    </div>
+{% endblock %}
+
+{% block auth_links %}
+    <a href="/login">Back to log in</a>
+{% endblock %}

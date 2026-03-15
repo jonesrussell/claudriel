@@ -40,7 +40,7 @@ curl --silent --show-error --fail \
   --cookie-jar "$signup_cookie_jar" \
   __BASE_URL__/signup > "$signup_form_file"
 
-grep -q 'Create Your Claudriel Account' "$signup_form_file"
+grep -q 'Create your account' "$signup_form_file"
 
 signup_token=$(php -r '$html = file_get_contents($argv[1]); if (!preg_match("/name=\"_csrf_token\" value=\"([^\"]+)\"/", $html, $matches)) { fwrite(STDERR, "Missing signup CSRF token\n"); exit(1);} echo $matches[1];' "$signup_form_file")
 
@@ -61,7 +61,7 @@ curl --silent --show-error --fail \
   --cookie-jar "$login_cookie_jar" \
   __BASE_URL__/login > "$login_form_file"
 
-grep -q 'Log in to Claudriel' "$login_form_file"
+grep -q 'Pick up where you left off.' "$login_form_file"
 
 login_token=$(php -r '$html = file_get_contents($argv[1]); if (!preg_match("/name=\"_csrf_token\" value=\"([^\"]+)\"/", $html, $matches)) { fwrite(STDERR, "Missing login CSRF token\n"); exit(1);} echo $matches[1];' "$login_form_file")
 

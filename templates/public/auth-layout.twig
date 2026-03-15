@@ -1,0 +1,193 @@
+{% extends "base.html.twig" %}
+
+{% block title %}{{ block('auth_page_title') }} | Claudriel{% endblock %}
+
+{% block styles %}
+    .site-nav {
+        background: transparent;
+        border-bottom: 0;
+    }
+    body {
+        min-height: 100vh;
+        background:
+            radial-gradient(circle at 20% 30%, rgba(107, 155, 255, 0.18), transparent 40%),
+            radial-gradient(circle at 80% 70%, rgba(45, 212, 191, 0.12), transparent 35%),
+            linear-gradient(180deg, #0b0d12 0%, #111521 52%, #0f1117 100%);
+    }
+    .auth-split {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        min-height: calc(100vh - 4rem);
+        max-width: 1180px;
+        margin: 0 auto;
+        padding: 0 1.4rem;
+        gap: 2rem;
+        align-items: center;
+    }
+    .auth-brand {
+        padding: 3rem 0;
+    }
+    .auth-eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.55rem;
+        font-size: 0.78rem;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--accent-teal);
+        margin-bottom: 1rem;
+    }
+    .auth-eyebrow::before {
+        content: "";
+        width: 2.4rem;
+        height: 1px;
+        background: linear-gradient(90deg, var(--accent-teal), rgba(45, 212, 191, 0));
+    }
+    .auth-brand h1 {
+        font-family: var(--font-display);
+        font-size: clamp(2.2rem, 5vw, 3.6rem);
+        line-height: 1;
+        letter-spacing: -0.035em;
+        margin-bottom: 0.75rem;
+    }
+    .auth-brand p {
+        font-size: 1.05rem;
+        color: #ccd0de;
+        max-width: 28rem;
+    }
+    .auth-card {
+        width: 100%;
+        max-width: 420px;
+        margin: 0 auto;
+        padding: 2rem;
+        border-radius: 1.2rem;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    .auth-card h2 {
+        font-family: var(--font-display);
+        font-size: 1.4rem;
+        margin-bottom: 1.4rem;
+    }
+    .auth-field {
+        display: grid;
+        gap: 0.35rem;
+        margin-bottom: 1rem;
+    }
+    .auth-field label {
+        font-size: 0.82rem;
+        font-weight: 600;
+        color: var(--text-secondary);
+    }
+    .auth-field input {
+        width: 100%;
+        padding: 0.75rem 0.9rem;
+        border-radius: 0.65rem;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: rgba(255, 255, 255, 0.06);
+        color: var(--text-primary);
+        font-family: var(--font-body);
+        font-size: 0.95rem;
+        transition: border-color 0.15s ease;
+    }
+    .auth-field input:focus {
+        outline: none;
+        border-color: var(--accent-teal);
+        box-shadow: 0 0 0 3px rgba(45, 212, 191, 0.12);
+    }
+    .auth-forgot {
+        display: block;
+        margin: -0.4rem 0 1rem;
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        text-align: right;
+    }
+    .auth-forgot a {
+        color: var(--accent-teal);
+        text-decoration: none;
+    }
+    .auth-forgot a:hover {
+        text-decoration: underline;
+    }
+    .auth-submit {
+        display: block;
+        width: 100%;
+        padding: 0.85rem;
+        border: 0;
+        border-radius: 999px;
+        font-weight: 600;
+        font-family: var(--font-body);
+        font-size: 0.95rem;
+        cursor: pointer;
+        background: linear-gradient(135deg, #f0b040 0%, #d46337 100%);
+        color: #15120e;
+        box-shadow: 0 12px 30px rgba(212, 99, 55, 0.2);
+        transition: transform 0.18s ease;
+    }
+    .auth-submit:hover {
+        transform: translateY(-1px);
+    }
+    .auth-error {
+        padding: 0.75rem 0.9rem;
+        margin-bottom: 1rem;
+        border-radius: 0.65rem;
+        background: rgba(239, 68, 68, 0.12);
+        border: 1px solid rgba(239, 68, 68, 0.25);
+        color: #fca5a5;
+        font-size: 0.85rem;
+    }
+    .auth-links {
+        margin-top: 1.2rem;
+        text-align: center;
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+    }
+    .auth-links a {
+        color: var(--accent-teal);
+        text-decoration: none;
+    }
+    .auth-links a:hover {
+        text-decoration: underline;
+    }
+    .auth-message {
+        text-align: center;
+        padding: 1rem 0;
+    }
+    .auth-message p {
+        color: var(--text-secondary);
+        margin-top: 0.5rem;
+    }
+    @media (max-width: 768px) {
+        .auth-split {
+            grid-template-columns: 1fr;
+            padding-top: 1rem;
+        }
+        .auth-brand {
+            padding: 1rem 0;
+            text-align: center;
+        }
+        .auth-brand p {
+            margin: 0 auto;
+        }
+    }
+{% endblock %}
+
+{% block content %}
+    <main class="auth-split">
+        <div class="auth-brand">
+            <div class="auth-eyebrow">{% block auth_eyebrow %}{% endblock %}</div>
+            <h1>{% block auth_headline %}{% endblock %}</h1>
+            <p>{% block auth_subtext %}{% endblock %}</p>
+        </div>
+        <div>
+            <div class="auth-card">
+                {% block auth_form %}{% endblock %}
+            </div>
+            <div class="auth-links">
+                {% block auth_links %}{% endblock %}
+            </div>
+        </div>
+    </main>
+{% endblock %}
+
+{% block auth_page_title %}Claudriel{% endblock %}
