@@ -99,7 +99,10 @@ task('sidecar:deploy', function (): void {
 
 desc('Clear stale framework caches from shared storage');
 task('deploy:clear_cache', function (): void {
-    run('sudo rm -f {{deploy_path}}/shared/storage/framework/packages.php');
+    // The cache file may be owned by the web server user. If rm fails,
+    // write invalid content so PHP's require returns non-array and the
+    // framework recompiles the manifest on next request.
+    run('rm -f {{deploy_path}}/shared/storage/framework/packages.php 2>/dev/null || echo "INVALIDATED" > {{deploy_path}}/shared/storage/framework/packages.php 2>/dev/null || true');
 });
 
 desc('Validate sidecar health and app smoke probes');
