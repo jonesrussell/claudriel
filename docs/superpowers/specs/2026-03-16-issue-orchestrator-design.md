@@ -6,25 +6,27 @@
 
 ## Goal
 
-Add a strongly stateful issue orchestrator to Claudriel that binds GitHub Issues to the existing Workspace + TemporalAgentOrchestrator + Claude Code sidecar pipeline. Fully operable through chat-only UX with optional CLI commands. Inspectable, resumable, explainable.
+Add a strongly stateful issue orchestrator to Claudriel that binds GitHub Issues to the existing Workspace + CodexExecutionPipeline + Claude Code sidecar pipeline. Fully operable through chat-only UX with optional CLI commands. Inspectable, resumable, explainable.
 
 ## Architecture
 
-IssueRun is a thin binding layer connecting three existing systems:
+IssueRun is a thin binding layer connecting two existing systems:
 
 ```
 GitHub Issue ──→ IssueRun ──→ Workspace (existing)
                     │              ↓
-                    │   Claude Code Sidecar Pipeline (existing)
-                    │              ↓
-                    └────→ TemporalAgentOrchestrator (existing)
+                    └────→ CodexExecutionPipeline (existing)
+                                   ↓
+                           Claude Code Sidecar (existing)
 ```
 
-IssueRun does not own execution, lifecycle, chat, or Git operations. It coordinates existing systems.
+IssueRun does not own execution or chat. It coordinates existing systems. Lifecycle (pending → running → paused → failed → completed) is owned by IssueOrchestrator — simple status tracking, not a state machine.
+
+**Correction from spec review:** TemporalAgentOrchestrator is a temporal context evaluator (drift detection, scheduling), not a run-lifecycle manager. IssueRun does not compose with it. The `temporal_run_id` field was removed.
 
 ## Component 1: `packages/github/` (Waaseyaa — new package)
 
-**Layer:** 3 (Services)
+**Layer:** 0 (Foundation) — pure HTTP client with value objects, no waaseyaa dependencies
 **Purpose:** Reusable GitHub API client for issues, milestones, PRs.
 
 ### Public API
@@ -100,7 +102,7 @@ final class IssueRun extends ContentEntityBase
             'status' => 'pending',
             'event_log' => '[]',
         ];
-        parent::__construct($values, $this->entityTypeId, $this->entityKeys);
+        parent::__construct($values, 'issue_run', $this->entityKeys);
     }
 }
 ```
@@ -114,7 +116,6 @@ final class IssueRun extends ContentEntityBase
 | `issue_body` | text_long | Cached issue body for prompt generation |
 | `milestone_title` | string | Cached milestone name for context |
 | `workspace_id` | integer | FK to Workspace.wid |
-| `temporal_run_id` | string | ID from TemporalAgentOrchestrator — set on startRun |
 | `status` | string | pending, running, paused, failed, completed |
 | `branch_name` | string | e.g. `issue-123` |
 | `pr_url` | string, nullable | Set when PR is created |
@@ -138,7 +139,6 @@ $this->entityType(new EntityType(
         'issue_body' => ['type' => 'text_long', 'label' => 'Issue Body'],
         'milestone_title' => ['type' => 'string', 'label' => 'Milestone'],
         'workspace_id' => ['type' => 'integer', 'label' => 'Workspace ID'],
-        'temporal_run_id' => ['type' => 'string', 'label' => 'Temporal Run ID'],
         'status' => ['type' => 'string', 'label' => 'Status'],
         'branch_name' => ['type' => 'string', 'label' => 'Branch Name'],
         'pr_url' => ['type' => 'string', 'label' => 'PR URL'],
@@ -155,7 +155,9 @@ $this->entityType(new EntityType(
 - `paused` → `running`, `failed`
 - `failed` → `pending` (retry)
 
-Validation enforced in IssueOrchestrator, not the entity. TemporalAgentOrchestrator makes lifecycle decisions; IssueRun records the outcomes.
+Validation enforced in IssueOrchestrator, not the entity. IssueOrchestrator owns lifecycle directly — simple status tracking with transition guards.
+
+**Known limitation (v1):** `event_log` append is not concurrency-safe. Under simultaneous requests, the second writer could overwrite the first's append. Acceptable for v1 where runs are user-initiated and sequential.
 
 ### Event Log Format
 
@@ -181,22 +183,23 @@ final class IssueOrchestrator
     public function __construct(
         private readonly EntityTypeManager $entityTypeManager,
         private readonly GitHubClient $gitHubClient,
-        private readonly TemporalAgentOrchestrator $temporalOrchestrator,
-        private readonly SidecarChatClient $sidecarClient,
-        private readonly IssuePromptBuilder $promptBuilder,
+        private readonly CodexExecutionPipeline $pipeline,
+        private readonly IssueInstructionBuilder $instructionBuilder,
         private readonly GitOperator $gitOperator,
     ) {}
 }
 ```
+
+**Correction from spec review:** Removed `SidecarChatClient` and `TemporalAgentOrchestrator` dependencies. Execution routes through `CodexExecutionPipeline::execute()` which already handles prompt building, sidecar invocation, patch application, and commit/push.
 
 ### Public Methods
 
 | Method | Signature | Behavior |
 |--------|-----------|----------|
 | `createRun` | `(int $issueNumber): IssueRun` | Fetch issue via GitHubClient, create/reuse Workspace (branch: `issue-{N}`), create IssueRun entity with cached issue data, status `pending`. Append `created` event. |
-| `startRun` | `(IssueRun $run): void` | Set status `running`, set `temporal_run_id`, build prompt via IssuePromptBuilder, invoke Claude Code sidecar, let TemporalAgentOrchestrator evaluate. Append `status_change` event. |
+| `startRun` | `(IssueRun $run): void` | Set status `running`, build instruction string via IssueInstructionBuilder, call `CodexExecutionPipeline::execute($workspace, $instruction)`. Append `status_change` event. |
 | `pauseRun` | `(IssueRun $run): void` | Set status `paused`. Append `status_change` event. |
-| `resumeRun` | `(IssueRun $run): void` | Set status `running`, re-invoke sidecar with resume context (includes `last_agent_output`). Append `status_change` event. |
+| `resumeRun` | `(IssueRun $run): void` | Set status `running`, build instruction with resume context (includes `last_agent_output`), call `CodexExecutionPipeline::execute()`. Append `status_change` event. |
 | `abortRun` | `(IssueRun $run): void` | Set status `failed`. Append `status_change` + `aborted` events. |
 | `completeRun` | `(IssueRun $run): void` | Set status `completed`. If diff exists, create PR via GitHubClient, store `pr_url`. Append `pr_created` + `status_change` events. |
 | `getRun` | `(string $uuid): ?IssueRun` | Load by UUID from storage. |
@@ -212,33 +215,31 @@ final class IssueOrchestrator
 3. **No process management:** Synchronous per call. No PID tracking, no daemon spawning.
 4. **Event logging on every state change:** All transitions append to `event_log` for audit trail and chat summaries.
 
-## Component 3a: `IssuePromptBuilder` (Claudriel)
+## Component 3a: `IssueInstructionBuilder` (Claudriel)
 
-**File:** `src/Domain/IssuePromptBuilder.php`
+**File:** `src/Domain/IssueInstructionBuilder.php`
+
+**Correction from spec review:** Renamed from `IssuePromptBuilder`. This builds the *instruction string* that gets passed to `CodexExecutionPipeline::execute($workspace, $instruction)`. The pipeline's existing `PromptBuilder` handles full prompt construction — this class only builds the issue-specific instruction.
 
 ```php
 namespace Claudriel\Domain;
 
-final class IssuePromptBuilder
+final class IssueInstructionBuilder
 {
-    public function __construct(
-        private readonly string $projectRoot,
-    ) {}
-
     public function build(IssueRun $run, Workspace $workspace): string {}
 }
 ```
 
-### Prompt Structure
+### Instruction Structure
 
-The deterministic "work this issue" prompt includes:
+The deterministic "work this issue" instruction includes:
 
 1. **Run header:** IssueRun UUID for traceability
 2. **Issue context:** title, body, labels, milestone name
-3. **Workspace context:** repo path, current branch, recent commits
-4. **Architectural constraints:** contents of `CLAUDE.md` from workspace repo root
-5. **Guardrails:** directories to avoid, test requirements, commit conventions
-6. **Resume context:** if `last_agent_output` exists, includes it for continuity
+3. **Guardrails:** directories to avoid, test requirements, commit conventions
+4. **Resume context:** if `last_agent_output` exists, includes it for continuity
+
+The instruction does NOT include workspace context or CLAUDE.md — those are handled by the existing `PromptBuilder` inside `CodexExecutionPipeline`.
 
 Pure function — no side effects, fully testable.
 
@@ -246,7 +247,9 @@ Pure function — no side effects, fully testable.
 
 ### Approach
 
-Extend `ChatStreamController::stream()` to detect orchestrator intents before sending to the AI client. Unrecognized messages continue through the existing AI chat flow unchanged.
+Extend `ChatStreamController` following the existing `handleLocalAction()` pattern. A new `handleOrchestratorIntent()` private method is called alongside `handleLocalAction()` — if it returns a `?StreamedResponse`, that response is used; otherwise the existing AI chat flow continues unchanged.
+
+`IssueOrchestrator` is injected as nullable (`?IssueOrchestrator`), matching the existing `?SidecarChatClient` factory pattern in the constructor.
 
 ### Intent Detection
 
@@ -342,7 +345,7 @@ packages/github/
 ```
 src/Entity/IssueRun.php
 src/Domain/IssueOrchestrator.php
-src/Domain/IssuePromptBuilder.php
+src/Domain/IssueInstructionBuilder.php
 src/Domain/Chat/IssueIntentDetector.php
 src/Domain/Chat/OrchestratorIntent.php
 src/Command/IssueRunCommand.php
@@ -350,7 +353,7 @@ src/Command/IssueListCommand.php
 src/Command/IssueStatusCommand.php
 tests/Claudriel/Unit/Entity/IssueRunTest.php
 tests/Claudriel/Unit/Domain/IssueOrchestratorTest.php
-tests/Claudriel/Unit/Domain/IssuePromptBuilderTest.php
+tests/Claudriel/Unit/Domain/IssueInstructionBuilderTest.php
 tests/Claudriel/Unit/Domain/Chat/IssueIntentDetectorTest.php
 ```
 
@@ -371,9 +374,10 @@ src/Controller/ChatStreamController.php    (add intent detection before AI call)
 ### Orchestrator lifecycle
 - `testCreateRunFetchesIssueAndCreatesWorkspace` — mock GitHubClient, verify workspace + IssueRun created
 - `testCreateRunReusesExistingWorkspace` — workspace with matching branch already exists
-- `testStartRunInvokesSidecar` — verify prompt built, sidecar called
+- `testStartRunInvokesPipeline` — verify instruction built, CodexExecutionPipeline::execute() called
 - `testPauseRunSetsStatus` — verify status change + event
-- `testResumeRunIncludesLastOutput` — verify prompt includes resume context
+- `testResumeRunIncludesLastOutput` — verify instruction includes resume context
+- `testInvalidStatusTransitionThrows` — e.g. completed → running, pending → completed
 - `testAbortRunSetsFailedStatus`
 - `testCompleteRunCreatesPR` — verify GitHubClient::createPullRequest called, pr_url stored
 - `testListRunsFiltersbyStatus`
@@ -386,14 +390,13 @@ src/Controller/ChatStreamController.php    (add intent detection before AI call)
 - `testUnrecognizedMessageReturnsNull` — normal chat passes through
 - `testCaseInsensitiveDetection` — "Run Issue #123" works
 
-### Prompt generation
-- `testPromptIncludesIssueTitle`
-- `testPromptIncludesIssueBody`
-- `testPromptIncludesMilestoneContext`
-- `testPromptIncludesRunUuid` — traceability header
-- `testPromptIncludesClaudeMd` — architectural constraints
-- `testPromptIncludesResumeContext` — when last_agent_output present
-- `testPromptExcludesResumeContextOnFirstRun`
+### Instruction generation
+- `testInstructionIncludesIssueTitle`
+- `testInstructionIncludesIssueBody`
+- `testInstructionIncludesMilestoneContext`
+- `testInstructionIncludesRunUuid` — traceability header
+- `testInstructionIncludesResumeContext` — when last_agent_output present
+- `testInstructionExcludesResumeContextOnFirstRun`
 
 ### Workspace diff
 - `testWorkspaceDiffShowsChanges`
@@ -404,7 +407,7 @@ src/Controller/ChatStreamController.php    (add intent detection before AI call)
 1. `packages/github/` — value objects + client + tests
 2. `IssueRun` entity + entity type registration + persistence tests
 3. `IssueOrchestrator` — createRun/startRun/lifecycle + tests
-4. `IssuePromptBuilder` + tests
+4. `IssueInstructionBuilder` + tests
 5. `IssueIntentDetector` + `OrchestratorIntent` + tests
 6. `ChatStreamController` extension (intent detection hook)
 7. CLI commands
