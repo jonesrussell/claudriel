@@ -644,7 +644,7 @@ final class ChatStreamController
         }
         $this->orchestrator->pauseRun($run);
 
-        return "Run paused.\n\n" . $this->orchestrator->summarizeRun($run);
+        return "Run paused.\n\n".$this->orchestrator->summarizeRun($run);
     }
 
     private function handleResumeRun(string $runId): string
@@ -655,7 +655,7 @@ final class ChatStreamController
         }
         $this->orchestrator->resumeRun($run);
 
-        return "Run resumed.\n\n" . $this->orchestrator->summarizeRun($run);
+        return "Run resumed.\n\n".$this->orchestrator->summarizeRun($run);
     }
 
     private function handleAbortRun(string $runId): string
@@ -666,7 +666,7 @@ final class ChatStreamController
         }
         $this->orchestrator->abortRun($run);
 
-        return "Run aborted.\n\n" . $this->orchestrator->summarizeRun($run);
+        return "Run aborted.\n\n".$this->orchestrator->summarizeRun($run);
     }
 
     private function findWorkspaceByUuid(string $workspaceUuid, string $tenantId): ?Workspace

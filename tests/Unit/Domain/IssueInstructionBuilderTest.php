@@ -18,11 +18,11 @@ final class IssueInstructionBuilderTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->builder = new IssueInstructionBuilder();
+        $this->builder = new IssueInstructionBuilder;
     }
 
     #[Test]
-    public function instructionIncludesIssueTitle(): void
+    public function instruction_includes_issue_title(): void
     {
         $run = $this->makeRun(['issue_title' => 'Add login page']);
         $result = $this->builder->build($run, $this->makeWorkspace());
@@ -30,7 +30,7 @@ final class IssueInstructionBuilderTest extends TestCase
     }
 
     #[Test]
-    public function instructionIncludesIssueBody(): void
+    public function instruction_includes_issue_body(): void
     {
         $run = $this->makeRun(['issue_body' => 'We need a login page with OAuth support.']);
         $result = $this->builder->build($run, $this->makeWorkspace());
@@ -38,7 +38,7 @@ final class IssueInstructionBuilderTest extends TestCase
     }
 
     #[Test]
-    public function instructionIncludesMilestoneContext(): void
+    public function instruction_includes_milestone_context(): void
     {
         $run = $this->makeRun(['milestone_title' => 'v1.0-alpha']);
         $result = $this->builder->build($run, $this->makeWorkspace());
@@ -46,7 +46,7 @@ final class IssueInstructionBuilderTest extends TestCase
     }
 
     #[Test]
-    public function instructionIncludesRunUuid(): void
+    public function instruction_includes_run_uuid(): void
     {
         $run = $this->makeRun(['uuid' => 'abc-123-def']);
         $result = $this->builder->build($run, $this->makeWorkspace());
@@ -54,7 +54,7 @@ final class IssueInstructionBuilderTest extends TestCase
     }
 
     #[Test]
-    public function instructionIncludesResumeContext(): void
+    public function instruction_includes_resume_context(): void
     {
         $run = $this->makeRun(['last_agent_output' => 'Created 3 files, tests passing.']);
         $result = $this->builder->build($run, $this->makeWorkspace());
@@ -63,7 +63,7 @@ final class IssueInstructionBuilderTest extends TestCase
     }
 
     #[Test]
-    public function instructionExcludesResumeContextOnFirstRun(): void
+    public function instruction_excludes_resume_context_on_first_run(): void
     {
         $run = $this->makeRun(['last_agent_output' => null]);
         $result = $this->builder->build($run, $this->makeWorkspace());

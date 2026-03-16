@@ -26,9 +26,11 @@ final class IssueIntentDetector
                     'list_runs' => [],
                     default => ['runId' => $matches[1]],
                 };
+
                 return new OrchestratorIntent($action, $params);
             }
         }
+
         return null;
     }
 }

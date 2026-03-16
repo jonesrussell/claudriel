@@ -13,15 +13,15 @@ use PHPUnit\Framework\TestCase;
 final class IssueRunTest extends TestCase
 {
     #[Test]
-    public function constructorSetsDefaults(): void
+    public function constructor_sets_defaults(): void
     {
-        $run = new IssueRun();
+        $run = new IssueRun;
         $this->assertSame('pending', $run->get('status'));
         $this->assertSame('[]', $run->get('event_log'));
     }
 
     #[Test]
-    public function constructorAcceptsValues(): void
+    public function constructor_accepts_values(): void
     {
         $run = new IssueRun([
             'issue_number' => 42,
@@ -34,23 +34,23 @@ final class IssueRunTest extends TestCase
     }
 
     #[Test]
-    public function entityTypeIdIsCorrect(): void
+    public function entity_type_id_is_correct(): void
     {
-        $run = new IssueRun();
+        $run = new IssueRun;
         $this->assertSame('issue_run', $run->getEntityTypeId());
     }
 
     #[Test]
-    public function labelKeyIsIssueTitle(): void
+    public function label_key_is_issue_title(): void
     {
         $run = new IssueRun(['issue_title' => 'My Issue']);
         $this->assertSame('My Issue', $run->label());
     }
 
     #[Test]
-    public function eventLogDefaultsToEmptyJsonArray(): void
+    public function event_log_defaults_to_empty_json_array(): void
     {
-        $run = new IssueRun();
+        $run = new IssueRun;
         $decoded = json_decode($run->get('event_log'), true);
         $this->assertSame([], $decoded);
     }

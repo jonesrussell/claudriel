@@ -31,6 +31,7 @@ final class IssueInstructionBuilder
         if ($lastOutput !== null && $lastOutput !== '') {
             $sections[] = "## Previous progress\n\n{$lastOutput}";
         }
+
         return implode("\n\n", array_filter($sections));
     }
 }

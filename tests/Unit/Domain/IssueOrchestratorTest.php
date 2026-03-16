@@ -11,15 +11,19 @@ use Claudriel\Entity\Workspace;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\EventDispatcher\EventDispatcher;
+use Waaseyaa\Database\PdoDatabase;
 use Waaseyaa\Entity\EntityType;
 use Waaseyaa\Entity\EntityTypeManager;
+use Waaseyaa\EntityStorage\SqlEntityStorage;
+use Waaseyaa\EntityStorage\SqlSchemaHandler;
 use Waaseyaa\GitHub\GitHubClient;
 
 #[CoversClass(IssueOrchestrator::class)]
 final class IssueOrchestratorTest extends TestCase
 {
     #[Test]
-    public function createRunFetchesIssueAndCreatesWorkspace(): void
+    public function create_run_fetches_issue_and_creates_workspace(): void
     {
         $orchestrator = $this->buildOrchestrator();
 
@@ -35,7 +39,7 @@ final class IssueOrchestratorTest extends TestCase
     }
 
     #[Test]
-    public function createRunSetsWorkspaceId(): void
+    public function create_run_sets_workspace_id(): void
     {
         $orchestrator = $this->buildOrchestrator();
 
@@ -45,7 +49,7 @@ final class IssueOrchestratorTest extends TestCase
     }
 
     #[Test]
-    public function createRunAppendsCreatedEvent(): void
+    public function create_run_appends_created_event(): void
     {
         $orchestrator = $this->buildOrchestrator();
 
@@ -58,7 +62,7 @@ final class IssueOrchestratorTest extends TestCase
     }
 
     #[Test]
-    public function createRunReusesExistingWorkspace(): void
+    public function create_run_reuses_existing_workspace(): void
     {
         $orchestrator = $this->buildOrchestrator();
 
@@ -69,7 +73,7 @@ final class IssueOrchestratorTest extends TestCase
     }
 
     #[Test]
-    public function pauseRunSetsStatusAndAppendsEvent(): void
+    public function pause_run_sets_status_and_appends_event(): void
     {
         $orchestrator = $this->buildOrchestrator();
         $run = $orchestrator->createRun(42);
@@ -86,7 +90,7 @@ final class IssueOrchestratorTest extends TestCase
     }
 
     #[Test]
-    public function abortRunSetsFailedStatus(): void
+    public function abort_run_sets_failed_status(): void
     {
         $orchestrator = $this->buildOrchestrator();
         $run = $orchestrator->createRun(42);
@@ -98,7 +102,7 @@ final class IssueOrchestratorTest extends TestCase
     }
 
     #[Test]
-    public function invalidStatusTransitionThrows(): void
+    public function invalid_status_transition_throws(): void
     {
         $orchestrator = $this->buildOrchestrator();
         $run = $orchestrator->createRun(42);
@@ -108,7 +112,7 @@ final class IssueOrchestratorTest extends TestCase
     }
 
     #[Test]
-    public function invalidTransitionFromCompletedThrows(): void
+    public function invalid_transition_from_completed_throws(): void
     {
         $orchestrator = $this->buildOrchestrator();
         $run = $orchestrator->createRun(42);
@@ -119,7 +123,7 @@ final class IssueOrchestratorTest extends TestCase
     }
 
     #[Test]
-    public function listRunsReturnsAllRuns(): void
+    public function list_runs_returns_all_runs(): void
     {
         $orchestrator = $this->buildOrchestrator();
         $orchestrator->createRun(1);
@@ -130,7 +134,7 @@ final class IssueOrchestratorTest extends TestCase
     }
 
     #[Test]
-    public function listRunsFiltersByStatus(): void
+    public function list_runs_filters_by_status(): void
     {
         $orchestrator = $this->buildOrchestrator();
         $run1 = $orchestrator->createRun(1);
@@ -148,7 +152,7 @@ final class IssueOrchestratorTest extends TestCase
     }
 
     #[Test]
-    public function summarizeRunReturnsString(): void
+    public function summarize_run_returns_string(): void
     {
         $orchestrator = $this->buildOrchestrator();
         $run = $orchestrator->createRun(42);
@@ -164,7 +168,8 @@ final class IssueOrchestratorTest extends TestCase
 
     private function buildOrchestrator(): IssueOrchestrator
     {
-        $gitHubClient = new class('fake', 'owner', 'repo') extends GitHubClient {
+        $gitHubClient = new class('fake', 'owner', 'repo') extends GitHubClient
+        {
             protected function request(string $method, string $path, ?array $body = null): array
             {
                 // Extract issue number from path
@@ -186,14 +191,14 @@ final class IssueOrchestratorTest extends TestCase
             }
         };
 
-        $db = \Waaseyaa\Database\PdoDatabase::createSqlite(':memory:');
-        $dispatcher = new \Symfony\Component\EventDispatcher\EventDispatcher();
+        $db = PdoDatabase::createSqlite(':memory:');
+        $dispatcher = new EventDispatcher;
         $this->entityTypeManager = new EntityTypeManager(
             $dispatcher,
             function ($definition) use ($db, $dispatcher) {
-                (new \Waaseyaa\EntityStorage\SqlSchemaHandler($definition, $db))->ensureTable();
+                (new SqlSchemaHandler($definition, $db))->ensureTable();
 
-                return new \Waaseyaa\EntityStorage\SqlEntityStorage($definition, $db, $dispatcher);
+                return new SqlEntityStorage($definition, $db, $dispatcher);
             },
         );
 
@@ -233,7 +238,7 @@ final class IssueOrchestratorTest extends TestCase
             entityTypeManager: $this->entityTypeManager,
             gitHubClient: $gitHubClient,
             pipeline: null,
-            instructionBuilder: new IssueInstructionBuilder(),
+            instructionBuilder: new IssueInstructionBuilder,
             gitOperator: null,
         );
     }

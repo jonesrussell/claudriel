@@ -41,7 +41,7 @@ final class IssueOrchestrator
             'issue_body' => $issue->body,
             'milestone_title' => $issue->milestone,
             'workspace_id' => $workspace->id(),
-            'branch_name' => 'issue-' . $issueNumber,
+            'branch_name' => 'issue-'.$issueNumber,
         ]);
 
         $this->appendEvent($run, ['type' => 'created', 'issue' => $issueNumber]);
@@ -159,7 +159,7 @@ final class IssueOrchestrator
         $workspace = $this->loadWorkspace($run);
         $repoPath = $workspace->get('repo_path');
 
-        if ($repoPath === null || !is_dir($repoPath)) {
+        if ($repoPath === null || ! is_dir($repoPath)) {
             return '';
         }
 
@@ -184,7 +184,7 @@ final class IssueOrchestrator
         }
 
         $events = json_decode($run->get('event_log') ?? '[]', true, 512, JSON_THROW_ON_ERROR);
-        $lines[] = "**Events:** " . count($events);
+        $lines[] = '**Events:** '.count($events);
 
         return implode("\n", $lines);
     }
@@ -194,7 +194,7 @@ final class IssueOrchestrator
         $currentStatus = $run->get('status');
         $allowed = self::VALID_TRANSITIONS[$currentStatus] ?? [];
 
-        if (!in_array($newStatus, $allowed, true)) {
+        if (! in_array($newStatus, $allowed, true)) {
             throw new \InvalidArgumentException(
                 "Cannot transition from '{$currentStatus}' to '{$newStatus}'"
             );
@@ -225,7 +225,7 @@ final class IssueOrchestrator
 
     private function findOrCreateWorkspace(int $issueNumber): Workspace
     {
-        $branchName = 'issue-' . $issueNumber;
+        $branchName = 'issue-'.$issueNumber;
         $storage = $this->entityTypeManager->getStorage('workspace');
         $ids = $storage->getQuery()->condition('branch', $branchName)->execute();
 

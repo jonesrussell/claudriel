@@ -12,11 +12,11 @@ use Claudriel\CLI\WorkspaceRunLoopCommand;
 use Claudriel\CLI\WorkspaceStatusCommand;
 use Claudriel\CLI\WorkspaceVerifyCommand;
 use Claudriel\Command\BriefCommand;
+use Claudriel\Command\CommitmentsCommand;
+use Claudriel\Command\CommitmentUpdateCommand;
 use Claudriel\Command\IssueListCommand;
 use Claudriel\Command\IssueRunCommand;
 use Claudriel\Command\IssueStatusCommand;
-use Claudriel\Command\CommitmentsCommand;
-use Claudriel\Command\CommitmentUpdateCommand;
 use Claudriel\Command\RecategorizeEventsCommand;
 use Claudriel\Command\SkillsCommand;
 use Claudriel\Command\WorkspaceCloneCommand;
@@ -54,6 +54,8 @@ use Claudriel\Controller\TriageApiController;
 use Claudriel\Controller\WorkspaceApiController;
 use Claudriel\Domain\DayBrief\Assembler\DayBriefAssembler;
 use Claudriel\Domain\DayBrief\Service\BriefSessionStore;
+use Claudriel\Domain\IssueInstructionBuilder;
+use Claudriel\Domain\IssueOrchestrator;
 use Claudriel\Entity\Account;
 use Claudriel\Entity\AccountPasswordResetToken;
 use Claudriel\Entity\AccountVerificationToken;
@@ -63,8 +65,8 @@ use Claudriel\Entity\ChatSession;
 use Claudriel\Entity\Commitment;
 use Claudriel\Entity\CommitmentExtractionLog;
 use Claudriel\Entity\Integration;
-use Claudriel\Entity\McEvent;
 use Claudriel\Entity\IssueRun;
+use Claudriel\Entity\McEvent;
 use Claudriel\Entity\Operation;
 use Claudriel\Entity\Person;
 use Claudriel\Entity\ScheduleEntry;
@@ -86,6 +88,7 @@ use Waaseyaa\EntityStorage\Connection\SingleConnectionResolver;
 use Waaseyaa\EntityStorage\Driver\SqlStorageDriver;
 use Waaseyaa\EntityStorage\EntityRepository;
 use Waaseyaa\Foundation\ServiceProvider\ServiceProvider;
+use Waaseyaa\GitHub\GitHubClient;
 use Waaseyaa\Routing\RouteBuilder;
 use Waaseyaa\Routing\WaaseyaaRouter;
 
@@ -1185,20 +1188,20 @@ final class ClaudrielServiceProvider extends ServiceProvider
     private function buildIssueOrchestrator(
         EntityTypeManager $entityTypeManager,
         GitOperator $gitOperator,
-    ): ?\Claudriel\Domain\IssueOrchestrator {
+    ): ?IssueOrchestrator {
         $githubToken = $_ENV['GITHUB_TOKEN'] ?? getenv('GITHUB_TOKEN') ?: null;
-        if (!is_string($githubToken) || $githubToken === '') {
+        if (! is_string($githubToken) || $githubToken === '') {
             return null;
         }
 
         $githubOwner = $_ENV['GITHUB_OWNER'] ?? getenv('GITHUB_OWNER') ?: '';
         $githubRepo = $_ENV['GITHUB_REPO'] ?? getenv('GITHUB_REPO') ?: '';
 
-        return new \Claudriel\Domain\IssueOrchestrator(
+        return new IssueOrchestrator(
             entityTypeManager: $entityTypeManager,
-            gitHubClient: new \Waaseyaa\GitHub\GitHubClient($githubToken, $githubOwner, $githubRepo),
+            gitHubClient: new GitHubClient($githubToken, $githubOwner, $githubRepo),
             pipeline: null,
-            instructionBuilder: new \Claudriel\Domain\IssueInstructionBuilder(),
+            instructionBuilder: new IssueInstructionBuilder,
             gitOperator: $gitOperator,
         );
     }

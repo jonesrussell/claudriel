@@ -15,7 +15,7 @@ use PHPUnit\Framework\TestCase;
 final class IssueIntentDetectorTest extends TestCase
 {
     #[Test]
-    public function detectRunIssueIntent(): void
+    public function detect_run_issue_intent(): void
     {
         $intent = IssueIntentDetector::detect('run issue #123');
         self::assertNotNull($intent);
@@ -24,7 +24,7 @@ final class IssueIntentDetectorTest extends TestCase
     }
 
     #[Test]
-    public function detectWorkOnIssueVariant(): void
+    public function detect_work_on_issue_variant(): void
     {
         $intent = IssueIntentDetector::detect('work on issue #45');
         self::assertNotNull($intent);
@@ -33,7 +33,7 @@ final class IssueIntentDetectorTest extends TestCase
     }
 
     #[Test]
-    public function detectStartIssueVariant(): void
+    public function detect_start_issue_variant(): void
     {
         $intent = IssueIntentDetector::detect('start issue #7');
         self::assertNotNull($intent);
@@ -42,7 +42,7 @@ final class IssueIntentDetectorTest extends TestCase
     }
 
     #[Test]
-    public function detectShowRunIntent(): void
+    public function detect_show_run_intent(): void
     {
         $intent = IssueIntentDetector::detect('show run abc-123-def');
         self::assertNotNull($intent);
@@ -51,7 +51,7 @@ final class IssueIntentDetectorTest extends TestCase
     }
 
     #[Test]
-    public function detectStatusOfRunVariant(): void
+    public function detect_status_of_run_variant(): void
     {
         $intent = IssueIntentDetector::detect('status of run abc-123');
         self::assertNotNull($intent);
@@ -60,7 +60,7 @@ final class IssueIntentDetectorTest extends TestCase
     }
 
     #[Test]
-    public function detectListRunsIntent(): void
+    public function detect_list_runs_intent(): void
     {
         $intent = IssueIntentDetector::detect('list runs');
         self::assertNotNull($intent);
@@ -69,7 +69,7 @@ final class IssueIntentDetectorTest extends TestCase
     }
 
     #[Test]
-    public function detectShowAllRunsVariant(): void
+    public function detect_show_all_runs_variant(): void
     {
         $intent = IssueIntentDetector::detect('show all runs');
         self::assertNotNull($intent);
@@ -78,7 +78,7 @@ final class IssueIntentDetectorTest extends TestCase
     }
 
     #[Test]
-    public function detectActiveRunsVariant(): void
+    public function detect_active_runs_variant(): void
     {
         $intent = IssueIntentDetector::detect('active runs');
         self::assertNotNull($intent);
@@ -87,7 +87,7 @@ final class IssueIntentDetectorTest extends TestCase
     }
 
     #[Test]
-    public function detectShowDiffIntent(): void
+    public function detect_show_diff_intent(): void
     {
         $intent = IssueIntentDetector::detect('diff for run abc-123');
         self::assertNotNull($intent);
@@ -96,7 +96,7 @@ final class IssueIntentDetectorTest extends TestCase
     }
 
     #[Test]
-    public function detectShowDiffVariant(): void
+    public function detect_show_diff_variant(): void
     {
         $intent = IssueIntentDetector::detect('show diff abc-123');
         self::assertNotNull($intent);
@@ -105,7 +105,7 @@ final class IssueIntentDetectorTest extends TestCase
     }
 
     #[Test]
-    public function detectPauseRunIntent(): void
+    public function detect_pause_run_intent(): void
     {
         $intent = IssueIntentDetector::detect('pause run abc-123');
         self::assertNotNull($intent);
@@ -114,7 +114,7 @@ final class IssueIntentDetectorTest extends TestCase
     }
 
     #[Test]
-    public function detectResumeRunIntent(): void
+    public function detect_resume_run_intent(): void
     {
         $intent = IssueIntentDetector::detect('resume run abc-123');
         self::assertNotNull($intent);
@@ -123,7 +123,7 @@ final class IssueIntentDetectorTest extends TestCase
     }
 
     #[Test]
-    public function detectAbortRunIntent(): void
+    public function detect_abort_run_intent(): void
     {
         $intent = IssueIntentDetector::detect('abort run abc-123');
         self::assertNotNull($intent);
@@ -132,7 +132,7 @@ final class IssueIntentDetectorTest extends TestCase
     }
 
     #[Test]
-    public function unrecognizedMessageReturnsNull(): void
+    public function unrecognized_message_returns_null(): void
     {
         self::assertNull(IssueIntentDetector::detect('hello, how are you?'));
         self::assertNull(IssueIntentDetector::detect('what is the weather like?'));
@@ -140,7 +140,7 @@ final class IssueIntentDetectorTest extends TestCase
     }
 
     #[Test]
-    public function caseInsensitiveDetection(): void
+    public function case_insensitive_detection(): void
     {
         $intent = IssueIntentDetector::detect('Run Issue #123');
         self::assertNotNull($intent);
