@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Claudriel\Provider;
 
+use Claudriel\Admin\Host\ClaudrielSurfaceHost;
 use Claudriel\AI\PromptBuilder;
 use Claudriel\CLI\WorkspaceIterateCommand;
 use Claudriel\CLI\WorkspaceLinkRepoCommand;
@@ -23,7 +24,6 @@ use Claudriel\Command\WorkspaceCloneCommand;
 use Claudriel\Command\WorkspaceCreateCommand;
 use Claudriel\Command\WorkspacePullCommand;
 use Claudriel\Command\WorkspacesCommand;
-use Claudriel\Controller\AdminSessionController;
 use Claudriel\Controller\AdminUiController;
 use Claudriel\Controller\Ai\ExtractionImprovementSuggestionController;
 use Claudriel\Controller\Ai\ExtractionSelfAssessmentController;
@@ -81,6 +81,7 @@ use Claudriel\Support\DriftDetector;
 use Claudriel\Support\GoogleTokenManager;
 use Claudriel\Support\GoogleTokenManagerInterface;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
+use Waaseyaa\AdminSurface\AdminSurfaceServiceProvider;
 use Waaseyaa\Database\PdoDatabase;
 use Waaseyaa\Entity\EntityType;
 use Waaseyaa\Entity\EntityTypeManager;
@@ -386,17 +387,22 @@ final class ClaudrielServiceProvider extends ServiceProvider
                 ->build(),
         );
 
+        // Admin surface routes (session, catalog, entity CRUD)
+        $surfaceHost = new ClaudrielSurfaceHost(fn () => $this->resolve(EntityTypeManager::class));
+        AdminSurfaceServiceProvider::registerRoutes($router, $surfaceHost);
+
+        // Legacy endpoints consumed by the frontend SPA
         $router->addRoute(
             'claudriel.admin.session',
             RouteBuilder::create('/admin/session')
-                ->controller(AdminSessionController::class.'::state')
+                ->controller(fn () => $surfaceHost->handleLegacySession())
                 ->allowAll()
                 ->methods('GET')
                 ->build(),
         );
 
         $adminLogoutRoute = RouteBuilder::create('/admin/logout')
-            ->controller(AdminSessionController::class.'::logout')
+            ->controller(fn () => $surfaceHost->handleLegacyLogout())
             ->allowAll()
             ->methods('POST')
             ->build();

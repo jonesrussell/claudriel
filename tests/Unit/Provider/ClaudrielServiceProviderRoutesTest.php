@@ -38,8 +38,15 @@ final class ClaudrielServiceProviderRoutesTest extends TestCase
         self::assertSame('/admin', $admin->getPath());
         self::assertSame('Claudriel\\Controller\\AdminUiController::show', $admin->getDefault('_controller'));
 
+        // Legacy session route still registered (closure-based, delegates to surface host)
         self::assertInstanceOf(Route::class, $adminSession);
         self::assertSame('/admin/session', $adminSession->getPath());
-        self::assertSame('Claudriel\\Controller\\AdminSessionController::state', $adminSession->getDefault('_controller'));
+
+        // Canonical admin surface routes
+        self::assertInstanceOf(Route::class, $routes->get('admin_surface.session'));
+        self::assertSame('/admin/surface/session', $routes->get('admin_surface.session')->getPath());
+
+        self::assertInstanceOf(Route::class, $routes->get('admin_surface.catalog'));
+        self::assertSame('/admin/surface/catalog', $routes->get('admin_surface.catalog')->getPath());
     }
 }
