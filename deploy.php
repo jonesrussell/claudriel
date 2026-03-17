@@ -92,7 +92,12 @@ task('deploy:clear_cache', function (): void {
 
 desc('Set up Python agent virtualenv');
 task('agent:setup', function (): void {
-    run('cd {{release_path}} && python3.11 -m venv agent/.venv 2>/dev/null || python3 -m venv agent/.venv');
+    $result = run('cd {{release_path}} && (python3.11 -m venv agent/.venv 2>/dev/null || python3 -m venv agent/.venv) && echo "VENV_OK" || echo "VENV_FAIL"');
+    if (! str_contains($result, 'VENV_OK')) {
+        writeln('<comment>Warning: Python venv creation failed — agent will not be available. Install python3-venv on the server.</comment>');
+
+        return;
+    }
     run('{{release_path}}/agent/.venv/bin/pip install -q -r {{release_path}}/agent/requirements.txt');
 });
 
