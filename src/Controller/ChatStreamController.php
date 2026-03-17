@@ -500,8 +500,9 @@ final class ChatStreamController
         $dockerImage = $_ENV['AGENT_DOCKER_IMAGE'] ?? getenv('AGENT_DOCKER_IMAGE') ?: '';
 
         if ($dockerImage !== '') {
-            // Production: run agent inside Docker container
-            $command = ['docker', 'run', '--rm', '-i', '--network=host', $dockerImage, 'python', '/srv/agent/main.py'];
+            // Production: run agent inside Docker container, pass API key
+            $apiKey = $_ENV['ANTHROPIC_API_KEY'] ?? getenv('ANTHROPIC_API_KEY') ?: '';
+            $command = ['docker', 'run', '--rm', '-i', '--network=host', '-e', 'ANTHROPIC_API_KEY='.$apiKey, $dockerImage, 'python', '/srv/agent/main.py'];
         } else {
             // Local dev: run agent directly via venv
             $venv = $_ENV['AGENT_VENV'] ?? getenv('AGENT_VENV') ?: $projectRoot.'/agent/.venv';

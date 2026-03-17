@@ -104,7 +104,9 @@ final class CodexExecutionPipeline
         $dockerImage = $_ENV['AGENT_DOCKER_IMAGE'] ?? getenv('AGENT_DOCKER_IMAGE') ?: '';
 
         if ($dockerImage !== '') {
-            return new SubprocessChatClient(['docker', 'run', '--rm', '-i', '--network=host', $dockerImage, 'python', '/srv/agent/main.py']);
+            $apiKey = $_ENV['ANTHROPIC_API_KEY'] ?? getenv('ANTHROPIC_API_KEY') ?: '';
+
+            return new SubprocessChatClient(['docker', 'run', '--rm', '-i', '--network=host', '-e', 'ANTHROPIC_API_KEY='.$apiKey, $dockerImage, 'python', '/srv/agent/main.py']);
         }
 
         $projectRoot = getcwd() ?: '/srv';
