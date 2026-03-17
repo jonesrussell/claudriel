@@ -54,6 +54,7 @@ use Claudriel\Domain\DayBrief\Assembler\DayBriefAssembler;
 use Claudriel\Domain\DayBrief\Service\BriefSessionStore;
 use Claudriel\Domain\IssueInstructionBuilder;
 use Claudriel\Domain\IssueOrchestrator;
+use Claudriel\Domain\Schedule\ScheduleSeriesResolver;
 use Claudriel\Entity\Account;
 use Claudriel\Entity\AccountPasswordResetToken;
 use Claudriel\Entity\AccountVerificationToken;
@@ -81,6 +82,7 @@ use Claudriel\Support\AutomatedSenderDetector;
 use Claudriel\Support\DriftDetector;
 use Claudriel\Support\GoogleTokenManager;
 use Claudriel\Support\GoogleTokenManagerInterface;
+use GraphQL\Type\Definition\Type;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 use Waaseyaa\AdminSurface\AdminSurfaceServiceProvider;
 use Waaseyaa\Database\PdoDatabase;
@@ -353,6 +355,31 @@ final class ClaudrielServiceProvider extends ServiceProvider
                 $this->resolve(InternalApiTokenGenerator::class),
             );
         });
+    }
+
+    public function graphqlMutationOverrides(): array
+    {
+        $resolver = new ScheduleSeriesResolver(
+            $this->resolve(EntityTypeManager::class),
+        );
+
+        return [
+            'updateScheduleEntry' => [
+                'args' => ['scope' => Type::string()],
+                'resolve' => fn (mixed $root, array $args): array => $resolver->resolveUpdate(
+                    $args['id'],
+                    $args['input'],
+                    $args['scope'] ?? 'occurrence',
+                ),
+            ],
+            'deleteScheduleEntry' => [
+                'args' => ['scope' => Type::string()],
+                'resolve' => fn (mixed $root, array $args): array => $resolver->resolveDelete(
+                    $args['id'],
+                    $args['scope'] ?? 'occurrence',
+                ),
+            ],
+        ];
     }
 
     public function middleware(): array

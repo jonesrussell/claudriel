@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "fb182b7d8adf533c4ad21cf504b75d5a",
+    "content-hash": "f3b093e7cca73ff86f197fa13dd5490f",
     "packages": [
         {
             "name": "doctrine/dbal",
@@ -4684,16 +4684,16 @@
         },
         {
             "name": "waaseyaa/foundation",
-            "version": "v0.1.0-alpha.14",
+            "version": "v0.1.0-alpha.16",
             "source": {
                 "type": "git",
                 "url": "https://github.com/waaseyaa/foundation.git",
-                "reference": "2399ef364344df326a4e54891c49492b05418182"
+                "reference": "1220a50bc2c270e76b1aa7d06e44b0bc18a8bc10"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/waaseyaa/foundation/zipball/2399ef364344df326a4e54891c49492b05418182",
-                "reference": "2399ef364344df326a4e54891c49492b05418182",
+                "url": "https://api.github.com/repos/waaseyaa/foundation/zipball/1220a50bc2c270e76b1aa7d06e44b0bc18a8bc10",
+                "reference": "1220a50bc2c270e76b1aa7d06e44b0bc18a8bc10",
                 "shasum": ""
             },
             "require": {
@@ -4728,9 +4728,9 @@
             "description": "Core framework primitives: service providers, domain events, results, error handling",
             "support": {
                 "issues": "https://github.com/waaseyaa/foundation/issues",
-                "source": "https://github.com/waaseyaa/foundation/tree/v0.1.0-alpha.14"
+                "source": "https://github.com/waaseyaa/foundation/tree/v0.1.0-alpha.16"
             },
-            "time": "2026-03-17T23:00:52+00:00"
+            "time": "2026-03-17T23:44:46+00:00"
         },
         {
             "name": "waaseyaa/github",
@@ -4768,16 +4768,16 @@
         },
         {
             "name": "waaseyaa/graphql",
-            "version": "v0.1.0-alpha.13",
+            "version": "v0.1.0-alpha.15",
             "source": {
                 "type": "git",
                 "url": "https://github.com/waaseyaa/graphql.git",
-                "reference": "3644b2ed35ecdafaebe518804f811d5fbb777541"
+                "reference": "c89883cb824bdfb238f013c08a8319d5b4b62a67"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/waaseyaa/graphql/zipball/3644b2ed35ecdafaebe518804f811d5fbb777541",
-                "reference": "3644b2ed35ecdafaebe518804f811d5fbb777541",
+                "url": "https://api.github.com/repos/waaseyaa/graphql/zipball/c89883cb824bdfb238f013c08a8319d5b4b62a67",
+                "reference": "c89883cb824bdfb238f013c08a8319d5b4b62a67",
                 "shasum": ""
             },
             "require": {
@@ -4804,16 +4804,20 @@
                     "Waaseyaa\\GraphQL\\": "src/"
                 }
             },
-            "notification-url": "https://packagist.org/downloads/",
+            "autoload-dev": {
+                "psr-4": {
+                    "Waaseyaa\\GraphQL\\Tests\\": "tests/"
+                }
+            },
             "license": [
                 "GPL-2.0-or-later"
             ],
             "description": "GraphQL endpoint for Waaseyaa — auto-generated schema from entity types",
             "support": {
-                "issues": "https://github.com/waaseyaa/graphql/issues",
-                "source": "https://github.com/waaseyaa/graphql/tree/v0.1.0-alpha.13"
+                "source": "https://github.com/waaseyaa/graphql/tree/v0.1.0-alpha.16",
+                "issues": "https://github.com/waaseyaa/graphql/issues"
             },
-            "time": "2026-03-16T23:24:21+00:00"
+            "time": "2026-03-17T23:30:10+00:00"
         },
         {
             "name": "waaseyaa/i18n",

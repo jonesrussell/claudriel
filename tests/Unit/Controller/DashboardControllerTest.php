@@ -203,7 +203,7 @@ final class DashboardControllerTest extends TestCase
 
     private function seedUpcomingScheduleEntry(EntityTypeManager $etm, string $title): void
     {
-        $start = new \DateTimeImmutable('+20 minutes', new \DateTimeZone('UTC'));
+        $start = new \DateTimeImmutable('+20 minutes');
         $end = $start->modify('+45 minutes');
 
         $etm->getStorage('schedule_entry')->save(new ScheduleEntry([
