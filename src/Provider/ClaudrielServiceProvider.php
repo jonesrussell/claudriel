@@ -38,6 +38,7 @@ use Claudriel\Controller\CommitmentUpdateController;
 use Claudriel\Controller\ContextController;
 use Claudriel\Controller\DashboardController;
 use Claudriel\Controller\DayBriefController;
+use Claudriel\Controller\GoogleOAuthController;
 use Claudriel\Controller\Governance\CodifiedContextIntegrityController;
 use Claudriel\Controller\IngestController;
 use Claudriel\Controller\NotFoundController;
@@ -917,6 +918,24 @@ final class ClaudrielServiceProvider extends ServiceProvider
                 ->render()
                 ->build(),
         );
+
+        // Google OAuth
+        $router->addRoute(
+            'claudriel.auth.google.redirect',
+            RouteBuilder::create('/auth/google')
+                ->controller(GoogleOAuthController::class.'::redirect')
+                ->allowAll()
+                ->methods('GET')
+                ->build(),
+        );
+
+        $googleCallbackRoute = RouteBuilder::create('/auth/google/callback')
+            ->controller(GoogleOAuthController::class.'::callback')
+            ->allowAll()
+            ->methods('GET')
+            ->build();
+        $googleCallbackRoute->setOption('_csrf', false);
+        $router->addRoute('claudriel.auth.google.callback', $googleCallbackRoute);
 
         // Catch-all: renders 404 for any unmatched path, preventing the
         // foundation render pipeline from failing on PathAliasResolver.
