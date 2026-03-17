@@ -8,6 +8,7 @@ use Claudriel\Entity\Integration;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Twig\Environment;
+use Waaseyaa\Entity\ContentEntityInterface;
 use Waaseyaa\Entity\EntityTypeManager;
 
 final class GoogleOAuthController
@@ -32,7 +33,7 @@ final class GoogleOAuthController
 
     public function __construct(
         private readonly EntityTypeManager $entityTypeManager,
-        private readonly ?Environment $twig = null,
+        ?Environment $twig = null,
     ) {
         $this->clientId = $_ENV['GOOGLE_CLIENT_ID'] ?? getenv('GOOGLE_CLIENT_ID') ?: '';
         $this->clientSecret = $_ENV['GOOGLE_CLIENT_SECRET'] ?? getenv('GOOGLE_CLIENT_SECRET') ?: '';
@@ -137,7 +138,7 @@ final class GoogleOAuthController
         }
 
         $httpCode = 0;
-        if (isset($http_response_header)) {
+        if (isset($http_response_header) && is_array($http_response_header)) {
             foreach ($http_response_header as $header) {
                 if (preg_match('#^HTTP/\d+\.\d+\s+(\d+)#', $header, $m)) {
                     $httpCode = (int) $m[1];
@@ -169,7 +170,7 @@ final class GoogleOAuthController
         }
 
         $httpCode = 0;
-        if (isset($http_response_header)) {
+        if (isset($http_response_header) && is_array($http_response_header)) {
             foreach ($http_response_header as $header) {
                 if (preg_match('#^HTTP/\d+\.\d+\s+(\d+)#', $header, $m)) {
                     $httpCode = (int) $m[1];
@@ -205,6 +206,7 @@ final class GoogleOAuthController
 
         if ($existingIds !== []) {
             $integration = $storage->load(reset($existingIds));
+            assert($integration instanceof Integration);
             $oldScopes = $integration->get('scopes');
 
             $integration->set('access_token', $tokenData['access_token']);

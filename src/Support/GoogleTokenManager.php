@@ -94,7 +94,7 @@ final class GoogleTokenManager implements GoogleTokenManagerInterface
         $response = @file_get_contents(self::TOKEN_ENDPOINT, false, $context);
         $httpCode = 0;
 
-        if (isset($http_response_header)) {
+        if (isset($http_response_header) && is_array($http_response_header)) {
             foreach ($http_response_header as $header) {
                 if (preg_match('#^HTTP/\d+\.\d+\s+(\d+)#', $header, $m)) {
                     $httpCode = (int) $m[1];
