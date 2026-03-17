@@ -74,6 +74,16 @@ final class GoogleOAuthController
         ?Request $httpRequest = null,
         ?Environment $twig = null,
     ): RedirectResponse {
+        try {
+            return $this->handleCallback($query, $account);
+        } catch (\Throwable $e) {
+            // Temporary debug output - remove after smoke test
+            return new RedirectResponse('/?oauth_error='.rawurlencode($e->getMessage().'|'.$e->getFile().':'.$e->getLine()), 302);
+        }
+    }
+
+    private function handleCallback(array $query, mixed $account): RedirectResponse
+    {
         if ($account === null) {
             return new RedirectResponse('/login', 302);
         }
