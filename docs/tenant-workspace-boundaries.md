@@ -36,8 +36,8 @@ Every workspace belongs to exactly one tenant, and no workspace-scoped operation
 - `Workspace` must be tenant-scoped. The existing `account_id` field is not sufficient on its own for multi-tenant isolation.
 - `McEvent`, `Commitment`, `Person`, `TriageEntry`, and `ScheduleEntry` must resolve to a tenant before persistence.
 - Any `workspace_id` or `workspace_uuid` reference must point only to a workspace owned by the same tenant.
-- Chat sessions and chat messages must resolve tenant ownership before performing local actions or sidecar-backed actions.
-- Sidecar sessions must inherit tenant context from the originating request and must never operate as a global shared context.
+- Chat sessions and chat messages must resolve tenant ownership before performing local actions or agent subprocess actions.
+- Agent subprocess sessions must inherit tenant context from the originating request and must never operate as a global shared context.
 
 ## Tenant and Workspace Resolution Rules
 
@@ -68,7 +68,7 @@ Every workspace belongs to exactly one tenant, and no workspace-scoped operation
 | Chat local actions | Create, delete, or update workspaces only inside active tenant | Match workspace names and identifiers within tenant scope | Refuse ambiguous or cross-tenant mutation |
 | Persistence layer | Persist `tenant_id` on all tenant-owned records | Persist workspace reference only after tenant match | Reject invalid associations |
 | Background jobs and async tasks | Carry tenant context in job payloads | Carry optional workspace context as tenant-scoped metadata | Do not run job if tenant context is missing |
-| Sidecar requests and sessions | Propagate originating tenant context | Propagate optional workspace context only as tenant-scoped input | Refuse global or unscoped privileged action |
+| Agent subprocess requests | Propagate originating tenant context | Propagate optional workspace context only as tenant-scoped input | Refuse global or unscoped privileged action |
 | Ingestion endpoints | Require trusted tenant context on ingest payload or auth mapping | Associate workspace only through tenant-scoped classification or lookup | Store tenant-only record if workspace is uncertain |
 
 ## Routing Boundary Rules
@@ -94,7 +94,7 @@ Phase 4 introduces a request-scope resolver that applies these rules consistentl
 - Chat send and chat stream carry `tenant_id` and optional `workspace_id` on sessions and messages, and local workspace mutations resolve names only inside the active tenant.
 - Workspace CRUD loads workspaces by tenant-scoped UUID and rejects cross-tenant access.
 - Tenant-owned CRUD APIs for people, commitments, schedule, and triage now load and mutate records only within the active tenant scope.
-- Sidecar chat requests now carry `tenant_id` and `workspace_id` so later enforcement layers can treat the sidecar boundary as tenant-aware instead of global.
+- Agent subprocess chat requests now carry `tenant_id` and `workspace_id` so later enforcement layers can treat the agent boundary as tenant-aware instead of global.
 
 ## Persistence Boundary Rules
 
@@ -111,19 +111,19 @@ Phase 4 introduces a request-scope resolver that applies these rules consistentl
 - Retry and replay behavior must preserve tenant context exactly; jobs must not rerun in a global default tenant.
 - Background processing must fail closed when tenant context is missing or inconsistent.
 
-## Sidecar Boundary Rules
+## Agent Subprocess Boundary Rules
 
-- The sidecar request path must receive tenant context from the PHP application, not invent it.
-- Sidecar sessions must be isolated per originating application context and must not leak state between tenants.
-- Sidecar-triggered ingestion back into Claudriel must preserve the same tenant association as the originating request.
-- A sidecar health check proves availability only; it does not prove that tenant propagation is correct. Tenant propagation must be validated separately in later phases.
+- The agent subprocess must receive tenant context from the PHP application, not invent it.
+- Agent subprocess sessions must be isolated per originating application context and must not leak state between tenants.
+- Agent-triggered ingestion back into Claudriel must preserve the same tenant association as the originating request.
+- Tenant propagation from PHP to the agent subprocess must be validated; the HMAC token carries account_id which resolves to tenant context.
 
 ## Current Gaps Observed In Repo
 
 - `Workspace` currently defaults fields like `account_id`, but it does not establish an explicit tenant field yet.
 - Existing local workspace actions in `ChatStreamController` perform global name matching across loaded workspaces and do not apply tenant scoping.
 - Several domain entities already carry `tenant_id`, but the boundary behavior is not documented consistently at the routing and job layers.
-- Sidecar availability is checked operationally, but tenant and workspace propagation rules are not yet formalized in code.
+- Agent subprocess receives tenant context via HMAC token (account_id), but workspace propagation rules are not yet formalized in code.
 
 ## Implementation Guidance For Phase 4
 

@@ -235,6 +235,36 @@ final class SchemaContractTest extends TestCase
         self::assertFalse($inputType->hasField('updated_at'));
     }
 
+    #[Test]
+    public function commitment_list_returns_items_and_total(): void
+    {
+        $schema = $this->buildSchema();
+        $queryType = $schema->getQueryType();
+        $listField = $queryType->getField('commitmentList');
+        $listType = $listField->getType();
+
+        self::assertInstanceOf(ObjectType::class, $listType);
+        self::assertTrue($listType->hasField('items'), 'commitmentList missing field: items');
+        self::assertTrue($listType->hasField('total'), 'commitmentList missing field: total');
+
+        self::assertSame('Int', $this->unwrapTypeName($listType->getField('total')->getType()));
+    }
+
+    #[Test]
+    public function person_list_returns_items_and_total(): void
+    {
+        $schema = $this->buildSchema();
+        $queryType = $schema->getQueryType();
+        $listField = $queryType->getField('personList');
+        $listType = $listField->getType();
+
+        self::assertInstanceOf(ObjectType::class, $listType);
+        self::assertTrue($listType->hasField('items'), 'personList missing field: items');
+        self::assertTrue($listType->hasField('total'), 'personList missing field: total');
+
+        self::assertSame('Int', $this->unwrapTypeName($listType->getField('total')->getType()));
+    }
+
     private function unwrapTypeName(Type $type): string
     {
         if ($type instanceof NonNull) {
