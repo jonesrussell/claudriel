@@ -77,65 +77,33 @@ final class GoogleOAuthController
         ?Request $httpRequest = null,
         ?Environment $twig = null,
     ): RedirectResponse {
-        try {
-            return $this->handleCallback($query, $account);
-        } catch (\Throwable $e) {
-            // Temporary debug - remove after smoke test
-            $debugPath = dirname(__DIR__, 2).'/storage/oauth-debug.log';
-            file_put_contents($debugPath, date('c').' '.$e->getMessage()."\n".$e->getTraceAsString()."\n", FILE_APPEND);
-            $_SESSION['flash_error'] = 'OAuth error: '.$e->getMessage();
-
-            return new RedirectResponse('/app', 302);
-        }
-    }
-
-    private function handleCallback(array $query, mixed $account): RedirectResponse
-    {
-        // Temporary debug trace - remove after smoke test
-        $debugPath = dirname(__DIR__, 2).'/storage/oauth-debug.log';
-        $log = static function (string $msg) use ($debugPath): void {
-            file_put_contents($debugPath, date('c').' '.$msg."\n", FILE_APPEND);
-        };
-
         $authenticatedAccount = $this->resolveAccount($account);
 
-        $log('callback: resolved='.($authenticatedAccount !== null ? 'yes' : 'no').' query_keys='.implode(',', array_keys($query)));
-
         if ($authenticatedAccount === null) {
-            $log('callback: REJECTED - no authenticated account');
-
             return new RedirectResponse('/login', 302);
         }
 
-        $log('callback: account_uuid='.$authenticatedAccount->getUuid());
-
         if (isset($query['error'])) {
-            $log('callback: Google error='.$query['error']);
             $_SESSION['flash_error'] = 'Google authorization denied: '.$query['error'];
 
-            return new RedirectResponse('/', 302);
+            return new RedirectResponse('/app', 302);
         }
 
         $expectedState = $_SESSION['google_oauth_state'] ?? null;
         unset($_SESSION['google_oauth_state']);
 
-        $log('callback: expected_state='.($expectedState ?? 'NULL').' query_state='.($query['state'] ?? 'MISSING'));
-
         if ($expectedState === null || ! hash_equals($expectedState, $query['state'] ?? '')) {
-            $log('callback: STATE MISMATCH - session_id='.session_id());
             $_SESSION['flash_error'] = 'Invalid OAuth state. Please try again.';
 
-            return new RedirectResponse('/', 302);
+            return new RedirectResponse('/app', 302);
         }
 
-        $log('callback: state OK, exchanging code');
         $tokenData = $this->exchangeCodeForTokens($query['code'] ?? '');
 
         if ($tokenData === null) {
-            $log('callback: token exchange FAILED');
             $_SESSION['flash_error'] = 'Failed to exchange authorization code.';
 
-            return new RedirectResponse('/', 302);
+            return new RedirectResponse('/app', 302);
         }
 
         $userInfo = $this->fetchUserInfo($tokenData['access_token']);
