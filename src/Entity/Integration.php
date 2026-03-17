@@ -18,6 +18,10 @@ final class Integration extends ContentEntityBase
 
     public function __construct(array $values = [])
     {
+        if (!isset($values['status'])) {
+            $values['status'] = 'pending';
+        }
+
         parent::__construct($values, 'integration', $this->entityKeys);
     }
 }
