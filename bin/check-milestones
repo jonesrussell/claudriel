@@ -1,31 +1,58 @@
 #!/usr/bin/env bash
-# Check GitHub milestone/issue health for jonesrussell/claudriel.
+# Check GitHub issue/milestone health for jonesrussell/claudriel.
 # Used as a SessionStart hook to surface triage gaps at conversation start.
+# Implements Tier 1 of the triage-issues skill.
 # Always exits 0 — output is a warning surface only, not a CI gate.
 
 REPO="jonesrussell/claudriel"
 
-echo "=== Claudriel Milestone Check ==="
+echo "=== Issue Triage ==="
 
-# Open issues with no milestone
-NO_MILESTONE=$(gh api "repos/${REPO}/issues?state=open&per_page=50" \
-  --jq '[.[] | select(.milestone == null) | "#\(.number) \(.title)"] | .[]' 2>/dev/null || echo "")
+# Fetch all open issues once (reused for multiple checks)
+ISSUES_JSON=$(gh api "repos/${REPO}/issues?state=open&per_page=100" \
+  --jq '[.[] | select(.pull_request == null) | {number, title, body: (.body // ""), updated_at: .updated_at, milestone: .milestone}]' 2>/dev/null || echo "[]")
 
-if [ -n "$NO_MILESTONE" ]; then
-  echo "⚠ Open issues without a milestone (incomplete triage):"
-  echo "$NO_MILESTONE" | while read -r line; do echo "  $line"; done
+TOTAL=$(echo "$ISSUES_JSON" | jq 'length')
+WARNINGS=0
+
+# Check 1: Open issues with no milestone
+NO_MILESTONE=$(echo "$ISSUES_JSON" | jq -r '[.[] | select(.milestone == null) | "#\(.number)"] | join(", ")' 2>/dev/null)
+if [[ -n "$NO_MILESTONE" ]]; then
+  echo "⚠ Issues missing milestones: $NO_MILESTONE"
+  WARNINGS=1
+fi
+
+# Check 2: Empty descriptions (body empty or under 20 chars)
+EMPTY_DESC=$(echo "$ISSUES_JSON" | jq -r '[.[] | select((.body | length) < 20) | "#\(.number)"] | join(", ")' 2>/dev/null)
+if [[ -n "$EMPTY_DESC" ]]; then
+  echo "⚠ Issues with no description: $EMPTY_DESC"
+  WARNINGS=1
+fi
+
+# Check 3: Stale issues (no update in 14+ days)
+CUTOFF=$(date -u -d '14 days ago' '+%Y-%m-%dT%H:%M:%SZ' 2>/dev/null || date -u -v-14d '+%Y-%m-%dT%H:%M:%SZ' 2>/dev/null)
+if [[ -n "$CUTOFF" ]]; then
+  STALE=$(echo "$ISSUES_JSON" | jq -r --arg cutoff "$CUTOFF" '[.[] | select(.updated_at < $cutoff) | "#\(.number)"] | join(", ")' 2>/dev/null)
+  if [[ -n "$STALE" ]]; then
+    echo "⚠ Stale issues (14+ days): $STALE"
+    WARNINGS=1
+  fi
+fi
+
+# Check 4: Open milestones with zero open issues
+STALE_MS=$(gh api "repos/${REPO}/milestones?state=open" \
+  --jq '[.[] | select(.open_issues == 0) | .title] | join(", ")' 2>/dev/null || echo "")
+if [[ -n "$STALE_MS" ]]; then
+  echo "⚠ Stale milestones (no open issues): $STALE_MS"
+  WARNINGS=1
+fi
+
+if [[ "$WARNINGS" -eq 0 ]]; then
+  echo "✓ All $TOTAL issues fully triaged"
 else
-  echo "✓ All open issues have milestones assigned."
+  TRIAGED=$(echo "$ISSUES_JSON" | jq --arg cutoff "${CUTOFF:-}" '[.[] | select(.milestone != null and (.body | length) >= 20 and (if $cutoff != "" then .updated_at >= $cutoff else true end))] | length' 2>/dev/null || echo "?")
+  echo "✓ $TRIAGED/$TOTAL issues fully triaged"
 fi
 
-# Open milestones with zero open issues
-MILESTONES=$(gh api "repos/${REPO}/milestones?state=open" \
-  --jq '.[] | select(.open_issues == 0) | "#\(.number) \(.title)"' 2>/dev/null || echo "")
-
-if [ -n "$MILESTONES" ]; then
-  echo "⚠ Open milestones with no open issues (possibly stale):"
-  echo "$MILESTONES" | while read -r line; do echo "  $line"; done
-fi
-
-echo "================================="
+echo "===================="
 exit 0
