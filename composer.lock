@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "c9b241f4fc55b68223f3bfab145353c7",
+    "content-hash": "fb182b7d8adf533c4ad21cf504b75d5a",
     "packages": [
         {
             "name": "doctrine/dbal",
@@ -4684,16 +4684,16 @@
         },
         {
             "name": "waaseyaa/foundation",
-            "version": "v0.1.0-alpha.13",
+            "version": "v0.1.0-alpha.14",
             "source": {
                 "type": "git",
                 "url": "https://github.com/waaseyaa/foundation.git",
-                "reference": "79a160a6cdcb031bd53df542415390f227c1699d"
+                "reference": "2399ef364344df326a4e54891c49492b05418182"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/waaseyaa/foundation/zipball/79a160a6cdcb031bd53df542415390f227c1699d",
-                "reference": "79a160a6cdcb031bd53df542415390f227c1699d",
+                "url": "https://api.github.com/repos/waaseyaa/foundation/zipball/2399ef364344df326a4e54891c49492b05418182",
+                "reference": "2399ef364344df326a4e54891c49492b05418182",
                 "shasum": ""
             },
             "require": {
@@ -4728,9 +4728,9 @@
             "description": "Core framework primitives: service providers, domain events, results, error handling",
             "support": {
                 "issues": "https://github.com/waaseyaa/foundation/issues",
-                "source": "https://github.com/waaseyaa/foundation/tree/v0.1.0-alpha.13"
+                "source": "https://github.com/waaseyaa/foundation/tree/v0.1.0-alpha.14"
             },
-            "time": "2026-03-17T18:52:01+00:00"
+            "time": "2026-03-17T23:00:52+00:00"
         },
         {
             "name": "waaseyaa/github",

@@ -75,6 +75,7 @@ use Claudriel\Entity\TriageEntry;
 use Claudriel\Entity\Workspace;
 use Claudriel\Ingestion\EventCategorizer;
 use Claudriel\Layer2\GitRepositoryManager;
+use Claudriel\Routing\AccountSessionMiddleware;
 use Claudriel\Service\GitOperator;
 use Claudriel\Support\AutomatedSenderDetector;
 use Claudriel\Support\DriftDetector;
@@ -352,6 +353,15 @@ final class ClaudrielServiceProvider extends ServiceProvider
                 $this->resolve(InternalApiTokenGenerator::class),
             );
         });
+    }
+
+    public function middleware(): array
+    {
+        return [
+            new AccountSessionMiddleware(
+                $this->resolve(EntityTypeManager::class),
+            ),
+        ];
     }
 
     public function routes(WaaseyaaRouter $router): void
