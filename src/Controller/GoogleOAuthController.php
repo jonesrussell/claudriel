@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Claudriel\Controller;
 
-use Claudriel\Entity\Account;
+use Claudriel\Access\AuthenticatedAccount;
 use Claudriel\Entity\Integration;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -48,7 +48,7 @@ final class GoogleOAuthController
         ?Request $httpRequest = null,
         ?Environment $twig = null,
     ): RedirectResponse {
-        if (! $account instanceof Account) {
+        if (! $account instanceof AuthenticatedAccount) {
             return new RedirectResponse('/login', 302);
         }
 
@@ -97,13 +97,13 @@ final class GoogleOAuthController
 
         $log('callback: account='.get_class($account).' query_keys='.implode(',', array_keys($query)));
 
-        if (! $account instanceof Account) {
+        if (! $account instanceof AuthenticatedAccount) {
             $log('callback: REJECTED - not Account instance');
 
             return new RedirectResponse('/login', 302);
         }
 
-        $log('callback: account_uuid='.$account->get('uuid'));
+        $log('callback: account_uuid='.$account->getUuid());
 
         if (isset($query['error'])) {
             $log('callback: Google error='.$query['error']);
@@ -206,10 +206,10 @@ final class GoogleOAuthController
         return json_decode($response, true, 512, JSON_THROW_ON_ERROR) ?? [];
     }
 
-    private function upsertIntegration(mixed $account, array $tokenData, ?string $providerEmail): void
+    private function upsertIntegration(AuthenticatedAccount $account, array $tokenData, ?string $providerEmail): void
     {
         $storage = $this->entityTypeManager->getStorage('integration');
-        $accountId = $account->get('uuid');
+        $accountId = $account->getUuid();
 
         $existingIds = $storage->getQuery()
             ->condition('account_id', $accountId)

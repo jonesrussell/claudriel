@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Claudriel\Tests\Unit\Controller;
 
+use Claudriel\Access\AuthenticatedAccount;
 use Claudriel\Controller\GoogleOAuthController;
 use Claudriel\Entity\Account;
 use Claudriel\Entity\Integration;
@@ -37,7 +38,7 @@ final class GoogleOAuthControllerTest extends TestCase
     {
         $etm = $this->buildEntityTypeManager();
         $controller = new GoogleOAuthController($etm);
-        $account = new Account(['uuid' => 'acc-uuid-1']);
+        $account = new AuthenticatedAccount(new Account(['uuid' => 'acc-uuid-1']));
 
         $response = $controller->redirect(account: $account);
 
