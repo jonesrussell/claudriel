@@ -11,7 +11,6 @@ use Claudriel\Controller\DashboardController;
 use Claudriel\Controller\PublicAccountController;
 use Claudriel\Controller\PublicPasswordResetController;
 use Claudriel\Controller\PublicSessionController;
-use Claudriel\Controller\WorkspaceApiController;
 use Claudriel\Entity\Account;
 use Claudriel\Entity\AccountPasswordResetToken;
 use Claudriel\Entity\AccountVerificationToken;
@@ -111,36 +110,25 @@ final class PublicAccountLifecycleSmokeTest extends TestCase
         self::assertSame(200, $briefFallback->statusCode);
         self::assertStringContainsString('Main Workspace', $briefFallback->content);
 
-        $workspaceController = new WorkspaceApiController($entityTypeManager);
-        $createWorkspace = $workspaceController->create(
-            account: $authenticated,
-            httpRequest: Request::create(
-                '/api/workspaces',
-                'POST',
-                server: ['CONTENT_TYPE' => 'application/json'],
-                content: json_encode(['name' => 'Project Phoenix'], JSON_THROW_ON_ERROR),
-            ),
-        );
-        self::assertSame(201, $createWorkspace->statusCode);
-        $createdWorkspace = json_decode($createWorkspace->content, true, 512, JSON_THROW_ON_ERROR)['workspace'];
+        // Workspace CRUD now served by /api/graphql (v1.4 admin migration).
+        // Verify workspace lifecycle via entity storage directly.
+        $workspaceStorage = $entityTypeManager->getStorage('workspace');
+        $phoenix = new Workspace([
+            'name' => 'Project Phoenix',
+            'tenant_id' => (string) $account->get('tenant_id'),
+        ]);
+        $workspaceStorage->save($phoenix);
+        self::assertNotEmpty($phoenix->get('uuid'));
 
-        $updateWorkspace = $workspaceController->update(
-            params: ['uuid' => $createdWorkspace['uuid']],
-            account: $authenticated,
-            httpRequest: Request::create(
-                '/api/workspaces/'.$createdWorkspace['uuid'],
-                'PATCH',
-                server: ['CONTENT_TYPE' => 'application/json'],
-                content: json_encode(['description' => 'Renamed from smoke'], JSON_THROW_ON_ERROR),
-            ),
-        );
-        self::assertSame(200, $updateWorkspace->statusCode);
+        $phoenix->set('description', 'Renamed from smoke');
+        $workspaceStorage->save($phoenix);
 
-        $deleteWorkspace = $workspaceController->delete(
-            params: ['uuid' => $createdWorkspace['uuid']],
-            account: $authenticated,
-        );
-        self::assertSame(200, $deleteWorkspace->statusCode);
+        $reloaded = $workspaceStorage->load($phoenix->id());
+        self::assertInstanceOf(Workspace::class, $reloaded);
+        self::assertSame('Renamed from smoke', $reloaded->get('description'));
+
+        $workspaceStorage->delete([$phoenix]);
+        self::assertNull($workspaceStorage->load($phoenix->id()));
 
         $tenantId = (string) $account->get('tenant_id');
         $defaultWorkspaceUuid = (string) ($this->firstTenant($entityTypeManager)?->get('metadata')['default_workspace_uuid'] ?? '');

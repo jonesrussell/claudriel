@@ -41,10 +41,16 @@ describe('claudrielHostAdapter', () => {
   })
 
   it('keeps Claudriel-specific entity transport mapping out of generic composables', async () => {
-    vi.stubGlobal('$fetch', vi.fn().mockResolvedValue({
-      commitments: [
-        { uuid: 'commitment-1', title: 'Ship host adapter docs' },
-      ],
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({
+        data: {
+          commitmentList: {
+            items: [{ uuid: 'commitment-1', title: 'Ship host adapter docs' }],
+            total: 1,
+          },
+        },
+      }),
     }))
 
     const result = await claudrielHostAdapter.transport.list('commitment')

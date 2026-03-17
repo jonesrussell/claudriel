@@ -25,7 +25,7 @@ Chat → ChatStreamController → SubprocessChatClient
 
 GraphQL (waaseyaa/graphql):
   POST /graphql → auto-generated schema from entity types
-  Commitment + Person fully migrated (REST controllers removed)
+  Commitment, Person, Workspace, ScheduleEntry, TriageEntry fully migrated (REST controllers removed)
   Frontend uses graphqlFetch() composables
 ```
 
@@ -93,6 +93,13 @@ Rule: higher layers import lower layers only. Never import from src/Command insi
 1. Create controller in `src/Controller/`
 2. Register in `ClaudrielServiceProvider::routes()` via `$router->addRoute(...)`
 
+**Migrate a REST controller to GraphQL:**
+1. Add `fieldDefinitions` to the entity's `EntityType` registration in `ClaudrielServiceProvider::register()`
+2. Add the type to `GRAPHQL_TYPES` and `GRAPHQL_FIELDS` in `frontend/admin/app/host/claudrielAdapter.ts`
+3. Remove REST routes from `ClaudrielServiceProvider::routes()`
+4. Delete the REST controller and its test
+5. Add schema contract tests in `tests/Integration/GraphQL/SchemaContractTest.php`
+
 ## GitHub Workflow
 
 All work starts with an issue. Before writing code, ask for or create the issue number.
@@ -133,3 +140,5 @@ All require HMAC Bearer token via `InternalApiTokenGenerator`. See `docs/specs/a
 - Controllers that don't render templates but keep `?Environment $twig` for DI compat need `@phpstan-ignore constructor.unusedParameter`
 - Non-SSR routes (without `->render()`) receive `AnonymousUser` for `$account`, not `AuthenticatedAccount`; use `AuthenticatedAccountSessionResolver` to resolve from session
 - `file_get_contents` needs `'ignore_errors' => true` in stream context to get response body on HTTP 4xx/5xx (otherwise returns `false`)
+- Entity types without `fieldDefinitions` in their `EntityType` registration produce no GraphQL schema; add fieldDefinitions matching the entity class constructor fields
+- `raw_payload` fields return raw JSON strings via GraphQL (REST controllers did `json_decode`); frontend consumers need `JSON.parse()`

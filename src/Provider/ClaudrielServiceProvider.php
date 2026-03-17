@@ -48,10 +48,7 @@ use Claudriel\Controller\PublicAccountController;
 use Claudriel\Controller\PublicHomepageController;
 use Claudriel\Controller\PublicPasswordResetController;
 use Claudriel\Controller\PublicSessionController;
-use Claudriel\Controller\ScheduleApiController;
 use Claudriel\Controller\TemporalNotificationApiController;
-use Claudriel\Controller\TriageApiController;
-use Claudriel\Controller\WorkspaceApiController;
 use Claudriel\Domain\Chat\InternalApiTokenGenerator;
 use Claudriel\Domain\DayBrief\Assembler\DayBriefAssembler;
 use Claudriel\Domain\DayBrief\Service\BriefSessionStore;
@@ -160,6 +157,22 @@ final class ClaudrielServiceProvider extends ServiceProvider
             label: 'Triage Entry',
             class: TriageEntry::class,
             keys: ['id' => 'teid', 'uuid' => 'uuid', 'label' => 'sender_name'],
+            fieldDefinitions: [
+                'teid' => ['type' => 'integer', 'readOnly' => true],
+                'uuid' => ['type' => 'string', 'readOnly' => true],
+                'sender_name' => ['type' => 'string', 'required' => true],
+                'sender_email' => ['type' => 'string'],
+                'summary' => ['type' => 'string'],
+                'status' => ['type' => 'string'],
+                'source' => ['type' => 'string'],
+                'tenant_id' => ['type' => 'string'],
+                'occurred_at' => ['type' => 'datetime'],
+                'external_id' => ['type' => 'string'],
+                'content_hash' => ['type' => 'string'],
+                'raw_payload' => ['type' => 'string'],
+                'created_at' => ['type' => 'timestamp', 'readOnly' => true],
+                'updated_at' => ['type' => 'timestamp', 'readOnly' => true],
+            ],
         ));
 
         $this->entityType(new EntityType(
@@ -222,6 +235,23 @@ final class ClaudrielServiceProvider extends ServiceProvider
             label: 'Workspace',
             class: Workspace::class,
             keys: ['id' => 'wid', 'uuid' => 'uuid', 'label' => 'name'],
+            fieldDefinitions: [
+                'wid' => ['type' => 'integer', 'readOnly' => true],
+                'uuid' => ['type' => 'string', 'readOnly' => true],
+                'name' => ['type' => 'string', 'required' => true],
+                'description' => ['type' => 'string'],
+                'account_id' => ['type' => 'string'],
+                'tenant_id' => ['type' => 'string'],
+                'metadata' => ['type' => 'string'],
+                'repo_path' => ['type' => 'string'],
+                'repo_url' => ['type' => 'string'],
+                'branch' => ['type' => 'string'],
+                'codex_model' => ['type' => 'string'],
+                'last_commit_hash' => ['type' => 'string'],
+                'ci_status' => ['type' => 'string'],
+                'created_at' => ['type' => 'timestamp', 'readOnly' => true],
+                'updated_at' => ['type' => 'timestamp', 'readOnly' => true],
+            ],
         ));
 
         $this->entityType(new EntityType(
@@ -229,6 +259,23 @@ final class ClaudrielServiceProvider extends ServiceProvider
             label: 'Schedule Entry',
             class: ScheduleEntry::class,
             keys: ['id' => 'seid', 'uuid' => 'uuid', 'label' => 'title'],
+            fieldDefinitions: [
+                'seid' => ['type' => 'integer', 'readOnly' => true],
+                'uuid' => ['type' => 'string', 'readOnly' => true],
+                'title' => ['type' => 'string', 'required' => true],
+                'starts_at' => ['type' => 'datetime', 'required' => true],
+                'ends_at' => ['type' => 'datetime'],
+                'notes' => ['type' => 'string'],
+                'source' => ['type' => 'string'],
+                'status' => ['type' => 'string'],
+                'external_id' => ['type' => 'string'],
+                'calendar_id' => ['type' => 'string'],
+                'recurring_series_id' => ['type' => 'string'],
+                'tenant_id' => ['type' => 'string'],
+                'raw_payload' => ['type' => 'string'],
+                'created_at' => ['type' => 'timestamp', 'readOnly' => true],
+                'updated_at' => ['type' => 'timestamp', 'readOnly' => true],
+            ],
         ));
 
         $this->entityType(new EntityType(
@@ -671,133 +718,10 @@ final class ClaudrielServiceProvider extends ServiceProvider
         $updateTemporalNotificationActionRoute->setOption('_csrf', false);
         $router->addRoute('claudriel.api.temporal-notifications.actions', $updateTemporalNotificationActionRoute);
 
-        $router->addRoute(
-            'claudriel.api.workspaces',
-            RouteBuilder::create('/api/workspaces')
-                ->controller(WorkspaceApiController::class.'::list')
-                ->allowAll()
-                ->methods('GET')
-                ->build(),
-        );
-
-        $createRoute = RouteBuilder::create('/api/workspaces')
-            ->controller(WorkspaceApiController::class.'::create')
-            ->allowAll()
-            ->methods('POST')
-            ->build();
-        $createRoute->setOption('_csrf', false);
-        $router->addRoute('claudriel.api.workspaces.create', $createRoute);
-
-        $router->addRoute(
-            'claudriel.api.workspaces.show',
-            RouteBuilder::create('/api/workspaces/{uuid}')
-                ->controller(WorkspaceApiController::class.'::show')
-                ->allowAll()
-                ->methods('GET')
-                ->build(),
-        );
-
-        $updateRoute = RouteBuilder::create('/api/workspaces/{uuid}')
-            ->controller(WorkspaceApiController::class.'::update')
-            ->allowAll()
-            ->methods('PATCH')
-            ->build();
-        $updateRoute->setOption('_csrf', false);
-        $router->addRoute('claudriel.api.workspaces.update', $updateRoute);
-
-        $deleteRoute = RouteBuilder::create('/api/workspaces/{uuid}')
-            ->controller(WorkspaceApiController::class.'::delete')
-            ->allowAll()
-            ->methods('DELETE')
-            ->build();
-        $deleteRoute->setOption('_csrf', false);
-        $router->addRoute('claudriel.api.workspaces.delete', $deleteRoute);
-
-        $router->addRoute(
-            'claudriel.api.schedule',
-            RouteBuilder::create('/api/schedule')
-                ->controller(ScheduleApiController::class.'::list')
-                ->allowAll()
-                ->methods('GET')
-                ->build(),
-        );
-
-        $createScheduleRoute = RouteBuilder::create('/api/schedule')
-            ->controller(ScheduleApiController::class.'::create')
-            ->allowAll()
-            ->methods('POST')
-            ->build();
-        $createScheduleRoute->setOption('_csrf', false);
-        $router->addRoute('claudriel.api.schedule.create', $createScheduleRoute);
-
-        $router->addRoute(
-            'claudriel.api.schedule.show',
-            RouteBuilder::create('/api/schedule/{uuid}')
-                ->controller(ScheduleApiController::class.'::show')
-                ->allowAll()
-                ->methods('GET')
-                ->build(),
-        );
-
-        $updateScheduleRoute = RouteBuilder::create('/api/schedule/{uuid}')
-            ->controller(ScheduleApiController::class.'::update')
-            ->allowAll()
-            ->methods('PATCH')
-            ->build();
-        $updateScheduleRoute->setOption('_csrf', false);
-        $router->addRoute('claudriel.api.schedule.update', $updateScheduleRoute);
-
-        $deleteScheduleRoute = RouteBuilder::create('/api/schedule/{uuid}')
-            ->controller(ScheduleApiController::class.'::delete')
-            ->allowAll()
-            ->methods('DELETE')
-            ->build();
-        $deleteScheduleRoute->setOption('_csrf', false);
-        $router->addRoute('claudriel.api.schedule.delete', $deleteScheduleRoute);
-
+        // Workspace CRUD routes removed — now served by /api/graphql (v1.4 admin migration)
+        // Schedule CRUD routes removed — now served by /api/graphql (v1.4 admin migration)
         // People CRUD routes removed — now served by /api/graphql (#180)
-
-        $router->addRoute(
-            'claudriel.api.triage',
-            RouteBuilder::create('/api/triage')
-                ->controller(TriageApiController::class.'::list')
-                ->allowAll()
-                ->methods('GET')
-                ->build(),
-        );
-
-        $createTriageRoute = RouteBuilder::create('/api/triage')
-            ->controller(TriageApiController::class.'::create')
-            ->allowAll()
-            ->methods('POST')
-            ->build();
-        $createTriageRoute->setOption('_csrf', false);
-        $router->addRoute('claudriel.api.triage.create', $createTriageRoute);
-
-        $router->addRoute(
-            'claudriel.api.triage.show',
-            RouteBuilder::create('/api/triage/{uuid}')
-                ->controller(TriageApiController::class.'::show')
-                ->allowAll()
-                ->methods('GET')
-                ->build(),
-        );
-
-        $updateTriageRoute = RouteBuilder::create('/api/triage/{uuid}')
-            ->controller(TriageApiController::class.'::update')
-            ->allowAll()
-            ->methods('PATCH')
-            ->build();
-        $updateTriageRoute->setOption('_csrf', false);
-        $router->addRoute('claudriel.api.triage.update', $updateTriageRoute);
-
-        $deleteTriageRoute = RouteBuilder::create('/api/triage/{uuid}')
-            ->controller(TriageApiController::class.'::delete')
-            ->allowAll()
-            ->methods('DELETE')
-            ->build();
-        $deleteTriageRoute->setOption('_csrf', false);
-        $router->addRoute('claudriel.api.triage.delete', $deleteTriageRoute);
+        // Triage CRUD routes removed — now served by /api/graphql (v1.4 admin migration)
 
         $router->addRoute(
             'claudriel.ai.export.daily',
