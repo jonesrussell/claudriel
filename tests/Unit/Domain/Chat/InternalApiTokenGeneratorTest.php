@@ -78,4 +78,14 @@ final class InternalApiTokenGeneratorTest extends TestCase
         $this->assertNull($generator->validate('just-one-part'));
         $this->assertNull($generator->validate('two:parts'));
     }
+
+    #[Test]
+    public function validate_handles_account_id_with_colons(): void
+    {
+        $generator = new InternalApiTokenGenerator(self::SECRET);
+        $token = $generator->generate('tenant:account:123');
+
+        $result = $generator->validate($token);
+        $this->assertSame('tenant:account:123', $result);
+    }
 }

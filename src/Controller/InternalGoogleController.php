@@ -90,6 +90,10 @@ final class InternalGoogleController
             return $this->jsonError('to and subject are required', 400);
         }
 
+        if (preg_match('/[\r\n]/', $to) || preg_match('/[\r\n]/', $subject)) {
+            return $this->jsonError('Invalid characters in to or subject', 400);
+        }
+
         $rawMessage = "To: {$to}\r\nSubject: {$subject}\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n{$bodyText}";
         $encoded = rtrim(strtr(base64_encode($rawMessage), '+/', '-_'), '=');
 

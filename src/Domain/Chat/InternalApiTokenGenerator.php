@@ -30,12 +30,25 @@ final class InternalApiTokenGenerator
      */
     public function validate(string $token): ?string
     {
-        $parts = explode(':', $token);
-        if (count($parts) !== 3) {
+        $lastColon = strrpos($token, ':');
+        if ($lastColon === false) {
             return null;
         }
 
-        [$accountId, $timestampStr, $signature] = $parts;
+        $signature = substr($token, $lastColon + 1);
+        $payloadPart = substr($token, 0, $lastColon);
+
+        $secondLastColon = strrpos($payloadPart, ':');
+        if ($secondLastColon === false) {
+            return null;
+        }
+
+        $accountId = substr($payloadPart, 0, $secondLastColon);
+        $timestampStr = substr($payloadPart, $secondLastColon + 1);
+
+        if ($accountId === '' || $timestampStr === '') {
+            return null;
+        }
 
         $timestamp = (int) $timestampStr;
         if (time() - $timestamp > $this->ttlSeconds) {

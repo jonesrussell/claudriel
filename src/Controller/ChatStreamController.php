@@ -27,6 +27,7 @@ final class ChatStreamController
 {
     public function __construct(
         private readonly EntityTypeManager $entityTypeManager,
+        private readonly ?InternalApiTokenGenerator $tokenGenerator = null,
         private readonly mixed $subprocessClientFactory = null,
         private readonly ?IssueOrchestrator $orchestrator = null,
     ) {}
@@ -376,8 +377,9 @@ final class ChatStreamController
         };
 
         $accountId = is_object($account) && method_exists($account, 'id') ? (string) $account->id() : $tenantId;
-        $secret = $_ENV['AGENT_INTERNAL_SECRET'] ?? getenv('AGENT_INTERNAL_SECRET') ?: '';
-        $tokenGenerator = new InternalApiTokenGenerator($secret);
+        $tokenGenerator = $this->tokenGenerator ?? new InternalApiTokenGenerator(
+            $_ENV['AGENT_INTERNAL_SECRET'] ?? getenv('AGENT_INTERNAL_SECRET') ?: '',
+        );
         $apiToken = $tokenGenerator->generate($accountId);
 
         $agentPath = $_ENV['AGENT_PATH'] ?? getenv('AGENT_PATH') ?: $projectRoot.'/agent/main.py';
