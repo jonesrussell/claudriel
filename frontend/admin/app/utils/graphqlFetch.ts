@@ -8,14 +8,14 @@ export class GraphQlError extends Error {
 }
 
 /**
- * Typed GraphQL fetch — sends a query to the /api/graphql endpoint
+ * Typed GraphQL fetch — sends a query to the /graphql endpoint
  * and returns the typed data or throws GraphQlError.
  */
 export async function graphqlFetch<T = unknown>(
   query: string,
   variables?: Record<string, unknown>,
 ): Promise<T> {
-  const response = await fetch('/api/graphql', {
+  const response = await fetch('/graphql', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ query, variables }),

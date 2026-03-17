@@ -21,7 +21,7 @@ describe('graphqlFetch', () => {
     );
 
     expect(result.article.title).toBe('Test');
-    expect(globalThis.fetch).toHaveBeenCalledWith('/api/graphql', expect.objectContaining({
+    expect(globalThis.fetch).toHaveBeenCalledWith('/graphql', expect.objectContaining({
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
     }));
