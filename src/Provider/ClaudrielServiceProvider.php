@@ -23,7 +23,7 @@ use Claudriel\Command\WorkspaceCloneCommand;
 use Claudriel\Command\WorkspaceCreateCommand;
 use Claudriel\Command\WorkspacePullCommand;
 use Claudriel\Command\WorkspacesCommand;
-use Claudriel\Controller\AdminSessionController;
+use Claudriel\Admin\Host\ClaudrielSurfaceHost;
 use Claudriel\Controller\AdminUiController;
 use Claudriel\Controller\Ai\ExtractionImprovementSuggestionController;
 use Claudriel\Controller\Ai\ExtractionSelfAssessmentController;
@@ -386,17 +386,22 @@ final class ClaudrielServiceProvider extends ServiceProvider
                 ->build(),
         );
 
+        // Admin surface routes (session, catalog, entity CRUD)
+        $surfaceHost = new ClaudrielSurfaceHost(fn() => $this->resolve(EntityTypeManager::class));
+        \Waaseyaa\AdminSurface\AdminSurfaceServiceProvider::registerRoutes($router, $surfaceHost);
+
+        // Legacy endpoints consumed by the frontend SPA
         $router->addRoute(
             'claudriel.admin.session',
             RouteBuilder::create('/admin/session')
-                ->controller(AdminSessionController::class.'::state')
+                ->controller(fn() => $surfaceHost->handleLegacySession())
                 ->allowAll()
                 ->methods('GET')
                 ->build(),
         );
 
         $adminLogoutRoute = RouteBuilder::create('/admin/logout')
-            ->controller(AdminSessionController::class.'::logout')
+            ->controller(fn() => $surfaceHost->handleLegacyLogout())
             ->allowAll()
             ->methods('POST')
             ->build();

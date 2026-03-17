@@ -8,11 +8,15 @@ use Claudriel\Access\AuthenticatedAccount;
 use Claudriel\Entity\Account;
 use Claudriel\Entity\Tenant;
 use Claudriel\Support\AdminAccess;
-use Claudriel\Support\AdminCatalog;
 use Claudriel\Support\AuthenticatedAccountSessionResolver;
 use Waaseyaa\Entity\EntityTypeManager;
 
-final class ClaudrielAdminHost implements AdminHostContract
+/**
+ * Authentication and redirect helpers for admin controllers.
+ *
+ * Session/catalog responsibilities have moved to ClaudrielSurfaceHost.
+ */
+final class ClaudrielAdminHost
 {
     public function __construct(
         private readonly EntityTypeManager $entityTypeManager,
@@ -94,32 +98,6 @@ final class ClaudrielAdminHost implements AdminHostContract
         session_regenerate_id(true);
     }
 
-    public function buildSessionPayload(AuthenticatedAccount $account): array
-    {
-        $tenantId = (string) ($account->getTenantId() ?? '');
-
-        return [
-            'account' => [
-                'uuid' => $account->getUuid(),
-                'email' => $account->getEmail(),
-                'tenant_id' => $tenantId,
-                'roles' => $account->getRoles(),
-            ],
-            'tenant' => $this->serializeTenant($tenantId),
-            'entity_types' => $this->entityCatalog(),
-        ];
-    }
-
-    public function buildLogoutPayload(): array
-    {
-        return ['logged_out' => true];
-    }
-
-    public function entityCatalog(): array
-    {
-        return AdminCatalog::entityTypes($this->entityTypeManager);
-    }
-
     public function defaultWorkspaceUuidForTenant(string $tenantId): ?string
     {
         if ($tenantId === '') {
@@ -139,27 +117,6 @@ final class ClaudrielAdminHost implements AdminHostContract
         $workspaceUuid = $metadata['default_workspace_uuid'] ?? null;
 
         return is_string($workspaceUuid) && $workspaceUuid !== '' ? $workspaceUuid : null;
-    }
-
-    /**
-     * @return array{uuid: string, name: string, default_workspace_uuid: string|null}|null
-     */
-    private function serializeTenant(string $tenantId): ?array
-    {
-        if ($tenantId === '') {
-            return null;
-        }
-
-        $tenant = $this->findTenantByUuid($tenantId);
-        if (! $tenant instanceof Tenant) {
-            return null;
-        }
-
-        return [
-            'uuid' => (string) $tenant->get('uuid'),
-            'name' => (string) $tenant->get('name'),
-            'default_workspace_uuid' => $this->defaultWorkspaceUuidForTenant($tenantId),
-        ];
     }
 
     private function findTenantByUuid(string $tenantId): ?Tenant
