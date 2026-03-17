@@ -74,7 +74,7 @@ final class GoogleOAuthController
         }
 
         if (isset($query['error'])) {
-            $_SESSION['flash_error'] = 'Google authorization denied: ' . ($query['error'] ?? 'unknown');
+            $_SESSION['flash_error'] = 'Google authorization denied: ' . $query['error'];
             return new RedirectResponse('/', 302);
         }
 
