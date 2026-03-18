@@ -48,6 +48,14 @@
     "extra": {
         "waaseyaa": {
             "providers": [
+                "Claudriel\\Provider\\AccountServiceProvider",
+                "Claudriel\\Provider\\IngestionServiceProvider",
+                "Claudriel\\Provider\\CommitmentServiceProvider",
+                "Claudriel\\Provider\\ChatServiceProvider",
+                "Claudriel\\Provider\\DayBriefServiceProvider",
+                "Claudriel\\Provider\\WorkspaceServiceProvider",
+                "Claudriel\\Provider\\OperationsServiceProvider",
+                "Claudriel\\Provider\\TemporalServiceProvider",
                 "Claudriel\\Provider\\ClaudrielServiceProvider",
                 "Claudriel\\Provider\\I18nServiceProvider"
             ]
