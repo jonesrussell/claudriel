@@ -24,7 +24,7 @@ final class ExtractionSelfAssessmentController
         private readonly ?string $batchStorageDirectory = null,
     ) {}
 
-    public function index(array $params, array $query, ?AccountInterface $account = null, ?Request $httpRequest = null): SsrResponse
+    public function index(array $params = [], array $query = [], ?AccountInterface $account = null, ?Request $httpRequest = null): SsrResponse
     {
         $payload = $this->buildPayload($query, $httpRequest);
 
@@ -41,7 +41,7 @@ final class ExtractionSelfAssessmentController
         return $this->json($payload);
     }
 
-    public function jsonView(array $params, array $query, ?AccountInterface $account = null, ?Request $httpRequest = null): SsrResponse
+    public function jsonView(array $params = [], array $query = [], ?AccountInterface $account = null, ?Request $httpRequest = null): SsrResponse
     {
         return $this->json($this->buildPayload($query, $httpRequest));
     }

@@ -20,10 +20,10 @@ final class AdminUiController
     ) {}
 
     public function show(
-        array $params,
-        array $query,
-        AccountInterface $account,
-        Request $httpRequest,
+        array $params = [],
+        array $query = [],
+        ?AccountInterface $account = null,
+        ?Request $httpRequest = null,
     ): RedirectResponse|SsrResponse {
         $resolvedAccount = $this->host()->resolveAuthenticatedAccount($account);
 

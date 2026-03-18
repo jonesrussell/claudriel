@@ -23,7 +23,7 @@ final class NotFoundController
         private readonly mixed $twig = null,
     ) {}
 
-    public function show(array $params, array $query, ?AccountInterface $account = null, ?Request $httpRequest = null): SsrResponse
+    public function show(array $params = [], array $query = [], ?AccountInterface $account = null, ?Request $httpRequest = null): SsrResponse
     {
         $path = '/'.ltrim((string) ($params['path'] ?? ''), '/');
 

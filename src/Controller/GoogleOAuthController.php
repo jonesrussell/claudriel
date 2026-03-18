@@ -53,10 +53,10 @@ final class GoogleOAuthController
     }
 
     public function redirect(
-        array $params,
-        array $query,
-        AccountInterface $account,
-        Request $httpRequest,
+        array $params = [],
+        array $query = [],
+        ?AccountInterface $account = null,
+        ?Request $httpRequest = null,
     ): RedirectResponse {
         $authenticatedAccount = $this->resolveAccount($account);
         if ($authenticatedAccount === null) {
@@ -80,10 +80,10 @@ final class GoogleOAuthController
     }
 
     public function callback(
-        array $params,
-        array $query,
-        AccountInterface $account,
-        Request $httpRequest,
+        array $params = [],
+        array $query = [],
+        ?AccountInterface $account = null,
+        ?Request $httpRequest = null,
     ): RedirectResponse {
         $authenticatedAccount = $this->resolveAccount($account);
 

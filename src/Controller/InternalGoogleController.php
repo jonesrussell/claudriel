@@ -17,7 +17,7 @@ final class InternalGoogleController
         private readonly InternalApiTokenGenerator $apiTokenGenerator,
     ) {}
 
-    public function gmailList(array $params, array $query, ?AccountInterface $account = null, ?Request $httpRequest = null): SsrResponse
+    public function gmailList(array $params = [], array $query = [], ?AccountInterface $account = null, ?Request $httpRequest = null): SsrResponse
     {
         $accountId = $this->authenticate($httpRequest);
         if ($accountId === null) {
@@ -41,7 +41,7 @@ final class InternalGoogleController
         return $this->jsonResponse($response);
     }
 
-    public function gmailRead(array $params, array $query, ?AccountInterface $account = null, ?Request $httpRequest = null): SsrResponse
+    public function gmailRead(array $params = [], array $query = [], ?AccountInterface $account = null, ?Request $httpRequest = null): SsrResponse
     {
         $accountId = $this->authenticate($httpRequest);
         if ($accountId === null) {
@@ -65,7 +65,7 @@ final class InternalGoogleController
         return $this->jsonResponse($response);
     }
 
-    public function gmailSend(array $params, array $query, ?AccountInterface $account = null, ?Request $httpRequest = null): SsrResponse
+    public function gmailSend(array $params = [], array $query = [], ?AccountInterface $account = null, ?Request $httpRequest = null): SsrResponse
     {
         $accountId = $this->authenticate($httpRequest);
         if ($accountId === null) {
@@ -104,7 +104,7 @@ final class InternalGoogleController
         return $this->jsonResponse($response);
     }
 
-    public function calendarList(array $params, array $query, ?AccountInterface $account = null, ?Request $httpRequest = null): SsrResponse
+    public function calendarList(array $params = [], array $query = [], ?AccountInterface $account = null, ?Request $httpRequest = null): SsrResponse
     {
         $accountId = $this->authenticate($httpRequest);
         if ($accountId === null) {
@@ -137,7 +137,7 @@ final class InternalGoogleController
         return $this->jsonResponse($response);
     }
 
-    public function calendarCreate(array $params, array $query, ?AccountInterface $account = null, ?Request $httpRequest = null): SsrResponse
+    public function calendarCreate(array $params = [], array $query = [], ?AccountInterface $account = null, ?Request $httpRequest = null): SsrResponse
     {
         $accountId = $this->authenticate($httpRequest);
         if ($accountId === null) {
@@ -178,9 +178,12 @@ final class InternalGoogleController
         return $this->jsonResponse($response);
     }
 
-    private function authenticate(Request $httpRequest): ?string
+    private function authenticate(mixed $httpRequest): ?string
     {
-        $auth = $httpRequest->headers->get('Authorization', '');
+        $auth = '';
+        if ($httpRequest instanceof Request) {
+            $auth = $httpRequest->headers->get('Authorization', '');
+        }
 
         if (! str_starts_with($auth, 'Bearer ')) {
             return null;
@@ -227,8 +230,11 @@ final class InternalGoogleController
         return json_decode($response, true) ?? ['error' => 'Invalid Google API response'];
     }
 
-    private function getRequestBody(Request $httpRequest): ?array
+    private function getRequestBody(mixed $httpRequest): ?array
     {
+        if (! $httpRequest instanceof Request) {
+            return null;
+        }
         $content = $httpRequest->getContent();
         if ($content === '') {
             return null;

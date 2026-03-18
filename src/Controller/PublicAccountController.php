@@ -30,7 +30,7 @@ final class PublicAccountController
         private readonly ?string $storageDir = null,
     ) {}
 
-    public function signupForm(array $params, array $query, ?AccountInterface $account = null, ?Request $httpRequest = null): RedirectResponse|SsrResponse
+    public function signupForm(array $params = [], array $query = [], ?AccountInterface $account = null, ?Request $httpRequest = null): RedirectResponse|SsrResponse
     {
         $resolvedAccount = $account instanceof AuthenticatedAccount
             ? $account
@@ -48,9 +48,9 @@ final class PublicAccountController
         ]);
     }
 
-    public function signup(array $params, array $query, ?AccountInterface $account = null, ?Request $httpRequest = null): RedirectResponse|SsrResponse
+    public function signup(array $params = [], array $query = [], ?AccountInterface $account = null, ?Request $httpRequest = null): RedirectResponse|SsrResponse
     {
-        $request = $httpRequest;
+        $request = $httpRequest ?? Request::create('/signup', 'POST');
         $name = trim((string) $request->request->get('name', ''));
         $email = strtolower(trim((string) $request->request->get('email', '')));
         $password = (string) $request->request->get('password', '');

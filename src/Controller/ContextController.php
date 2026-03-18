@@ -19,7 +19,7 @@ final class ContextController
         private readonly EntityTypeManager $entityTypeManager,
     ) {}
 
-    public function show(array $params, array $query, ?AccountInterface $account = null, ?Request $httpRequest = null): SsrResponse
+    public function show(array $params = [], array $query = [], ?AccountInterface $account = null, ?Request $httpRequest = null): SsrResponse
     {
         $projectRoot = getenv('CLAUDRIEL_PROJECT_ROOT') ?: dirname(__DIR__, 2);
 

@@ -39,9 +39,9 @@ final class PublicSessionController
         ]);
     }
 
-    public function login(array $params, array $query, ?AccountInterface $account = null, ?Request $httpRequest = null): RedirectResponse|SsrResponse
+    public function login(array $params = [], array $query = [], ?AccountInterface $account = null, ?Request $httpRequest = null): RedirectResponse|SsrResponse
     {
-        $request = $httpRequest;
+        $request = $httpRequest ?? Request::create('/login', 'POST');
         $email = strtolower(trim((string) $request->request->get('email', '')));
         $password = (string) $request->request->get('password', '');
         $redirect = $this->host()->sanitizeRedirectTarget($request->request->get('redirect'));
@@ -76,7 +76,7 @@ final class PublicSessionController
         return new RedirectResponse($this->host()->postLoginRedirect($resolvedAccount, $redirect), 302);
     }
 
-    public function logout(array $params, array $query, ?AccountInterface $account = null, ?Request $httpRequest = null): RedirectResponse
+    public function logout(array $params = [], array $query = [], ?AccountInterface $account = null, ?Request $httpRequest = null): RedirectResponse
     {
         $this->host()->clearAuthenticatedSession();
         CsrfMiddleware::regenerate();
@@ -84,7 +84,7 @@ final class PublicSessionController
         return new RedirectResponse('/?logged_out=1', 302);
     }
 
-    public function sessionState(array $params, array $query, ?AccountInterface $account = null, ?Request $httpRequest = null): SsrResponse
+    public function sessionState(array $params = [], array $query = [], ?AccountInterface $account = null, ?Request $httpRequest = null): SsrResponse
     {
         $resolvedAccount = $account instanceof AuthenticatedAccount
             ? $account

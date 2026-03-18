@@ -33,9 +33,9 @@ final class PublicPasswordResetController
         ]);
     }
 
-    public function requestReset(array $params, array $query, ?AccountInterface $account = null, ?Request $httpRequest = null): RedirectResponse|SsrResponse
+    public function requestReset(array $params = [], array $query = [], ?AccountInterface $account = null, ?Request $httpRequest = null): RedirectResponse|SsrResponse
     {
-        $request = $httpRequest;
+        $request = $httpRequest ?? Request::create('/forgot-password', 'POST');
         $email = strtolower(trim((string) $request->request->get('email', '')));
 
         if ($email === '') {
@@ -72,9 +72,9 @@ final class PublicPasswordResetController
         ]);
     }
 
-    public function resetPassword(array $params, array $query, ?AccountInterface $account = null, ?Request $httpRequest = null): RedirectResponse|SsrResponse
+    public function resetPassword(array $params = [], array $query = [], ?AccountInterface $account = null, ?Request $httpRequest = null): RedirectResponse|SsrResponse
     {
-        $request = $httpRequest;
+        $request = $httpRequest ?? Request::create('/reset-password', 'POST');
         $token = (string) ($params['token'] ?? $request->request->get('token', ''));
         $password = (string) $request->request->get('password', '');
 

@@ -22,7 +22,7 @@ final class CommitmentExtractionAuditController
         private readonly ?string $batchStorageDirectory = null,
     ) {}
 
-    public function index(array $params, array $query, ?AccountInterface $account = null, ?Request $httpRequest = null): SsrResponse
+    public function index(array $params = [], array $query = [], ?AccountInterface $account = null, ?Request $httpRequest = null): SsrResponse
     {
         $service = new CommitmentExtractionAuditService($this->entityTypeManager);
         $page = max(1, (int) ($query['page'] ?? $httpRequest->query->get('page', 1)));
@@ -55,7 +55,7 @@ final class CommitmentExtractionAuditController
         );
     }
 
-    public function show(array $params, array $query, ?AccountInterface $account = null, ?Request $httpRequest = null): SsrResponse
+    public function show(array $params = [], array $query = [], ?AccountInterface $account = null, ?Request $httpRequest = null): SsrResponse
     {
         $service = new CommitmentExtractionAuditService($this->entityTypeManager);
         $id = $params['id'] ?? null;
@@ -86,7 +86,7 @@ final class CommitmentExtractionAuditController
         );
     }
 
-    public function trends(array $params, array $query, ?AccountInterface $account = null, ?Request $httpRequest = null): SsrResponse
+    public function trends(array $params = [], array $query = [], ?AccountInterface $account = null, ?Request $httpRequest = null): SsrResponse
     {
         $payload = $this->buildTrendsPayload($query, $httpRequest);
 
@@ -103,12 +103,12 @@ final class CommitmentExtractionAuditController
         return $this->json($payload);
     }
 
-    public function trendsJson(array $params, array $query, ?AccountInterface $account = null, ?Request $httpRequest = null): SsrResponse
+    public function trendsJson(array $params = [], array $query = [], ?AccountInterface $account = null, ?Request $httpRequest = null): SsrResponse
     {
         return $this->json($this->buildTrendsPayload($query, $httpRequest));
     }
 
-    public function sender(array $params, array $query, ?AccountInterface $account = null, ?Request $httpRequest = null): SsrResponse
+    public function sender(array $params = [], array $query = [], ?AccountInterface $account = null, ?Request $httpRequest = null): SsrResponse
     {
         $service = new CommitmentExtractionAuditService($this->entityTypeManager);
         $senderEmail = rawurldecode((string) ($params['email'] ?? ''));
@@ -134,7 +134,7 @@ final class CommitmentExtractionAuditController
         ]);
     }
 
-    public function drift(array $params, array $query, ?AccountInterface $account = null, ?Request $httpRequest = null): SsrResponse
+    public function drift(array $params = [], array $query = [], ?AccountInterface $account = null, ?Request $httpRequest = null): SsrResponse
     {
         $payload = $this->buildDriftPayload($query, $httpRequest);
 
@@ -151,12 +151,12 @@ final class CommitmentExtractionAuditController
         return $this->json($payload);
     }
 
-    public function driftJson(array $params, array $query, ?AccountInterface $account = null, ?Request $httpRequest = null): SsrResponse
+    public function driftJson(array $params = [], array $query = [], ?AccountInterface $account = null, ?Request $httpRequest = null): SsrResponse
     {
         return $this->json($this->buildDriftPayload($query, $httpRequest));
     }
 
-    public function senderDrift(array $params, array $query, ?AccountInterface $account = null, ?Request $httpRequest = null): SsrResponse
+    public function senderDrift(array $params = [], array $query = [], ?AccountInterface $account = null, ?Request $httpRequest = null): SsrResponse
     {
         $service = new CommitmentExtractionAuditService($this->entityTypeManager);
         $detector = new CommitmentExtractionDriftDetector($service);

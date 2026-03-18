@@ -26,7 +26,7 @@ final class DashboardController
         private readonly ?Environment $twig = null,
     ) {}
 
-    public function show(array $params, array $query, ?AccountInterface $account = null, ?Request $httpRequest = null): SsrResponse
+    public function show(array $params = [], array $query = [], ?AccountInterface $account = null, ?Request $httpRequest = null): SsrResponse
     {
         $resolver = new TenantWorkspaceResolver($this->entityTypeManager);
         try {
@@ -187,11 +187,13 @@ final class DashboardController
         return $payload;
     }
 
-    private function resolveRequestId(Request $httpRequest, array $query): string
+    private function resolveRequestId(mixed $httpRequest, array $query): string
     {
-        $headerId = $httpRequest->headers->get('X-Request-Id');
-        if (is_string($headerId) && $headerId !== '') {
-            return $headerId;
+        if ($httpRequest instanceof Request) {
+            $headerId = $httpRequest->headers->get('X-Request-Id');
+            if (is_string($headerId) && $headerId !== '') {
+                return $headerId;
+            }
         }
 
         $queryId = $query['request_id'] ?? null;
@@ -202,16 +204,18 @@ final class DashboardController
         return bin2hex(random_bytes(8));
     }
 
-    private function resolveRequestedTimezone(Request $httpRequest, array $query): ?string
+    private function resolveRequestedTimezone(mixed $httpRequest, array $query): ?string
     {
         $queryTimezone = $query['timezone'] ?? null;
         if (is_string($queryTimezone) && $queryTimezone !== '') {
             return $queryTimezone;
         }
 
-        $headerTimezone = $httpRequest->headers->get('X-Timezone');
-        if (is_string($headerTimezone) && $headerTimezone !== '') {
-            return $headerTimezone;
+        if ($httpRequest instanceof Request) {
+            $headerTimezone = $httpRequest->headers->get('X-Timezone');
+            if (is_string($headerTimezone) && $headerTimezone !== '') {
+                return $headerTimezone;
+            }
         }
 
         return null;

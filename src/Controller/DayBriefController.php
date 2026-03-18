@@ -28,7 +28,7 @@ final class DayBriefController
         private readonly mixed $twig = null,
     ) {}
 
-    public function show(array $params, array $query, ?AccountInterface $account = null, ?Request $httpRequest = null): SsrResponse
+    public function show(array $params = [], array $query = [], ?AccountInterface $account = null, ?Request $httpRequest = null): SsrResponse
     {
         try {
             $scope = (new TenantWorkspaceResolver($this->entityTypeManager))->resolve($query, $account, $httpRequest);
@@ -55,10 +55,13 @@ final class DayBriefController
         $assembler = $this->buildAssembler();
         $brief = $assembler->assemble($scope->tenantId, $since, $scope->workspaceId(), $snapshot);
 
-        $accept = $httpRequest->headers->get('Accept', '');
-        $wantsJson = $httpRequest->getRequestFormat('') === 'json'
-            || str_contains($accept, 'application/json')
-            || str_contains($accept, 'application/vnd.api+json');
+        $wantsJson = false;
+        if ($httpRequest !== null) {
+            $accept = $httpRequest->headers->get('Accept', '');
+            $wantsJson = $httpRequest->getRequestFormat('') === 'json'
+                || str_contains($accept, 'application/json')
+                || str_contains($accept, 'application/vnd.api+json');
+        }
 
         if (! $wantsJson) {
             $sessionStore->recordBriefAt(new \DateTimeImmutable);

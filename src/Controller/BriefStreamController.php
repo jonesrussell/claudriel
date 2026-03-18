@@ -27,7 +27,7 @@ final class BriefStreamController
     /**
      * GET /stream/brief -- SSE stream that pushes brief updates when signal file changes.
      */
-    public function stream(array $params, array $query, ?AccountInterface $account = null, ?Request $httpRequest = null): StreamedResponse|SsrResponse
+    public function stream(array $params = [], array $query = [], ?AccountInterface $account = null, ?Request $httpRequest = null): StreamedResponse|SsrResponse
     {
         $resolver = new TenantWorkspaceResolver($this->entityTypeManager);
         try {
@@ -226,9 +226,12 @@ final class BriefStreamController
         ];
     }
 
-    private function resolveRequestId(Request $httpRequest, array $query): string
+    private function resolveRequestId(mixed $httpRequest, array $query): string
     {
-        $headerId = $httpRequest->headers->get('X-Request-Id');
+        $headerId = null;
+        if ($httpRequest instanceof Request) {
+            $headerId = $httpRequest->headers->get('X-Request-Id');
+        }
 
         $queryId = $query['request_id'] ?? null;
         $requestId = is_string($headerId) && $headerId !== '' ? $headerId : (is_string($queryId) && $queryId !== '' ? $queryId : bin2hex(random_bytes(8)));
@@ -236,8 +239,14 @@ final class BriefStreamController
         return $requestId;
     }
 
-    private function resolveUserId(AccountInterface $account): ?string
+    private function resolveUserId(mixed $account): ?string
     {
+        if (is_scalar($account)) {
+            return (string) $account;
+        }
+        if (! is_object($account)) {
+            return null;
+        }
         foreach (['id', 'getId', 'uuid', 'getUuid'] as $property) {
             if (property_exists($account, $property) && is_scalar($account->{$property})) {
                 return (string) $account->{$property};

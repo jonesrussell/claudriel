@@ -23,7 +23,7 @@ final class ModelUpdateBatchController
         private readonly ?string $storageDirectory = null,
     ) {}
 
-    public function create(array $params, array $query, ?AccountInterface $account = null, ?Request $httpRequest = null): SsrResponse
+    public function create(array $params = [], array $query = [], ?AccountInterface $account = null, ?Request $httpRequest = null): SsrResponse
     {
         $days = max(1, (int) ($query['days'] ?? $httpRequest->request->get('days', $httpRequest->query->get('days', 14)) ?? 14));
         $service = $this->buildService();
@@ -37,7 +37,7 @@ final class ModelUpdateBatchController
         ]);
     }
 
-    public function show(array $params, array $query, ?AccountInterface $account = null, ?Request $httpRequest = null): SsrResponse
+    public function show(array $params = [], array $query = [], ?AccountInterface $account = null, ?Request $httpRequest = null): SsrResponse
     {
         $batchId = rawurldecode((string) ($params['batchId'] ?? ''));
         $batch = $this->buildService()->loadBatch($batchId);

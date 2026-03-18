@@ -21,7 +21,7 @@ final class CommitmentUpdateController
         private readonly EntityTypeManager $entityTypeManager,
     ) {}
 
-    public function update(array $params, array $query, ?AccountInterface $account = null, ?Request $httpRequest = null): SsrResponse
+    public function update(array $params = [], array $query = [], ?AccountInterface $account = null, ?Request $httpRequest = null): SsrResponse
     {
         $uuid = $params['uuid'] ?? '';
 
@@ -37,7 +37,7 @@ final class CommitmentUpdateController
             );
         }
 
-        $raw = $httpRequest->getContent();
+        $raw = $httpRequest?->getContent() ?? '';
         $body = json_decode($raw, true) ?? [];
         $status = $body['status'] ?? null;
 

@@ -36,7 +36,7 @@ final class ChatStreamController
     /**
      * GET /stream/chat/{messageId} — SSE stream of Anthropic response tokens.
      */
-    public function stream(array $params, array $query, ?AccountInterface $account = null, ?Request $httpRequest = null): StreamedResponse|SsrResponse
+    public function stream(array $params = [], array $query = [], ?AccountInterface $account = null, ?Request $httpRequest = null): StreamedResponse|SsrResponse
     {
         $resolver = new TenantWorkspaceResolver($this->entityTypeManager);
         try {

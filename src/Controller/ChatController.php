@@ -27,7 +27,7 @@ final class ChatController
     /**
      * GET /chat — render the chat UI.
      */
-    public function index(array $params, array $query, ?AccountInterface $account = null, ?Request $httpRequest = null): SsrResponse
+    public function index(array $params = [], array $query = [], ?AccountInterface $account = null, ?Request $httpRequest = null): SsrResponse
     {
         $resolver = new TenantWorkspaceResolver($this->entityTypeManager);
         try {
@@ -86,7 +86,7 @@ final class ChatController
     /**
      * GET /api/chat/sessions/{uuid}/messages — load messages for a session.
      */
-    public function messages(array $params, array $query, ?AccountInterface $account = null, ?Request $httpRequest = null): SsrResponse
+    public function messages(array $params = [], array $query = [], ?AccountInterface $account = null, ?Request $httpRequest = null): SsrResponse
     {
         $resolver = new TenantWorkspaceResolver($this->entityTypeManager);
         try {
@@ -139,9 +139,9 @@ final class ChatController
     /**
      * POST /api/chat/send — send a message and get the assistant response.
      */
-    public function send(array $params, array $query, ?AccountInterface $account = null, ?Request $httpRequest = null): SsrResponse
+    public function send(array $params = [], array $query = [], ?AccountInterface $account = null, ?Request $httpRequest = null): SsrResponse
     {
-        $raw = $httpRequest->getContent();
+        $raw = method_exists($httpRequest, 'getContent') ? $httpRequest->getContent() : '';
         $body = json_decode($raw, true) ?? [];
         $resolver = new TenantWorkspaceResolver($this->entityTypeManager);
         try {

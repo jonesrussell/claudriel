@@ -19,7 +19,7 @@ final class TemporalNotificationApiController
         private readonly EntityTypeManager $entityTypeManager,
     ) {}
 
-    public function dismiss(array $params, array $query, ?AccountInterface $account = null, ?Request $httpRequest = null): SsrResponse
+    public function dismiss(array $params = [], array $query = [], ?AccountInterface $account = null, ?Request $httpRequest = null): SsrResponse
     {
         $body = json_decode($httpRequest->getContent(), true) ?? [];
         $notification = $this->resolveNotification((string) ($params['uuid'] ?? ''), $query, $account, $httpRequest, $body);
@@ -32,7 +32,7 @@ final class TemporalNotificationApiController
         return $this->json(['notification' => $this->serialize($updated)]);
     }
 
-    public function snooze(array $params, array $query, ?AccountInterface $account = null, ?Request $httpRequest = null): SsrResponse
+    public function snooze(array $params = [], array $query = [], ?AccountInterface $account = null, ?Request $httpRequest = null): SsrResponse
     {
         $body = json_decode($httpRequest->getContent(), true) ?? [];
         $notification = $this->resolveNotification((string) ($params['uuid'] ?? ''), $query, $account, $httpRequest, $body);
@@ -53,7 +53,7 @@ final class TemporalNotificationApiController
         return $this->json(['notification' => $this->serialize($updated)]);
     }
 
-    public function updateAction(array $params, array $query, ?AccountInterface $account = null, ?Request $httpRequest = null): SsrResponse
+    public function updateAction(array $params = [], array $query = [], ?AccountInterface $account = null, ?Request $httpRequest = null): SsrResponse
     {
         $body = json_decode($httpRequest->getContent(), true) ?? [];
         $notification = $this->resolveNotification((string) ($params['uuid'] ?? ''), $query, $account, $httpRequest, $body);

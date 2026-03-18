@@ -45,7 +45,7 @@ final class ObservabilityDashboardController
         private readonly ?DateTimeImmutable $heartbeatTimestampOverride = null,
     ) {}
 
-    public function index(array $params, array $query, ?AccountInterface $account = null, ?Request $httpRequest = null): SsrResponse
+    public function index(array $params = [], array $query = [], ?AccountInterface $account = null, ?Request $httpRequest = null): SsrResponse
     {
         $payload = $this->buildPayload($query, $httpRequest);
 
@@ -62,7 +62,7 @@ final class ObservabilityDashboardController
         return $this->json($payload);
     }
 
-    public function jsonView(array $params, array $query, ?AccountInterface $account = null, ?Request $httpRequest = null): SsrResponse
+    public function jsonView(array $params = [], array $query = [], ?AccountInterface $account = null, ?Request $httpRequest = null): SsrResponse
     {
         return $this->json($this->buildPayload($query, $httpRequest));
     }
