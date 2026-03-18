@@ -13,6 +13,7 @@ use Claudriel\Temporal\Agent\TemporalGuidanceAssembler;
 use Claudriel\Temporal\TemporalContextFactory;
 use Symfony\Component\HttpFoundation\Request;
 use Twig\Environment;
+use Waaseyaa\Access\AccountInterface;
 use Waaseyaa\Entity\ContentEntityInterface;
 use Waaseyaa\Entity\EntityTypeManager;
 use Waaseyaa\SSR\SsrResponse;
@@ -25,11 +26,11 @@ final class DashboardController
         private readonly ?Environment $twig = null,
     ) {}
 
-    public function show(array $params = [], array $query = [], mixed $account = null, mixed $httpRequest = null): SsrResponse
+    public function show(array $params, array $query, ?AccountInterface $account = null, ?Request $httpRequest = null): SsrResponse
     {
         $resolver = new TenantWorkspaceResolver($this->entityTypeManager);
         try {
-            $scope = $resolver->resolve($query, $account, $httpRequest instanceof Request ? $httpRequest : null);
+            $scope = $resolver->resolve($query, $account, $httpRequest);
         } catch (RequestScopeViolation $exception) {
             return new SsrResponse(
                 content: json_encode(['error' => $exception->getMessage()], JSON_THROW_ON_ERROR),
@@ -186,13 +187,11 @@ final class DashboardController
         return $payload;
     }
 
-    private function resolveRequestId(mixed $httpRequest, array $query): string
+    private function resolveRequestId(Request $httpRequest, array $query): string
     {
-        if ($httpRequest instanceof Request) {
-            $headerId = $httpRequest->headers->get('X-Request-Id');
-            if (is_string($headerId) && $headerId !== '') {
-                return $headerId;
-            }
+        $headerId = $httpRequest->headers->get('X-Request-Id');
+        if (is_string($headerId) && $headerId !== '') {
+            return $headerId;
         }
 
         $queryId = $query['request_id'] ?? null;
@@ -203,18 +202,16 @@ final class DashboardController
         return bin2hex(random_bytes(8));
     }
 
-    private function resolveRequestedTimezone(mixed $httpRequest, array $query): ?string
+    private function resolveRequestedTimezone(Request $httpRequest, array $query): ?string
     {
         $queryTimezone = $query['timezone'] ?? null;
         if (is_string($queryTimezone) && $queryTimezone !== '') {
             return $queryTimezone;
         }
 
-        if ($httpRequest instanceof Request) {
-            $headerTimezone = $httpRequest->headers->get('X-Timezone');
-            if (is_string($headerTimezone) && $headerTimezone !== '') {
-                return $headerTimezone;
-            }
+        $headerTimezone = $httpRequest->headers->get('X-Timezone');
+        if (is_string($headerTimezone) && $headerTimezone !== '') {
+            return $headerTimezone;
         }
 
         return null;

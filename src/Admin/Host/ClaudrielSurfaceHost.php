@@ -195,7 +195,7 @@ final class ClaudrielSurfaceHost extends AbstractAdminSurfaceHost
     {
         $etm = $this->etm();
 
-        if (!$etm->hasDefinition($type)) {
+        if (! $etm->hasDefinition($type)) {
             return $this->jsonResponse(['error' => "Unknown entity type: {$type}"], 404);
         }
 
@@ -215,11 +215,11 @@ final class ClaudrielSurfaceHost extends AbstractAdminSurfaceHost
                 'x-weight' => $weight,
             ];
 
-            if (!empty($fieldDef['readOnly'])) {
+            if (! empty($fieldDef['readOnly'])) {
                 $prop['readOnly'] = true;
             }
 
-            if (!empty($fieldDef['required'])) {
+            if (! empty($fieldDef['required'])) {
                 $required[] = $fieldName;
                 $prop['x-required'] = true;
             }

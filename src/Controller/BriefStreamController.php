@@ -14,6 +14,7 @@ use Claudriel\Temporal\TemporalContextFactory;
 use Claudriel\Temporal\TimeSnapshot;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use Waaseyaa\Access\AccountInterface;
 use Waaseyaa\Entity\EntityTypeManager;
 use Waaseyaa\SSR\SsrResponse;
 
@@ -26,11 +27,11 @@ final class BriefStreamController
     /**
      * GET /stream/brief -- SSE stream that pushes brief updates when signal file changes.
      */
-    public function stream(array $params = [], array $query = [], mixed $account = null, mixed $httpRequest = null): StreamedResponse|SsrResponse
+    public function stream(array $params, array $query, ?AccountInterface $account = null, ?Request $httpRequest = null): StreamedResponse|SsrResponse
     {
         $resolver = new TenantWorkspaceResolver($this->entityTypeManager);
         try {
-            $scope = $resolver->resolve($query, $account, $httpRequest instanceof Request ? $httpRequest : null);
+            $scope = $resolver->resolve($query, $account, $httpRequest);
         } catch (RequestScopeViolation $exception) {
             return $this->json(['error' => $exception->getMessage()], $exception->statusCode());
         }
@@ -42,7 +43,7 @@ final class BriefStreamController
             tenantId: $scope->tenantId,
             workspaceUuid: $scope->workspaceId(),
             account: $account,
-            requestTimezone: $this->resolveRequestedTimezone($query, $httpRequest instanceof Request ? $httpRequest : null),
+            requestTimezone: $this->resolveRequestedTimezone($query, $httpRequest),
         );
 
         if (($query['transport'] ?? null) === 'fallback') {
@@ -225,12 +226,9 @@ final class BriefStreamController
         ];
     }
 
-    private function resolveRequestId(mixed $httpRequest, array $query): string
+    private function resolveRequestId(Request $httpRequest, array $query): string
     {
-        $headerId = null;
-        if ($httpRequest instanceof Request) {
-            $headerId = $httpRequest->headers->get('X-Request-Id');
-        }
+        $headerId = $httpRequest->headers->get('X-Request-Id');
 
         $queryId = $query['request_id'] ?? null;
         $requestId = is_string($headerId) && $headerId !== '' ? $headerId : (is_string($queryId) && $queryId !== '' ? $queryId : bin2hex(random_bytes(8)));
@@ -238,24 +236,18 @@ final class BriefStreamController
         return $requestId;
     }
 
-    private function resolveUserId(mixed $account): ?string
+    private function resolveUserId(AccountInterface $account): ?string
     {
-        if (is_object($account)) {
-            foreach (['id', 'getId', 'uuid', 'getUuid'] as $property) {
-                if (property_exists($account, $property) && is_scalar($account->{$property})) {
-                    return (string) $account->{$property};
-                }
-                if (method_exists($account, $property)) {
-                    $value = $account->{$property}();
-                    if (is_scalar($value)) {
-                        return (string) $value;
-                    }
+        foreach (['id', 'getId', 'uuid', 'getUuid'] as $property) {
+            if (property_exists($account, $property) && is_scalar($account->{$property})) {
+                return (string) $account->{$property};
+            }
+            if (method_exists($account, $property)) {
+                $value = $account->{$property}();
+                if (is_scalar($value)) {
+                    return (string) $value;
                 }
             }
-        }
-
-        if (is_scalar($account)) {
-            return (string) $account;
         }
 
         return null;

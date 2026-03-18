@@ -14,6 +14,7 @@ use Claudriel\Support\AutomatedSenderDetector;
 use Claudriel\Support\BriefSignal;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Waaseyaa\Access\AccountInterface;
 use Waaseyaa\Entity\EntityTypeManager;
 
 /**
@@ -35,7 +36,7 @@ final class IngestController
         $this->registry->addHandler(new PersonIngestHandler($this->entityTypeManager));
     }
 
-    public function handle(array $params = [], array $query = [], mixed $account = null, mixed $httpRequest = null): JsonResponse
+    public function handle(array $params, array $query, ?AccountInterface $account = null, ?Request $httpRequest = null): JsonResponse
     {
         // Validate bearer token.
         $token = $this->extractBearerToken($httpRequest);
@@ -45,7 +46,7 @@ final class IngestController
             return new JsonResponse(['error' => 'Unauthorized'], 401);
         }
 
-        $raw = $httpRequest instanceof Request ? $httpRequest->getContent() : '';
+        $raw = $httpRequest->getContent();
         $data = json_decode($raw, true);
 
         if (! is_array($data) || ! isset($data['source'], $data['type'], $data['payload'])) {
@@ -74,12 +75,8 @@ final class IngestController
         return new JsonResponse($result, 201);
     }
 
-    private function extractBearerToken(mixed $httpRequest): ?string
+    private function extractBearerToken(Request $httpRequest): ?string
     {
-        if (! $httpRequest instanceof Request) {
-            return null;
-        }
-
         $header = $httpRequest->headers->get('Authorization', '');
         if (! is_string($header) || ! str_starts_with($header, 'Bearer ')) {
             return null;

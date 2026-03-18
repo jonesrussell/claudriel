@@ -8,6 +8,7 @@ use Claudriel\Access\AuthenticatedAccount;
 use Claudriel\Admin\Host\ClaudrielAdminHost;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Waaseyaa\Access\AccountInterface;
 use Waaseyaa\Entity\EntityTypeManager;
 use Waaseyaa\SSR\SsrResponse;
 
@@ -19,10 +20,10 @@ final class AdminUiController
     ) {}
 
     public function show(
-        array $params = [],
-        array $query = [],
-        mixed $account = null,
-        ?Request $httpRequest = null,
+        array $params,
+        array $query,
+        AccountInterface $account,
+        Request $httpRequest,
     ): RedirectResponse|SsrResponse {
         $resolvedAccount = $this->host()->resolveAuthenticatedAccount($account);
 

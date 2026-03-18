@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Claudriel\Tests\Unit\Layer2;
 
-use Claudriel\Entity\Artifact;
 use Claudriel\Domain\Git\GitRepositoryManager;
+use Claudriel\Entity\Artifact;
 use PHPUnit\Framework\TestCase;
 
 final class GitRepositoryManagerTest extends TestCase
