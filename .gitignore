@@ -13,6 +13,7 @@ waaseyaa.sqlite
 node_modules/
 frontend/admin/.nuxt/
 frontend/admin/.output/
+public/admin/
 
 # User data (gitignored, .gitkeep preserves dirs)
 context/

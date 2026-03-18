@@ -84,6 +84,21 @@ jobs:
             --optimize-autoloader \
             --prefer-dist
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '25'
+          cache: 'npm'
+          cache-dependency-path: claudriel/frontend/admin/package-lock.json
+
+      - name: Build admin SPA
+        working-directory: claudriel/frontend/admin
+        run: |
+          npm ci
+          npm run generate
+          rm -rf ../../public/admin
+          cp -r .output/public ../../public/admin
+
       - name: Assemble build artifact
         run: |
           mkdir -p claudriel/.build
