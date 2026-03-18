@@ -424,6 +424,16 @@ final class ClaudrielServiceProvider extends ServiceProvider
         $surfaceHost = new ClaudrielSurfaceHost(fn () => $entityTypeManager);
         AdminSurfaceServiceProvider::registerRoutes($router, $surfaceHost);
 
+        // Schema endpoint for admin entity forms
+        $router->addRoute(
+            'claudriel.api.schema',
+            RouteBuilder::create('/api/schema/{type}')
+                ->controller(fn (array $params) => $surfaceHost->handleSchema($params['type'] ?? ''))
+                ->allowAll()
+                ->methods('GET')
+                ->build(),
+        );
+
         // Legacy endpoints consumed by the frontend SPA
         $router->addRoute(
             'claudriel.admin.session',
