@@ -7,7 +7,7 @@ namespace Claudriel\Domain;
 use Claudriel\AI\CodexExecutionPipeline;
 use Claudriel\Entity\IssueRun;
 use Claudriel\Entity\Workspace;
-use Claudriel\Service\GitOperator;
+use Claudriel\Domain\Git\GitOperator;
 use Waaseyaa\Entity\EntityTypeManager;
 use Waaseyaa\GitHub\GitHubClient;
 
