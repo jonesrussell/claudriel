@@ -6,7 +6,7 @@ namespace Claudriel\Command;
 
 use Claudriel\Entity\Artifact;
 use Claudriel\Entity\Workspace;
-use Claudriel\Layer2\GitRepositoryManager;
+use Claudriel\Domain\Git\GitRepositoryManager;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
