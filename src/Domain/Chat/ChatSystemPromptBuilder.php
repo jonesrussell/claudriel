@@ -17,6 +17,8 @@ final class ChatSystemPromptBuilder
         private readonly string $projectRoot,
         private readonly ?EntityRepositoryInterface $workspaceRepo = null,
         private readonly ?EntityRepositoryInterface $projectRepo = null,
+        private readonly ?EntityRepositoryInterface $ruleRepo = null,
+        private readonly string $ruleTenantId = 'default',
     ) {}
 
     public function build(string $tenantId = 'default', ?string $activeWorkspace = null, ?TimeSnapshot $snapshot = null, ?string $workspaceId = null): string
@@ -27,6 +29,12 @@ final class ChatSystemPromptBuilder
         $claudeMd = $this->readFile('CLAUDE.user.md') ?? $this->readFile('CLAUDE.md') ?? '';
         if ($claudeMd !== '') {
             $parts[] = "# Personality & Behavior\n\n".$this->extractPersonality($claudeMd);
+        }
+
+        // Judgment rules (learned corrections)
+        $rulesBlock = $this->buildJudgmentRules();
+        if ($rulesBlock !== '') {
+            $parts[] = $rulesBlock;
         }
 
         // User context
@@ -65,6 +73,56 @@ final class ChatSystemPromptBuilder
         $parts[] = $this->buildInstructions();
 
         return implode("\n\n---\n\n", array_filter($parts));
+    }
+
+    private function buildJudgmentRules(): string
+    {
+        if ($this->ruleRepo === null) {
+            return '';
+        }
+
+        $rules = $this->ruleRepo->findBy([
+            'tenant_id' => $this->ruleTenantId,
+            'status' => 'active',
+        ]);
+
+        if (empty($rules)) {
+            return '';
+        }
+
+        // Sort by application_count desc, then confidence desc
+        usort($rules, static function ($a, $b): int {
+            $cmp = ((int) ($b->get('application_count') ?? 0)) <=> ((int) ($a->get('application_count') ?? 0));
+            if ($cmp !== 0) {
+                return $cmp;
+            }
+
+            return ((float) ($b->get('confidence') ?? 0)) <=> ((float) ($a->get('confidence') ?? 0));
+        });
+
+        $lines = ['<judgment_rules>'];
+        $tokenBudget = 2000;
+        $currentLength = 0;
+
+        foreach ($rules as $rule) {
+            $ruleText = (string) ($rule->get('rule_text') ?? '');
+            $context = (string) ($rule->get('context') ?? '');
+            $entry = "- {$ruleText}";
+            if ($context !== '') {
+                $entry .= " (applies: {$context})";
+            }
+
+            if ($currentLength + mb_strlen($entry) > $tokenBudget) {
+                break;
+            }
+
+            $lines[] = $entry;
+            $currentLength += mb_strlen($entry);
+        }
+
+        $lines[] = '</judgment_rules>';
+
+        return "# Judgment Rules (learned from your corrections)\n\n".implode("\n", $lines);
     }
 
     private function buildWorkspaceExecutionContext(string $workspaceId): string

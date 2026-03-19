@@ -11,6 +11,7 @@ const LABEL_FIELDS: Record<string, string> = {
   schedule_entry: 'title',
   triage_entry: 'sender_name',
   project: 'name',
+  judgment_rule: 'rule_text',
 }
 
 /** Fields to request per GraphQL entity type. */
@@ -21,6 +22,7 @@ const GRAPHQL_FIELDS: Record<string, string> = {
   workspace: 'uuid name description account_id tenant_id metadata repo_path repo_url branch codex_model last_commit_hash ci_status project_id mode status created_at updated_at',
   schedule_entry: 'uuid title starts_at ends_at notes source status external_id calendar_id recurring_series_id tenant_id created_at updated_at',
   triage_entry: 'uuid sender_name sender_email summary status source tenant_id occurred_at external_id content_hash raw_payload created_at updated_at',
+  judgment_rule: 'uuid rule_text context source confidence application_count last_applied_at status tenant_id created_at updated_at',
 }
 
 function toPascalCase(s: string): string {
