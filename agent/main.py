@@ -22,9 +22,17 @@ from tools.commitment_list import TOOL_DEF as COMMITMENT_LIST_DEF, execute as co
 from tools.commitment_update import TOOL_DEF as COMMITMENT_UPDATE_DEF, execute as commitment_update_exec
 from tools.person_search import TOOL_DEF as PERSON_SEARCH_DEF, execute as person_search_exec
 from tools.person_detail import TOOL_DEF as PERSON_DETAIL_DEF, execute as person_detail_exec
+from tools.brief_generate import TOOL_DEF as BRIEF_GENERATE_DEF, execute as brief_generate_exec
+from tools.event_search import TOOL_DEF as EVENT_SEARCH_DEF, execute as event_search_exec
+from tools.search_global import TOOL_DEF as SEARCH_GLOBAL_DEF, execute as search_global_exec
+from tools.workspace_list import TOOL_DEF as WORKSPACE_LIST_DEF, execute as workspace_list_exec
+from tools.workspace_context import TOOL_DEF as WORKSPACE_CONTEXT_DEF, execute as workspace_context_exec
+from tools.schedule_query import TOOL_DEF as SCHEDULE_QUERY_DEF, execute as schedule_query_exec
+from tools.triage_list import TOOL_DEF as TRIAGE_LIST_DEF, execute as triage_list_exec
+from tools.triage_resolve import TOOL_DEF as TRIAGE_RESOLVE_DEF, execute as triage_resolve_exec
 from util.http import PhpApiClient
 
-TOOLS = [GMAIL_LIST_DEF, GMAIL_READ_DEF, GMAIL_SEND_DEF, CALENDAR_LIST_DEF, CALENDAR_CREATE_DEF, COMMITMENT_LIST_DEF, COMMITMENT_UPDATE_DEF, PERSON_SEARCH_DEF, PERSON_DETAIL_DEF]
+TOOLS = [GMAIL_LIST_DEF, GMAIL_READ_DEF, GMAIL_SEND_DEF, CALENDAR_LIST_DEF, CALENDAR_CREATE_DEF, COMMITMENT_LIST_DEF, COMMITMENT_UPDATE_DEF, PERSON_SEARCH_DEF, PERSON_DETAIL_DEF, BRIEF_GENERATE_DEF, EVENT_SEARCH_DEF, SEARCH_GLOBAL_DEF, WORKSPACE_LIST_DEF, WORKSPACE_CONTEXT_DEF, SCHEDULE_QUERY_DEF, TRIAGE_LIST_DEF, TRIAGE_RESOLVE_DEF]
 
 EXECUTORS = {
     "gmail_list": gmail_list_exec,
@@ -36,6 +44,14 @@ EXECUTORS = {
     "commitment_update": commitment_update_exec,
     "person_search": person_search_exec,
     "person_detail": person_detail_exec,
+    "brief_generate": brief_generate_exec,
+    "event_search": event_search_exec,
+    "search_global": search_global_exec,
+    "workspace_list": workspace_list_exec,
+    "workspace_context": workspace_context_exec,
+    "schedule_query": schedule_query_exec,
+    "triage_list": triage_list_exec,
+    "triage_resolve": triage_resolve_exec,
 }
 
 DEFAULT_TURN_LIMITS = {

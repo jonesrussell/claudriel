@@ -51,14 +51,18 @@
                 "Claudriel\\Provider\\AccountServiceProvider",
                 "Claudriel\\Provider\\IngestionServiceProvider",
                 "Claudriel\\Provider\\CommitmentServiceProvider",
+                "Claudriel\\Provider\\CommitmentToolServiceProvider",
                 "Claudriel\\Provider\\ChatServiceProvider",
                 "Claudriel\\Provider\\DayBriefServiceProvider",
                 "Claudriel\\Provider\\ProjectServiceProvider",
                 "Claudriel\\Provider\\WorkspaceServiceProvider",
                 "Claudriel\\Provider\\OperationsServiceProvider",
                 "Claudriel\\Provider\\TemporalServiceProvider",
+                "Claudriel\\Provider\\PersonToolServiceProvider",
+                "Claudriel\\Provider\\WorkspaceToolServiceProvider",
                 "Claudriel\\Provider\\ClaudrielServiceProvider",
-                "Claudriel\\Provider\\I18nServiceProvider"
+                "Claudriel\\Provider\\I18nServiceProvider",
+                "Claudriel\\Provider\\SearchToolServiceProvider"
             ]
         }
     },
