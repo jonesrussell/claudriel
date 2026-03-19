@@ -11,26 +11,51 @@
   <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg-deep: #0f1117;
-      --bg-surface: #181a24;
-      --bg-elevated: #21232f;
-      --bg-hover: #2b2d3b;
-      --border: #33364a;
-      --border-subtle: #282a38;
-      --text-primary: #f0f0f5;
+      /* Font families */
+      --font-display: 'Bricolage Grotesque', system-ui, sans-serif;
+      --font-body: 'DM Sans', system-ui, sans-serif;
+
+      /* Surfaces */
+      --bg-deep: #0a0c10;
+      --bg-surface: #131620;
+      --bg-elevated: #1a1d2a;
+      --bg-hover: #222536;
+      --bg-input: rgba(255, 255, 255, 0.06);
+
+      /* Borders */
+      --border: rgba(255, 255, 255, 0.06);
+      --border-subtle: rgba(255, 255, 255, 0.04);
+      --border-emphasis: rgba(255, 255, 255, 0.1);
+
+      /* Text */
+      --text-primary: #e8e9ed;
       --text-secondary: #9b9cb5;
       --text-muted: #6b6d82;
-      --accent-blue: #6b9bff;
-      --accent-teal: #2dd4bf;
+
+      /* Accents */
       --accent-amber: #f0b040;
+      --accent-teal: #2dd4bf;
+      --accent-blue: #6b9bff;
       --accent-red: #f06060;
       --accent-green: #34d399;
       --accent-purple: #a78bfa;
-      --font-display: 'Bricolage Grotesque', system-ui, sans-serif;
-      --font-body: 'DM Sans', system-ui, 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif;
+
+      /* Spacing */
+      --space-xs: 0.25rem;
+      --space-sm: 0.5rem;
+      --space-md: 1rem;
+      --space-lg: 1.5rem;
+      --space-xl: 2rem;
+      --space-2xl: 3rem;
+
+      /* Radius */
       --radius-sm: 6px;
       --radius-md: 10px;
       --radius-lg: 14px;
+      --radius-pill: 999px;
+
+      /* Accent hover */
+      --accent-amber-hover: #d49a2e;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -53,7 +78,7 @@
       height: 3.25rem;
     }
     .site-nav .brand {
-      color: #fff;
+      color: var(--text-primary);
       font-family: var(--font-display);
       font-weight: 700;
       font-size: 1.05rem;
@@ -70,7 +95,7 @@
       border: 1px solid var(--border);
       color: var(--text-secondary);
       padding: 0.35rem 0.75rem;
-      border-radius: 6px;
+      border-radius: var(--radius-sm);
       font-size: 0.8rem;
       cursor: pointer;
       font-family: var(--font-body);
