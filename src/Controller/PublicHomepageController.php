@@ -27,12 +27,12 @@ final class PublicHomepageController
             'primary_cta_href' => '/signup',
             'primary_cta_label' => 'Join the waitlist',
             'secondary_cta_href' => '/login',
-            'headline' => 'Run your day before it runs you.',
-            'subheadline' => 'Claudriel turns your schedule, commitments, and active work into one focused operating surface. We\'re in early access.',
+            'headline' => 'Run your operation. Not your inbox.',
+            'subheadline' => 'Claudriel keeps your commitments, schedule, and client context in one place, so your next move is always obvious.',
             'proof_points' => [
-                'See the day clearly before the first meeting starts.',
-                'Keep commitments, drift, and workspace actions in one tenant-aware shell.',
-                'Let chat, brief, and schedule guidance stay in sync as work moves.',
+                'Commitments extracted from every conversation. Nothing slips.',
+                'Your day, structured. Know what matters before your first call.',
+                'Context that follows you across clients, projects, and threads.',
             ],
         ];
 
