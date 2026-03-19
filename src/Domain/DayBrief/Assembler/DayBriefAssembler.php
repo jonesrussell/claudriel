@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Claudriel\Domain\DayBrief\Assembler;
 
+use Claudriel\Domain\Git\GitOperator;
 use Claudriel\Support\DriftDetector;
 use Claudriel\Support\SchedulePayloadNormalizer;
 use Claudriel\Temporal\AtomicTimeService;
@@ -26,9 +27,10 @@ final class DayBriefAssembler
         private readonly ?EntityRepositoryInterface $workspaceRepo = null,
         private readonly ?EntityRepositoryInterface $triageRepo = null,
         private readonly ?AtomicTimeService $timeService = null,
+        private readonly ?GitOperator $gitOperator = null,
     ) {}
 
-    /** @return array{schedule: array, schedule_timeline: array, schedule_summary: string, temporal_awareness: array<string, mixed>, temporal_suggestions: list<array{type: string, title: string, summary: string}>, job_hunt: array, people: array, triage: array, creators: array, notifications: array, commitments: array{pending: array, drifting: array}, counts: array{job_alerts: int, messages: int, triage: int, due_today: int, drifting: int}, generated_at: string, time_snapshot: array<string, int|string>, matched_skills: array, workspaces: array} */
+    /** @return array{schedule: array, schedule_timeline: array, schedule_summary: string, temporal_awareness: array<string, mixed>, temporal_suggestions: list<array{type: string, title: string, summary: string}>, job_hunt: array, people: array, triage: array, creators: array, notifications: array, commitments: array{pending: array, drifting: array}, counts: array{job_alerts: int, messages: int, triage: int, due_today: int, drifting: int}, generated_at: string, time_snapshot: array<string, int|string>, matched_skills: array, workspaces: array, workspace_status: ?array{last_commit: ?string, has_changes: bool, is_drifted: bool}} */
     public function assemble(string $tenantId, \DateTimeImmutable $since, ?string $workspaceUuid = null, ?TimeSnapshot $snapshot = null): array
     {
         $snapshot ??= ($this->timeService ?? new AtomicTimeService)->now();
@@ -142,6 +144,7 @@ final class DayBriefAssembler
             'time_snapshot' => $snapshot->toArray(),
             'matched_skills' => $this->matchSkillsToEvents($recentEvents),
             'workspaces' => $this->buildWorkspaceData($recentEvents, $tenantId, $workspaceUuid),
+            'workspace_status' => $workspaceUuid !== null ? $this->buildWorkspaceStatus($workspaceUuid) : null,
         ];
     }
 
@@ -509,6 +512,50 @@ final class DayBriefAssembler
             'summary' => (string) ($this->getEntityValue($entry, 'summary') ?? ''),
             'occurred' => (string) ($this->getEntityValue($entry, 'occurred_at') ?? ''),
         ], $entries);
+    }
+
+    /**
+     * @return array{last_commit: ?string, has_changes: bool, is_drifted: bool}
+     */
+    private function buildWorkspaceStatus(string $workspaceUuid): array
+    {
+        $result = ['last_commit' => null, 'has_changes' => false, 'is_drifted' => false];
+
+        if ($this->workspaceRepo === null) {
+            return $result;
+        }
+
+        $workspace = null;
+        foreach ($this->workspaceRepo->findBy([]) as $ws) {
+            if ((string) ($this->getEntityValue($ws, 'uuid') ?? '') === $workspaceUuid) {
+                $workspace = $ws;
+                break;
+            }
+        }
+
+        if ($workspace === null) {
+            return $result;
+        }
+
+        $lastCommit = $this->getEntityValue($workspace, 'last_commit_hash');
+        $result['last_commit'] = is_string($lastCommit) && $lastCommit !== '' ? $lastCommit : null;
+
+        $repoPath = $this->getEntityValue($workspace, 'repo_path');
+        if ($this->gitOperator !== null && is_string($repoPath) && is_dir($repoPath)) {
+            try {
+                $gitStatus = $this->gitOperator->getStatus($repoPath);
+                $result['has_changes'] = trim($gitStatus) !== '';
+            } catch (\RuntimeException) {
+                // Git status unavailable, leave as false
+            }
+        }
+
+        $updatedAt = $this->parseDateTime($this->getEntityValue($workspace, 'updated_at'));
+        if ($updatedAt instanceof \DateTimeImmutable) {
+            $result['is_drifted'] = $updatedAt < new \DateTimeImmutable('-48 hours');
+        }
+
+        return $result;
     }
 
     private function buildWorkspaceData(array $recentEvents, string $tenantId, ?string $workspaceUuid = null): array

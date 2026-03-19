@@ -4,17 +4,22 @@ declare(strict_types=1);
 
 namespace Claudriel\Domain\Chat;
 
+use Claudriel\Domain\Agent\WorkspaceExecutionContext;
 use Claudriel\Domain\DayBrief\Assembler\DayBriefAssembler;
 use Claudriel\Temporal\TimeSnapshot;
+use Waaseyaa\Entity\ContentEntityInterface;
+use Waaseyaa\Entity\Repository\EntityRepositoryInterface;
 
 final class ChatSystemPromptBuilder
 {
     public function __construct(
         private readonly DayBriefAssembler $assembler,
         private readonly string $projectRoot,
+        private readonly ?EntityRepositoryInterface $workspaceRepo = null,
+        private readonly ?EntityRepositoryInterface $projectRepo = null,
     ) {}
 
-    public function build(string $tenantId = 'default', ?string $activeWorkspace = null, ?TimeSnapshot $snapshot = null): string
+    public function build(string $tenantId = 'default', ?string $activeWorkspace = null, ?TimeSnapshot $snapshot = null, ?string $workspaceId = null): string
     {
         $parts = [];
 
@@ -51,10 +56,48 @@ final class ChatSystemPromptBuilder
             $parts[] = "## Active Workspace: {$activeWorkspace}\nYou are currently operating within the {$activeWorkspace} workspace.\nThis workspace includes events, commitments, and people related to the {$activeWorkspace} project.";
         }
 
+        // Workspace execution context (repo, branch, recent commits)
+        if ($workspaceId !== null && $this->workspaceRepo !== null) {
+            $parts[] = $this->buildWorkspaceExecutionContext($workspaceId);
+        }
+
         // Chat instructions
         $parts[] = $this->buildInstructions();
 
         return implode("\n\n---\n\n", array_filter($parts));
+    }
+
+    private function buildWorkspaceExecutionContext(string $workspaceId): string
+    {
+        try {
+            $context = WorkspaceExecutionContext::forWorkspace($workspaceId, $this->workspaceRepo);
+            $lines = [$context->toPromptContext()];
+
+            if ($context->repoPath !== null && is_dir($context->repoPath)) {
+                $logOutput = shell_exec(sprintf(
+                    'git -C %s log --oneline -5 2>/dev/null',
+                    escapeshellarg($context->repoPath),
+                ));
+                if (is_string($logOutput) && trim($logOutput) !== '') {
+                    $lines[] = "Recent commits:\n".$logOutput;
+                }
+            }
+
+            if ($context->projectUuid !== null && $this->projectRepo !== null) {
+                /** @var ContentEntityInterface[] $projects */
+                $projects = $this->projectRepo->findBy([]);
+                foreach ($projects as $project) {
+                    if ((string) ($project->get('uuid') ?? '') === $context->projectUuid) {
+                        $lines[] = sprintf('Project name: %s', (string) ($project->get('name') ?? ''));
+                        break;
+                    }
+                }
+            }
+
+            return implode("\n", $lines);
+        } catch (\RuntimeException) {
+            return '';
+        }
     }
 
     private function readFile(string $relativePath): ?string
