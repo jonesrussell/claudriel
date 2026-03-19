@@ -9,6 +9,7 @@ use Claudriel\Domain\DayBrief\Assembler\DayBriefAssembler;
 use Claudriel\Entity\JudgmentRule;
 use Claudriel\Support\DriftDetector;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\EventDispatcher\EventDispatcher;
 use Waaseyaa\Entity\EntityType;
 use Waaseyaa\Entity\Repository\EntityRepositoryInterface;
 use Waaseyaa\EntityStorage\Driver\InMemoryStorageDriver;
@@ -66,8 +67,8 @@ final class ChatSystemPromptBuilderRulesTest extends TestCase
                 class: JudgmentRule::class,
                 keys: ['id' => 'jrid', 'uuid' => 'uuid', 'label' => 'rule_text'],
             ),
-            new InMemoryStorageDriver(),
-            new \Symfony\Component\EventDispatcher\EventDispatcher(),
+            new InMemoryStorageDriver,
+            new EventDispatcher,
         );
     }
 

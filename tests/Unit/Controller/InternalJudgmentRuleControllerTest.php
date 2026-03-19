@@ -8,8 +8,8 @@ use Claudriel\Controller\InternalJudgmentRuleController;
 use Claudriel\Domain\Chat\InternalApiTokenGenerator;
 use Claudriel\Entity\JudgmentRule;
 use PHPUnit\Framework\TestCase;
-use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\EventDispatcher\EventDispatcher;
+use Symfony\Component\HttpFoundation\Request;
 use Waaseyaa\Entity\EntityType;
 use Waaseyaa\EntityStorage\Driver\InMemoryStorageDriver;
 use Waaseyaa\EntityStorage\EntityRepository;
@@ -32,8 +32,8 @@ final class InternalJudgmentRuleControllerTest extends TestCase
                 class: JudgmentRule::class,
                 keys: ['id' => 'jrid', 'uuid' => 'uuid', 'label' => 'rule_text'],
             ),
-            new InMemoryStorageDriver(),
-            new EventDispatcher(),
+            new InMemoryStorageDriver,
+            new EventDispatcher,
         );
     }
 
