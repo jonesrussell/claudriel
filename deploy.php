@@ -67,7 +67,7 @@ host('production')
 
 desc('Upload pre-built release artifact from CI');
 task('deploy:upload', function (): void {
-    upload('.build/', '{{release_path}}/', [
+    upload('build/', '{{release_path}}/', [
         'options' => ['--recursive', '--compress'],
     ]);
 });

@@ -100,23 +100,23 @@ jobs:
 
       - name: Assemble build artifact
         run: |
-          mkdir -p claudriel/.build
+          mkdir -p claudriel/build
           rsync -aL \
             --exclude='.git' \
-            --exclude='.build/' \
+            --exclude='build/' \
             --exclude='.github/' \
             --exclude='tests/' \
             --exclude='docs/' \
             --exclude='.env' \
             --exclude='*.sqlite' \
             --exclude='skills/' \
-            claudriel/ claudriel/.build/
+            claudriel/ claudriel/build/
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
           name: deploy-artifact
-          path: claudriel/.build/
+          path: claudriel/build/
           retention-days: 3
 
   deploy-staging:
@@ -135,7 +135,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: deploy-artifact
-          path: claudriel/.build/
+          path: claudriel/build/
 
       - name: Set up PHP 8.4
         uses: shivammathur/setup-php@v2
@@ -178,7 +178,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: deploy-artifact
-          path: claudriel/.build/
+          path: claudriel/build/
 
       - name: Set up PHP 8.4
         uses: shivammathur/setup-php@v2
