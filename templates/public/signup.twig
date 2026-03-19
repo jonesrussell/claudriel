@@ -1,38 +1,24 @@
 {% extends "public/auth-layout.twig" %}
 
-{% block auth_page_title %}Sign Up{% endblock %}
+{% block auth_page_title %}Join the Waitlist{% endblock %}
 
-{% block auth_eyebrow %}Get started{% endblock %}
-{% block auth_headline %}Run your day before it runs you.{% endblock %}
-{% block auth_subtext %}Create your account to start.{% endblock %}
+{% block auth_eyebrow %}Early access{% endblock %}
+{% block auth_headline %}We're building something different.{% endblock %}
+{% block auth_subtext %}Claudriel turns your schedule, commitments, and active work into one focused operating surface. Join the waitlist to get early access.{% endblock %}
 
 {% block auth_form %}
-    <h2>Create your account</h2>
+    <h2>Join the waitlist</h2>
 
-    {% if error is defined and error %}
-        <div class="auth-error">{{ error }}</div>
-    {% endif %}
-
-    <form method="post" action="/signup">
-        <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
-
-        <div class="auth-field">
-            <label for="name">Name</label>
-            <input id="name" type="text" name="name" value="{{ name|default('') }}" autocomplete="name" required>
-        </div>
-
-        <div class="auth-field">
-            <label for="email">Email</label>
-            <input id="email" type="email" name="email" value="{{ email|default('') }}" autocomplete="email" required>
-        </div>
-
-        <div class="auth-field">
-            <label for="password">Password</label>
-            <input id="password" type="password" name="password" autocomplete="new-password" required>
-        </div>
-
-        <button type="submit" class="auth-submit">Create account</button>
-    </form>
+    <div style="min-height: 400px;">
+        <iframe
+            src="https://goformx.com/forms/claudriel-waitlist"
+            width="100%"
+            height="400"
+            frameborder="0"
+            style="border: none; border-radius: 0.65rem; background: transparent;"
+            title="Claudriel waitlist signup"
+        ></iframe>
+    </div>
 {% endblock %}
 
 {% block auth_links %}

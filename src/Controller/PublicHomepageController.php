@@ -25,13 +25,14 @@ final class PublicHomepageController
 
         $context = [
             'primary_cta_href' => '/signup',
+            'primary_cta_label' => 'Join the waitlist',
             'secondary_cta_href' => '/login',
             'headline' => 'Run your day before it runs you.',
-            'subheadline' => 'Claudriel turns your schedule, commitments, and active work into one focused operating surface.',
+            'subheadline' => 'Claudriel turns your schedule, commitments, and active work into one focused operating surface. We\'re in early access.',
             'proof_points' => [
                 'See the day clearly before the first meeting starts.',
-                'Turn signup into a ready tenant and workspace without manual provisioning.',
-                'Keep chat, brief, schedule intelligence, and workspace actions in one flow.',
+                'Keep commitments, drift, and workspace actions in one tenant-aware shell.',
+                'Let chat, brief, and schedule guidance stay in sync as work moves.',
             ],
         ];
 

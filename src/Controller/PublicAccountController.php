@@ -50,6 +50,12 @@ final class PublicAccountController
 
     public function signup(array $params = [], array $query = [], ?AccountInterface $account = null, ?Request $httpRequest = null): RedirectResponse|SsrResponse
     {
+        // Account creation disabled — waitlist only
+        $registrationOpen = ($_ENV['CLAUDRIEL_REGISTRATION_OPEN'] ?? getenv('CLAUDRIEL_REGISTRATION_OPEN') ?: '0') === '1';
+        if (! $registrationOpen) {
+            return new RedirectResponse('/signup', 302);
+        }
+
         $request = $httpRequest ?? Request::create('/signup', 'POST');
         $name = trim((string) $request->request->get('name', ''));
         $email = strtolower(trim((string) $request->request->get('email', '')));

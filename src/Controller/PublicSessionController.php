@@ -36,6 +36,7 @@ final class PublicSessionController
             'email' => (string) ($query['email'] ?? ''),
             'redirect' => $redirect,
             'error' => null,
+            'verified' => ((string) ($query['verified'] ?? '')) === '1',
         ]);
     }
 

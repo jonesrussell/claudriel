@@ -9,6 +9,10 @@
 {% block auth_form %}
     <h2>Log in</h2>
 
+    {% if verified is defined and verified %}
+        <div class="auth-success">Your email has been verified. Please log in to continue.</div>
+    {% endif %}
+
     {% if error is defined and error %}
         <div class="auth-error">{{ error }}</div>
     {% endif %}
@@ -38,5 +42,5 @@
 {% endblock %}
 
 {% block auth_links %}
-    Don't have an account? <a href="/signup">Sign up</a>
+    Don't have an account? <a href="/signup">Join the waitlist</a>
 {% endblock %}
