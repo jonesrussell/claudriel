@@ -39,8 +39,10 @@ use Claudriel\Controller\Governance\CodifiedContextIntegrityController;
 use Claudriel\Controller\NotFoundController;
 use Claudriel\Controller\Platform\ObservabilityDashboardController;
 use Claudriel\Controller\PublicHomepageController;
+use Claudriel\Controller\WorkspaceDriftController;
 use Claudriel\Domain\DayBrief\Assembler\DayBriefAssembler;
 use Claudriel\Domain\DayBrief\Service\BriefSessionStore;
+use Claudriel\Domain\Git\DriftDetector as GitDriftDetector;
 use Claudriel\Domain\Git\GitOperator;
 use Claudriel\Domain\Git\GitRepositoryManager;
 use Claudriel\Domain\IssueInstructionBuilder;
@@ -63,7 +65,7 @@ use Claudriel\Support\DriftDetector;
 use GraphQL\Type\Definition\Type;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 use Waaseyaa\AdminSurface\AdminSurfaceServiceProvider;
-use Waaseyaa\Database\PdoDatabase;
+use Waaseyaa\Database\DatabaseInterface;
 use Waaseyaa\Entity\EntityType;
 use Waaseyaa\Entity\EntityTypeManager;
 use Waaseyaa\EntityStorage\Connection\SingleConnectionResolver;
@@ -520,6 +522,30 @@ final class ClaudrielServiceProvider extends ServiceProvider
                 ->build(),
         );
 
+        // Workspace API: repo connection and drift detection
+        $driftControllerFactory = fn (): WorkspaceDriftController => new WorkspaceDriftController(
+            $entityTypeManager,
+            new GitRepositoryManager,
+            new GitDriftDetector,
+        );
+
+        $connectRepoRoute = RouteBuilder::create('/api/workspaces/{uuid}/connect-repo')
+            ->controller(fn (array $params) => $driftControllerFactory()->connectRepo($params))
+            ->allowAll()
+            ->methods('POST')
+            ->build();
+        $connectRepoRoute->setOption('_csrf', false);
+        $router->addRoute('claudriel.api.workspace.connect_repo', $connectRepoRoute);
+
+        $router->addRoute(
+            'claudriel.api.workspace.drift',
+            RouteBuilder::create('/api/workspaces/{uuid}/drift')
+                ->controller(fn (array $params) => $driftControllerFactory()->drift($params))
+                ->allowAll()
+                ->methods('GET')
+                ->build(),
+        );
+
         // Catch-all: renders 404 for any unmatched path, preventing the
         // foundation render pipeline from failing on PathAliasResolver.
         // @see https://github.com/jonesrussell/claudriel/issues/21
@@ -537,7 +563,7 @@ final class ClaudrielServiceProvider extends ServiceProvider
 
     public function commands(
         EntityTypeManager $entityTypeManager,
-        PdoDatabase $database,
+        DatabaseInterface $database,
         EventDispatcherInterface $dispatcher,
     ): array {
         // Trigger getStorage() for each entity type so SqlSchemaHandler::ensureTable() runs.

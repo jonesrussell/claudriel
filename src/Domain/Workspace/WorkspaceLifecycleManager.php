@@ -145,6 +145,81 @@ final class WorkspaceLifecycleManager
     }
 
     /**
+     * Auto-sync a persistent workspace by pulling latest changes.
+     *
+     * Only works for persistent mode workspaces with a connected repository.
+     * Returns true if a sync (git pull) was performed.
+     */
+    public function autoSync(string $uuid): bool
+    {
+        $workspace = $this->loadByUuid($uuid);
+
+        if ($workspace->get('mode') !== 'persistent') {
+            return false;
+        }
+
+        $repoPath = trim((string) ($workspace->get('repo_path') ?? ''));
+        if ($repoPath === '' || ! is_dir($repoPath.'/.git')) {
+            return false;
+        }
+
+        if ($this->isSyncing($workspace)) {
+            return false;
+        }
+
+        try {
+            $this->gitRepositoryManager->pull($repoPath);
+            $newHash = $this->gitRepositoryManager->getLatestCommit($repoPath);
+            $workspace->set('last_commit_hash', $newHash);
+            $this->entityTypeManager->getStorage('workspace')->save($workspace);
+
+            return true;
+        } catch (\Throwable) {
+            return false;
+        }
+    }
+
+    /**
+     * Rebuild an ephemeral workspace by destroying and re-cloning.
+     *
+     * Only works for ephemeral mode workspaces with a connected repository.
+     * Triggered when drift exceeds threshold or manually.
+     */
+    public function rebuild(string $uuid): void
+    {
+        $workspace = $this->loadByUuid($uuid);
+
+        if ($workspace->get('mode') !== 'ephemeral') {
+            throw new \RuntimeException(sprintf('Cannot rebuild persistent workspace %s. Use autoSync instead.', $uuid));
+        }
+
+        $repoUrl = trim((string) ($workspace->get('repo_url') ?? ''));
+        if ($repoUrl === '') {
+            throw new \RuntimeException(sprintf('Workspace %s has no repository URL configured.', $uuid));
+        }
+
+        $branch = trim((string) ($workspace->get('branch') ?? 'main'));
+        $repoPath = trim((string) ($workspace->get('repo_path') ?? ''));
+
+        if ($repoPath === '') {
+            $repoPath = $this->gitRepositoryManager->buildWorkspaceRepoPath($uuid);
+        }
+
+        // Remove existing clone
+        if (is_dir($repoPath)) {
+            $this->removeDirectory($repoPath);
+        }
+
+        // Re-clone
+        $this->gitRepositoryManager->clone($repoUrl, $repoPath, $branch);
+
+        $newHash = $this->gitRepositoryManager->getLatestCommit($repoPath);
+        $workspace->set('repo_path', $repoPath);
+        $workspace->set('last_commit_hash', $newHash);
+        $this->entityTypeManager->getStorage('workspace')->save($workspace);
+    }
+
+    /**
      * Check if a git operation is in progress (lock file exists).
      */
     public function isSyncing(Workspace $workspace): bool

@@ -67,6 +67,7 @@ final class ClaudrielSurfaceHost extends AbstractAdminSurfaceHost
         $catalog = new CatalogBuilder;
 
         $catalog->defineEntity('workspace', 'Workspace')->group('structure');
+        $catalog->defineEntity('project', 'Project')->group('structure');
         $catalog->defineEntity('person', 'Person')->group('people');
         $catalog->defineEntity('commitment', 'Commitment')->group('workflows');
         $catalog->defineEntity('schedule_entry', 'Schedule Entry')->group('workflows');
