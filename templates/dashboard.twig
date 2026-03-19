@@ -7,6 +7,14 @@
 
 {% block title %}Dashboard — Claudriel{% endblock %}
 
+{% block nav_actions %}
+    <a href="/settings" style="color: var(--text-secondary); text-decoration: none; font-size: 0.8rem;">Settings</a>
+    <form method="post" action="/logout" style="margin: 0;">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
+        <button type="submit" class="nav-logout">Log out</button>
+    </form>
+{% endblock %}
+
 {% block styles %}
         .site-nav-inner {
             max-width: 100%;
