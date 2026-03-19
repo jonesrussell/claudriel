@@ -95,6 +95,10 @@ final class InternalCommitmentController
         $commitment = $commitments[0];
 
         if (isset($body['status'])) {
+            $allowedStatuses = ['pending', 'active', 'completed', 'cancelled', 'overdue'];
+            if (! in_array($body['status'], $allowedStatuses, true)) {
+                return $this->jsonError('Invalid status. Allowed: '.implode(', ', $allowedStatuses), 400);
+            }
             $commitment->set('status', $body['status']);
         }
         if (isset($body['notes'])) {

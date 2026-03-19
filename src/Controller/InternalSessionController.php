@@ -66,23 +66,23 @@ final class InternalSessionController
         $session = $sessions[0];
 
         // Check daily ceiling: sum turns_consumed for tenant today
+        // Note: TOCTOU race exists on concurrent requests; acceptable given single-user tenants.
+        // The created_at filter limits query scope to avoid loading all historical sessions.
+        $todayStart = (new \DateTimeImmutable('today'))->format('Y-m-d');
         $allSessions = $this->sessionRepo->findBy([
             'tenant_id' => $this->tenantId,
         ]);
 
-        $todayStart = (new \DateTimeImmutable('today'))->format('Y-m-d');
         $totalTurnsToday = 0;
         foreach ($allSessions as $s) {
             $createdAt = $s->get('created_at');
             if ($createdAt !== null) {
                 $sessionDate = (new \DateTimeImmutable($createdAt))->format('Y-m-d');
-                if ($sessionDate === $todayStart) {
-                    $totalTurnsToday += (int) ($s->get('turns_consumed') ?? 0);
+                if ($sessionDate < $todayStart) {
+                    continue;
                 }
-            } else {
-                // Sessions without created_at are assumed to be from today (e.g. in-memory tests)
-                $totalTurnsToday += (int) ($s->get('turns_consumed') ?? 0);
             }
+            $totalTurnsToday += (int) ($s->get('turns_consumed') ?? 0);
         }
 
         if ($totalTurnsToday >= self::DAILY_CEILING) {

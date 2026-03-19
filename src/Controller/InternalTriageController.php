@@ -7,13 +7,13 @@ namespace Claudriel\Controller;
 use Claudriel\Domain\Chat\InternalApiTokenGenerator;
 use Symfony\Component\HttpFoundation\Request;
 use Waaseyaa\Access\AccountInterface;
-use Waaseyaa\EntityStorage\EntityRepository;
+use Waaseyaa\Entity\Repository\EntityRepositoryInterface;
 use Waaseyaa\SSR\SsrResponse;
 
 final class InternalTriageController
 {
     public function __construct(
-        private readonly EntityRepository $triageRepo,
+        private readonly EntityRepositoryInterface $triageRepo,
         private readonly InternalApiTokenGenerator $apiTokenGenerator,
         private readonly string $tenantId,
     ) {}
@@ -73,6 +73,11 @@ final class InternalTriageController
 
         $body = $this->getRequestBody($httpRequest);
         $newStatus = $body['status'] ?? 'resolved';
+
+        $allowedStatuses = ['resolved', 'dismissed', 'escalated'];
+        if (! in_array($newStatus, $allowedStatuses, true)) {
+            return $this->jsonError('Invalid status. Allowed: '.implode(', ', $allowedStatuses), 400);
+        }
 
         $entry->set('status', $newStatus);
         $this->triageRepo->save($entry);

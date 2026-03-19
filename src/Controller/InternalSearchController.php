@@ -48,13 +48,10 @@ final class InternalSearchController
 
     private function searchPersons(string $keyword, int $limit): array
     {
-        $all = $this->personRepo->findBy([]);
+        $all = $this->personRepo->findBy(['tenant_id' => $this->tenantId]);
         $results = [];
 
         foreach ($all as $person) {
-            if (! $this->matchesTenant($person)) {
-                continue;
-            }
 
             $searchable = mb_strtolower(implode(' ', [
                 (string) ($person->get('name') ?? ''),
@@ -81,13 +78,10 @@ final class InternalSearchController
 
     private function searchCommitments(string $keyword, int $limit): array
     {
-        $all = $this->commitmentRepo->findBy([]);
+        $all = $this->commitmentRepo->findBy(['tenant_id' => $this->tenantId]);
         $results = [];
 
         foreach ($all as $commitment) {
-            if (! $this->matchesTenant($commitment)) {
-                continue;
-            }
 
             $searchable = mb_strtolower((string) ($commitment->get('title') ?? ''));
 
@@ -111,13 +105,10 @@ final class InternalSearchController
 
     private function searchEvents(string $keyword, int $limit): array
     {
-        $all = $this->eventRepo->findBy([]);
+        $all = $this->eventRepo->findBy(['tenant_id' => $this->tenantId]);
         $results = [];
 
         foreach ($all as $event) {
-            if (! $this->matchesTenant($event)) {
-                continue;
-            }
 
             $payload = json_decode((string) ($event->get('payload') ?? '{}'), true) ?? [];
             $searchable = mb_strtolower(implode(' ', [
@@ -145,20 +136,6 @@ final class InternalSearchController
         }
 
         return $results;
-    }
-
-    private function matchesTenant(mixed $entity): bool
-    {
-        if (! is_object($entity) || ! method_exists($entity, 'get')) {
-            return false;
-        }
-
-        $entityTenant = (string) ($entity->get('tenant_id') ?? '');
-        if ($entityTenant === '') {
-            return $this->tenantId === 'default';
-        }
-
-        return $entityTenant === $this->tenantId;
     }
 
     private function authenticate(mixed $httpRequest): ?string
