@@ -42,10 +42,18 @@ set('writable_dirs', ['storage', 'logs', 'cache']);
 // Hosts
 // ---------------------------------------------------------------------------
 
-host('production')
+host('staging')
     ->setHostname('claudriel.northcloud.one')
     ->set('remote_user', 'deployer')
     ->set('deploy_path', '/home/deployer/claudriel')
+    ->set('deploy_validation_base_url', 'https://claudriel.northcloud.one')
+    ->set('labels', ['stage' => 'staging']);
+
+host('production')
+    ->setHostname('147.182.150.145')
+    ->set('remote_user', 'deployer')
+    ->set('deploy_path', '/home/deployer/claudriel-prod')
+    ->set('deploy_validation_base_url', 'https://claudriel.ai')
     ->set('labels', ['stage' => 'production']);
 
 // ---------------------------------------------------------------------------
