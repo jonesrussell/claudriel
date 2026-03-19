@@ -14,7 +14,7 @@
         background:
             radial-gradient(circle at top left, rgba(107, 155, 255, 0.22), transparent 30%),
             radial-gradient(circle at 80% 20%, rgba(45, 212, 191, 0.18), transparent 28%),
-            linear-gradient(180deg, #0b0d12 0%, #111521 52%, #0f1117 100%);
+            linear-gradient(180deg, #0a0c10 0%, #131620 52%, #0a0c10 100%);
     }
     .home-shell {
         position: relative;
@@ -70,7 +70,7 @@
     .hero p.lead {
         max-width: 36rem;
         font-size: 1.08rem;
-        color: #ccd0de;
+        color: var(--text-primary);
     }
     .cta-row {
         display: flex;
@@ -145,14 +145,14 @@
         border-radius: 1.2rem;
         overflow: hidden;
         border: 1px solid rgba(255, 255, 255, 0.06);
-        background: #0f1117;
+        background: var(--bg-deep);
     }
     .frame-topbar {
         display: flex;
         justify-content: space-between;
         align-items: center;
         padding: 0.85rem 1rem;
-        background: #171b28;
+        background: var(--bg-surface);
         border-bottom: 1px solid rgba(255, 255, 255, 0.06);
         color: var(--text-secondary);
         font-size: 0.82rem;
@@ -163,7 +163,7 @@
         min-height: 24rem;
     }
     .frame-sidebar {
-        background: #141824;
+        background: var(--bg-surface);
         border-right: 1px solid rgba(255, 255, 255, 0.05);
         padding: 1rem;
         display: grid;
@@ -193,7 +193,7 @@
         gap: 0.9rem;
         background:
             linear-gradient(180deg, rgba(107, 155, 255, 0.06), rgba(107, 155, 255, 0)),
-            #0f1117;
+            var(--bg-deep);
     }
     .status-row {
         display: flex;
@@ -366,15 +366,15 @@
                             <div style="display: grid; gap: 0.5rem;">
                                 <div style="display: flex; gap: 0.65rem; align-items: center; padding: 0.65rem 0.8rem; background: rgba(255,255,255,0.03); border-radius: 0.5rem; border-left: 2px solid var(--accent-amber);">
                                     <span style="font-size: 0.8rem; color: var(--accent-amber); font-weight: 600;">1</span>
-                                    <span style="font-size: 0.85rem; color: #ccd0de;">Review Acme proposal (Sarah flagged timeline)</span>
+                                    <span style="font-size: 0.85rem; color: var(--text-primary);">Review Acme proposal (Sarah flagged timeline)</span>
                                 </div>
                                 <div style="display: flex; gap: 0.65rem; align-items: center; padding: 0.65rem 0.8rem; background: rgba(255,255,255,0.03); border-radius: 0.5rem; border-left: 2px solid var(--accent-teal);">
                                     <span style="font-size: 0.8rem; color: var(--accent-teal); font-weight: 600;">2</span>
-                                    <span style="font-size: 0.85rem; color: #ccd0de;">Two commitments drifting past 48h</span>
+                                    <span style="font-size: 0.85rem; color: var(--text-primary);">Two commitments drifting past 48h</span>
                                 </div>
                                 <div style="display: flex; gap: 0.65rem; align-items: center; padding: 0.65rem 0.8rem; background: rgba(255,255,255,0.03); border-radius: 0.5rem; border-left: 2px solid var(--accent-blue);">
                                     <span style="font-size: 0.8rem; color: var(--accent-blue); font-weight: 600;">3</span>
-                                    <span style="font-size: 0.85rem; color: #ccd0de;">Clear block until 2pm: deep work window</span>
+                                    <span style="font-size: 0.85rem; color: var(--text-primary);">Clear block until 2pm: deep work window</span>
                                 </div>
                             </div>
                         </div>
