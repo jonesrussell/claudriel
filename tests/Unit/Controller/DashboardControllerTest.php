@@ -15,6 +15,9 @@ use Claudriel\Entity\Skill;
 use Claudriel\Entity\TemporalNotification;
 use Claudriel\Entity\TriageEntry;
 use Claudriel\Entity\Workspace;
+use Claudriel\Temporal\AtomicTimeService;
+use Claudriel\Temporal\Clock\WallClockInterface;
+use Claudriel\Temporal\TemporalContextFactory;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\HttpFoundation\Request;
@@ -106,21 +109,17 @@ final class DashboardControllerTest extends TestCase
         self::assertStringContainsString('Queued in chat', $response->content);
     }
 
-    /** @see https://github.com/jonesrussell/claudriel/issues/345 */
     public function test_show_renders_live_guidance_card_and_ambient_nudge_from_schedule(): void
     {
-        $hour = (int) (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))->format('G');
-        if ($hour >= 23 || $hour < 6) {
-            self::markTestSkipped('Temporal agent suppresses guidance outside business hours (#345)');
-        }
-
+        $fixedNow = new \DateTimeImmutable('10:00:00', new \DateTimeZone('UTC'));
         $etm = $this->buildEntityTypeManager();
         $this->seedWorkspace($etm, 'workspace-dashboard-3', 'Guidance Workspace');
-        $this->seedUpcomingScheduleEntry($etm, 'Planning');
+        $this->seedUpcomingScheduleEntry($etm, 'Planning', $fixedNow);
 
         $controller = new DashboardController(
             $etm,
             new Environment(new FilesystemLoader(dirname(__DIR__, 3).'/templates')),
+            $this->buildFixedTimeContextFactory($etm),
         );
 
         $response = $controller->show(
@@ -141,21 +140,17 @@ final class DashboardControllerTest extends TestCase
         self::assertStringContainsString('data-guidance-dismiss="', $response->content);
     }
 
-    /** @see https://github.com/jonesrussell/claudriel/issues/345 */
     public function test_show_renders_persisted_guidance_action_state_in_html(): void
     {
-        $hour = (int) (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))->format('G');
-        if ($hour >= 23 || $hour < 6) {
-            self::markTestSkipped('Temporal agent suppresses guidance outside business hours (#345)');
-        }
-
+        $fixedNow = new \DateTimeImmutable('10:00:00', new \DateTimeZone('UTC'));
         $etm = $this->buildEntityTypeManager();
         $this->seedWorkspace($etm, 'workspace-dashboard-4', 'Guidance State Workspace');
-        $this->seedUpcomingScheduleEntry($etm, 'Planning');
+        $this->seedUpcomingScheduleEntry($etm, 'Planning', $fixedNow);
 
         $controller = new DashboardController(
             $etm,
             new Environment(new FilesystemLoader(dirname(__DIR__, 3).'/templates')),
+            $this->buildFixedTimeContextFactory($etm),
         );
 
         $request = Request::create('/dashboard', 'GET', server: ['HTTP_X_REQUEST_ID' => 'dashboard-guidance-state-req']);
@@ -213,9 +208,9 @@ final class DashboardControllerTest extends TestCase
         ]));
     }
 
-    private function seedUpcomingScheduleEntry(EntityTypeManager $etm, string $title): void
+    private function seedUpcomingScheduleEntry(EntityTypeManager $etm, string $title, ?\DateTimeImmutable $referenceNow = null): void
     {
-        $start = new \DateTimeImmutable('+20 minutes');
+        $start = ($referenceNow ?? new \DateTimeImmutable())->modify('+20 minutes');
         $end = $start->modify('+45 minutes');
 
         $etm->getStorage('schedule_entry')->save(new ScheduleEntry([
@@ -242,5 +237,17 @@ final class DashboardControllerTest extends TestCase
             new EntityType(id: 'triage_entry', label: 'Triage Entry', class: TriageEntry::class, keys: ['id' => 'teid', 'uuid' => 'uuid', 'label' => 'sender_name']),
             new EntityType(id: 'workspace', label: 'Workspace', class: Workspace::class, keys: ['id' => 'wid', 'uuid' => 'uuid', 'label' => 'name']),
         ];
+    }
+
+    private function buildFixedTimeContextFactory(EntityTypeManager $etm): TemporalContextFactory
+    {
+        $fixedClock = new class implements WallClockInterface {
+            public function now(): \DateTimeImmutable
+            {
+                return new \DateTimeImmutable('10:00:00', new \DateTimeZone('UTC'));
+            }
+        };
+
+        return new TemporalContextFactory($etm, new AtomicTimeService($fixedClock));
     }
 }

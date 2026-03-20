@@ -16,6 +16,9 @@ use Claudriel\Entity\TemporalNotification;
 use Claudriel\Entity\TriageEntry;
 use Claudriel\Entity\Workspace;
 use Claudriel\Support\BriefSignal;
+use Claudriel\Temporal\AtomicTimeService;
+use Claudriel\Temporal\Clock\WallClockInterface;
+use Claudriel\Temporal\TemporalContextFactory;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\HttpFoundation\Request;
@@ -103,19 +106,21 @@ final class BriefStreamControllerTest extends TestCase
         self::assertSame('Fallback Workspace', $payload['briefs']['workspaces'][0]['name']);
     }
 
-    /** @see https://github.com/jonesrussell/claudriel/issues/345 */
     public function test_fallback_payload_includes_live_proactive_guidance_when_schedule_has_upcoming_block(): void
     {
-        $hour = (int) (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))->format('G');
-        if ($hour >= 23 || $hour < 6) {
-            self::markTestSkipped('Temporal agent suppresses guidance outside business hours (#345)');
-        }
-
+        $fixedNow = new \DateTimeImmutable('10:00:00', new \DateTimeZone('UTC'));
         $etm = $this->buildEntityTypeManager();
         $this->seedWorkspace($etm, 'workspace-fallback-2', 'Guidance Workspace', 'user-77');
-        $this->seedUpcomingScheduleEntry($etm, 'Planning');
+        $this->seedUpcomingScheduleEntry($etm, 'Planning', $fixedNow);
 
-        $controller = new BriefStreamController($etm);
+        $fixedClock = new class implements WallClockInterface {
+            public function now(): \DateTimeImmutable
+            {
+                return new \DateTimeImmutable('10:00:00', new \DateTimeZone('UTC'));
+            }
+        };
+        $factory = new TemporalContextFactory($etm, new AtomicTimeService($fixedClock));
+        $controller = new BriefStreamController($etm, $factory);
         $account = new AuthenticatedAccount(new Account([
             'name' => 'Test User',
             'email' => 'test@example.com',
@@ -163,9 +168,9 @@ final class BriefStreamControllerTest extends TestCase
         ]));
     }
 
-    private function seedUpcomingScheduleEntry(EntityTypeManager $etm, string $title): void
+    private function seedUpcomingScheduleEntry(EntityTypeManager $etm, string $title, ?\DateTimeImmutable $referenceNow = null): void
     {
-        $start = new \DateTimeImmutable('+20 minutes');
+        $start = ($referenceNow ?? new \DateTimeImmutable())->modify('+20 minutes');
         $end = $start->modify('+45 minutes');
 
         $etm->getStorage('schedule_entry')->save(new ScheduleEntry([

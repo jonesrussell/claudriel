@@ -22,6 +22,7 @@ final class BriefStreamController
 {
     public function __construct(
         private readonly EntityTypeManager $entityTypeManager,
+        private readonly ?TemporalContextFactory $temporalContextFactory = null,
     ) {}
 
     /**
@@ -38,7 +39,7 @@ final class BriefStreamController
 
         $requestId = $this->resolveRequestId($httpRequest, $query);
         $userId = $this->resolveUserId($account);
-        $snapshot = (new TemporalContextFactory($this->entityTypeManager))->snapshotForInteraction(
+        $snapshot = (($this->temporalContextFactory ?? new TemporalContextFactory($this->entityTypeManager)))->snapshotForInteraction(
             scopeKey: 'brief-stream:'.$requestId,
             tenantId: $scope->tenantId,
             workspaceUuid: $scope->workspaceId(),
@@ -205,7 +206,7 @@ final class BriefStreamController
         }
 
         $assembler = new DayBriefAssembler($eventRepo, $commitmentRepo, $driftDetector, $personRepo, $skillRepo, $scheduleRepo, $workspaceRepo, $triageRepo);
-        $snapshot ??= (new TemporalContextFactory($this->entityTypeManager))->snapshotForInteraction(
+        $snapshot ??= (($this->temporalContextFactory ?? new TemporalContextFactory($this->entityTypeManager)))->snapshotForInteraction(
             scopeKey: 'brief-stream:fallback:'.$tenantId.':'.($workspaceUuid ?? 'global'),
             tenantId: $tenantId,
             workspaceUuid: $workspaceUuid,

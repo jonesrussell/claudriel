@@ -24,6 +24,7 @@ final class DashboardController
     public function __construct(
         private readonly EntityTypeManager $entityTypeManager,
         private readonly ?Environment $twig = null,
+        private readonly ?TemporalContextFactory $temporalContextFactory = null,
     ) {}
 
     public function show(array $params = [], array $query = [], ?AccountInterface $account = null, ?Request $httpRequest = null): SsrResponse
@@ -46,7 +47,7 @@ final class DashboardController
         // for future "new items" indicators but doesn't gate the main display.
         $since = new \DateTimeImmutable('-24 hours');
         $requestId = $this->resolveRequestId($httpRequest, $query);
-        $snapshot = (new TemporalContextFactory($this->entityTypeManager))->snapshotForInteraction(
+        $snapshot = ($this->temporalContextFactory ?? new TemporalContextFactory($this->entityTypeManager))->snapshotForInteraction(
             scopeKey: 'dashboard:'.$requestId,
             tenantId: $scope->tenantId,
             workspaceUuid: $scope->workspaceId(),
