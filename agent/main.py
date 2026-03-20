@@ -35,6 +35,11 @@ from util.http import PhpApiClient
 
 TOOLS = [GMAIL_LIST_DEF, GMAIL_READ_DEF, GMAIL_SEND_DEF, CALENDAR_LIST_DEF, CALENDAR_CREATE_DEF, JUDGMENT_RULE_SUGGEST_DEF, COMMITMENT_LIST_DEF, COMMITMENT_UPDATE_DEF, PERSON_SEARCH_DEF, PERSON_DETAIL_DEF, BRIEF_GENERATE_DEF, EVENT_SEARCH_DEF, SEARCH_GLOBAL_DEF, WORKSPACE_LIST_DEF, WORKSPACE_CONTEXT_DEF, SCHEDULE_QUERY_DEF, TRIAGE_LIST_DEF, TRIAGE_RESOLVE_DEF]
 
+# Max characters for tool results stored in conversation history.
+# Full results are still emitted via tool_result events to the frontend.
+TOOL_RESULT_MAX_CHARS = 2000
+GMAIL_BODY_MAX_CHARS = 500
+
 EXECUTORS = {
     "gmail_list": gmail_list_exec,
     "gmail_read": gmail_read_exec,
@@ -93,6 +98,33 @@ def emit(event: str, **kwargs) -> None:
     print(line, flush=True)
 
 
+def truncate_tool_result(tool_name: str, result: dict) -> str:
+    """Truncate a tool result for conversation history to control token growth."""
+    result_json = json.dumps(result, ensure_ascii=False)
+
+    if tool_name == "gmail_read":
+        # Gmail bodies are the biggest offender; truncate the body field
+        truncated = dict(result)
+        if "body" in truncated and len(truncated["body"]) > GMAIL_BODY_MAX_CHARS:
+            truncated["body"] = truncated["body"][:GMAIL_BODY_MAX_CHARS] + " [truncated]"
+        return json.dumps(truncated, ensure_ascii=False)
+
+    if len(result_json) > TOOL_RESULT_MAX_CHARS:
+        return result_json[:TOOL_RESULT_MAX_CHARS] + " [truncated]"
+
+    return result_json
+
+
+def build_cached_tools(tools: list) -> list:
+    """Add cache_control to the last tool definition for prompt caching."""
+    if not tools:
+        return tools
+    cached = [dict(t) for t in tools]
+    cached[-1] = dict(cached[-1])
+    cached[-1]["cache_control"] = {"type": "ephemeral"}
+    return cached
+
+
 def main() -> None:
     try:
         request = json.load(sys.stdin)
@@ -125,6 +157,8 @@ def main() -> None:
         turn_limit = turn_limits.get(task_type, turn_limits.get("general", 25))
 
     turns_consumed = 0
+    cached_tools = build_cached_tools(TOOLS)
+    cached_system = [{"type": "text", "text": system_prompt, "cache_control": {"type": "ephemeral"}}]
 
     try:
         for _ in range(turn_limit):
@@ -133,9 +167,9 @@ def main() -> None:
             response = client.messages.create(
                 model=model,
                 max_tokens=4096,
-                system=system_prompt,
+                system=cached_system,
                 messages=messages,
-                tools=TOOLS,
+                tools=cached_tools,
             )
 
             # Collect text and tool_use blocks from the response
@@ -178,7 +212,7 @@ def main() -> None:
                 tool_results.append({
                     "type": "tool_result",
                     "tool_use_id": tool_call.id,
-                    "content": json.dumps(result, ensure_ascii=False),
+                    "content": truncate_tool_result(tool_call.name, result),
                 })
 
             # Check if approaching limit and still have tool calls
