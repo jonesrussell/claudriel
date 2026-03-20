@@ -20,17 +20,13 @@ final class InternalGoogleController
     public function gmailList(array $params = [], array $query = [], ?AccountInterface $account = null, ?Request $httpRequest = null): SsrResponse
     {
         $accountId = $this->authenticate($httpRequest);
-        file_put_contents('/tmp/claudriel_gmail_debug.log', date('c').' gmailList accountId='.($accountId ?? 'null')."\n", FILE_APPEND);
         if ($accountId === null) {
             return $this->jsonError('Unauthorized', 401);
         }
 
         try {
             $accessToken = $this->tokenManager->getValidAccessToken($accountId);
-            file_put_contents('/tmp/claudriel_gmail_debug.log', date('c').' got token len='.strlen($accessToken)."\n", FILE_APPEND);
         } catch (\RuntimeException $e) {
-            file_put_contents('/tmp/claudriel_gmail_debug.log', date('c').' token ERROR: '.$e->getMessage()."\n", FILE_APPEND);
-
             return $this->jsonError($e->getMessage(), 503);
         }
 
@@ -41,7 +37,6 @@ final class InternalGoogleController
             .http_build_query(['q' => $q, 'maxResults' => $maxResults]);
 
         $response = $this->googleApiGet($url, $accessToken);
-        file_put_contents('/tmp/claudriel_gmail_debug.log', date('c').' response keys='.implode(',', array_keys($response))."\n", FILE_APPEND);
 
         return $this->jsonResponse($response);
     }
