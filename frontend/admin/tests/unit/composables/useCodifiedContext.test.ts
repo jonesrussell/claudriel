@@ -53,4 +53,14 @@ describe('useCodifiedContext', () => {
     expect(sessions.value).toEqual([])
     expect(error.value).toBe('HTTP 500')
   })
+
+  it('surfaces network failures as errors', async () => {
+    globalThis.fetch = vi.fn().mockRejectedValue(new Error('Network down'))
+
+    const { sessions, error, fetchSessions } = useCodifiedContext()
+    await fetchSessions()
+
+    expect(sessions.value).toEqual([])
+    expect(error.value).toBe('Network down')
+  })
 })
