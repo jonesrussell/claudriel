@@ -175,7 +175,8 @@ final class GoogleOAuthController
         }
 
         $httpCode = $this->parseHttpStatusCode($http_response_header ?? []); // @phpstan-ignore nullCoalesce.variable
-        error_log('[GoogleOAuth] exchangeCode: httpCode='.$httpCode.' response='.substr((string) $response, 0, 500));
+        error_log('[GoogleOAuth] exchangeCode: httpCode='.$httpCode);
+        file_put_contents('/tmp/google_oauth_debug.log', date('c').' httpCode='.$httpCode.' response='.$response."\n", FILE_APPEND);
 
         if ($httpCode >= 400) {
             return null;
