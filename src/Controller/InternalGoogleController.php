@@ -20,13 +20,17 @@ final class InternalGoogleController
     public function gmailList(array $params = [], array $query = [], ?AccountInterface $account = null, ?Request $httpRequest = null): SsrResponse
     {
         $accountId = $this->authenticate($httpRequest);
+        error_log('[InternalGoogle] gmailList: accountId='.($accountId ?? 'null'));
         if ($accountId === null) {
             return $this->jsonError('Unauthorized', 401);
         }
 
         try {
             $accessToken = $this->tokenManager->getValidAccessToken($accountId);
+            error_log('[InternalGoogle] gmailList: got token, len='.strlen($accessToken));
         } catch (\RuntimeException $e) {
+            error_log('[InternalGoogle] gmailList: token error: '.$e->getMessage());
+
             return $this->jsonError($e->getMessage(), 503);
         }
 
@@ -37,6 +41,7 @@ final class InternalGoogleController
             .http_build_query(['q' => $q, 'maxResults' => $maxResults]);
 
         $response = $this->googleApiGet($url, $accessToken);
+        error_log('[InternalGoogle] gmailList: response keys='.implode(',', array_keys($response)));
 
         return $this->jsonResponse($response);
     }
