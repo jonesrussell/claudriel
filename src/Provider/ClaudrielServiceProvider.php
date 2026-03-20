@@ -594,9 +594,6 @@ final class ClaudrielServiceProvider extends ServiceProvider
             label: 'Commitment',
             class: Commitment::class,
             keys: ['id' => 'cid', 'uuid' => 'uuid', 'label' => 'title'],
-            fieldDefinitions: [
-                'direction' => ['type' => 'string'],
-            ],
         );
         $commitmentRepo = new EntityRepository(
             $commitmentType,

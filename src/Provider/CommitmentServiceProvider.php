@@ -28,6 +28,7 @@ final class CommitmentServiceProvider extends ServiceProvider
                 'title' => ['type' => 'string', 'required' => true],
                 'status' => ['type' => 'string'],
                 'confidence' => ['type' => 'float'],
+                'direction' => ['type' => 'string'],
                 'due_date' => ['type' => 'datetime'],
                 'person_uuid' => ['type' => 'string'],
                 'source' => ['type' => 'string'],
