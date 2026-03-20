@@ -156,3 +156,4 @@ All require HMAC Bearer token via `InternalApiTokenGenerator`. See `docs/specs/a
 - `CommitmentCompletionDetector` exists but is not wired into any automated flow; it's a building block for future commitment lifecycle automation
 - `DayBriefAssembler::assemble()` returns `waiting_on` (inbound pending commitments) inside `commitments` key, and `follow_ups` (unanswered emails) at top level; both have corresponding entries in `counts`
 - `InMemoryStorageDriver` uses the entity's id key as storage key; when seeding multiple entities in tests, you MUST set unique IDs (e.g., `'eid' => 1`, `'eid' => 2`) or each `save()` overwrites the previous
+- `EntityRepositoryInterface::findBy()` only supports exact-match key-value criteria, not range queries (`>=`, `LIKE`, etc.); date filtering or substring search must happen in PHP after fetching results
