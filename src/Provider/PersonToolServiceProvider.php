@@ -6,8 +6,8 @@ namespace Claudriel\Provider;
 
 use Claudriel\Controller\InternalPersonController;
 use Claudriel\Domain\Chat\InternalApiTokenGenerator;
-use Waaseyaa\Entity\EntityTypeManager;
 use Claudriel\Support\StorageRepositoryAdapter;
+use Waaseyaa\Entity\EntityTypeManager;
 use Waaseyaa\Foundation\ServiceProvider\ServiceProvider;
 use Waaseyaa\Routing\RouteBuilder;
 use Waaseyaa\Routing\WaaseyaaRouter;

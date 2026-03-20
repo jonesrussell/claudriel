@@ -37,11 +37,10 @@ final class PrivacyPolicyController
         );
     }
 
-    /** @return string */
     private function renderInline(array $context): string
     {
         return '<html><head><title>Privacy Policy | Claudriel</title></head>'
-            . '<body><h1>Privacy Policy</h1><p>Last updated: ' . $context['last_updated'] . '</p>'
-            . '<p>Contact: ' . $context['contact_email'] . '</p></body></html>';
+            .'<body><h1>Privacy Policy</h1><p>Last updated: '.$context['last_updated'].'</p>'
+            .'<p>Contact: '.$context['contact_email'].'</p></body></html>';
     }
 }

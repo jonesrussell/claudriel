@@ -25,7 +25,7 @@ final class TermsOfServiceController
         if ($this->twig === null) {
             return new SsrResponse(
                 content: '<html><head><title>Terms of Service | Claudriel</title></head>'
-                    . '<body><h1>Terms of Service</h1><p>Last updated: ' . $context['last_updated'] . '</p></body></html>',
+                    .'<body><h1>Terms of Service</h1><p>Last updated: '.$context['last_updated'].'</p></body></html>',
                 statusCode: 200,
                 headers: ['Content-Type' => 'text/html; charset=UTF-8'],
             );
