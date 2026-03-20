@@ -164,13 +164,19 @@ final class GoogleOAuthController
             ],
         ]);
 
+        error_log('[GoogleOAuth] exchangeCode: client_id='.substr($this->clientId, 0, 20).'... redirect_uri='.$this->redirectUri);
+
         $response = @file_get_contents(self::TOKEN_ENDPOINT, false, $context);
 
         if ($response === false) {
+            error_log('[GoogleOAuth] exchangeCode: file_get_contents returned false');
+
             return null;
         }
 
         $httpCode = $this->parseHttpStatusCode($http_response_header ?? []); // @phpstan-ignore nullCoalesce.variable
+        error_log('[GoogleOAuth] exchangeCode: httpCode='.$httpCode);
+        file_put_contents('/tmp/google_oauth_debug.log', date('c').' httpCode='.$httpCode.' response='.$response."\n", FILE_APPEND);
 
         if ($httpCode >= 400) {
             return null;
@@ -209,6 +215,8 @@ final class GoogleOAuthController
     {
         $storage = $this->entityTypeManager->getStorage('integration');
         $accountId = $account->getUuid();
+        $dbPath = $_ENV['WAASEYAA_DB'] ?? getenv('WAASEYAA_DB') ?: 'unknown';
+        error_log('[GoogleOAuth] upsert: account_id='.$accountId.' db='.$dbPath);
 
         $existingIds = $storage->getQuery()
             ->condition('account_id', $accountId)
