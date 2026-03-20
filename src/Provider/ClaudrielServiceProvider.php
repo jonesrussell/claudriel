@@ -653,13 +653,7 @@ final class ClaudrielServiceProvider extends ServiceProvider
         );
         $triageRepo = new StorageRepositoryAdapter(new SqlEntityStorage($triageType, $database, $dispatcher));
 
-        $artifactType = new EntityType(
-            id: 'artifact',
-            label: 'Artifact',
-            class: Artifact::class,
-            keys: ['id' => 'artid', 'uuid' => 'uuid', 'label' => 'name'],
-        );
-        $artifactRepo = new StorageRepositoryAdapter(new SqlEntityStorage($artifactType, $database, $dispatcher));
+        $artifactRepo = new StorageRepositoryAdapter($entityTypeManager->getStorage('artifact'));
 
         $operationType = new EntityType(
             id: 'operation',

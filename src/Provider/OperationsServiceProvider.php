@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Claudriel\Provider;
 
+use Claudriel\Entity\Artifact;
 use Claudriel\Entity\Integration;
 use Claudriel\Entity\IssueRun;
 use Claudriel\Entity\Operation;
@@ -75,6 +76,27 @@ final class OperationsServiceProvider extends ServiceProvider
                 'scopes' => ['type' => 'text_long'],
                 'provider_email' => ['type' => 'string'],
                 'metadata' => ['type' => 'text_long'],
+                'tenant_id' => ['type' => 'string'],
+                'created_at' => ['type' => 'timestamp', 'readOnly' => true],
+                'updated_at' => ['type' => 'timestamp', 'readOnly' => true],
+            ],
+        ));
+
+        $this->entityType(new EntityType(
+            id: 'artifact',
+            label: 'Artifact',
+            class: Artifact::class,
+            keys: ['id' => 'artid', 'uuid' => 'uuid', 'label' => 'name'],
+            fieldDefinitions: [
+                'artid' => ['type' => 'integer', 'readOnly' => true],
+                'uuid' => ['type' => 'string', 'readOnly' => true],
+                'name' => ['type' => 'string', 'required' => true],
+                'workspace_uuid' => ['type' => 'string'],
+                'type' => ['type' => 'string'],
+                'repo_url' => ['type' => 'string'],
+                'branch' => ['type' => 'string'],
+                'local_path' => ['type' => 'string'],
+                'last_commit' => ['type' => 'string'],
                 'tenant_id' => ['type' => 'string'],
                 'created_at' => ['type' => 'timestamp', 'readOnly' => true],
                 'updated_at' => ['type' => 'timestamp', 'readOnly' => true],
