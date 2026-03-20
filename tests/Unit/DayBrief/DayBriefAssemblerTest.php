@@ -487,4 +487,18 @@ final class DayBriefAssemblerTest extends TestCase
         self::assertSame($wsUuid, $entry['uuid']);
         self::assertSame(2, $entry['activity_count']);
     }
+
+    public function test_brief_includes_waiting_on_section_with_inbound_commitments(): void
+    {
+        $this->commitmentRepo->save(new Commitment(['cid' => 100, 'title' => 'They send proposal', 'direction' => 'inbound', 'status' => 'pending', 'tenant_id' => 'test-tenant']));
+        $this->commitmentRepo->save(new Commitment(['cid' => 101, 'title' => 'Review document', 'direction' => 'outbound', 'status' => 'pending', 'tenant_id' => 'test-tenant']));
+
+        $brief = $this->assembler->assemble('test-tenant', new \DateTimeImmutable('-24 hours'));
+
+        self::assertArrayHasKey('waiting_on', $brief['commitments']);
+        self::assertCount(1, $brief['commitments']['waiting_on']);
+        self::assertSame('They send proposal', $brief['commitments']['waiting_on'][0]->get('title'));
+        self::assertArrayHasKey('waiting_on', $brief['counts']);
+        self::assertSame(1, $brief['counts']['waiting_on']);
+    }
 }

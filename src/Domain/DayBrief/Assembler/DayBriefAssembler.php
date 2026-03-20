@@ -30,7 +30,7 @@ final class DayBriefAssembler
         private readonly ?GitOperator $gitOperator = null,
     ) {}
 
-    /** @return array{schedule: array, schedule_timeline: array, schedule_summary: string, temporal_awareness: array<string, mixed>, temporal_suggestions: list<array{type: string, title: string, summary: string}>, job_hunt: array, people: array, triage: array, creators: array, notifications: array, commitments: array{pending: array, drifting: array}, counts: array{job_alerts: int, messages: int, triage: int, due_today: int, drifting: int}, generated_at: string, time_snapshot: array<string, int|string>, matched_skills: array, workspaces: array, workspace_status: ?array{last_commit: ?string, has_changes: bool, is_drifted: bool}} */
+    /** @return array{schedule: array, schedule_timeline: array, schedule_summary: string, temporal_awareness: array<string, mixed>, temporal_suggestions: list<array{type: string, title: string, summary: string}>, job_hunt: array, people: array, triage: array, creators: array, notifications: array, commitments: array{pending: array, drifting: array, waiting_on: array}, counts: array{job_alerts: int, messages: int, triage: int, due_today: int, drifting: int, waiting_on: int}, generated_at: string, time_snapshot: array<string, int|string>, matched_skills: array, workspaces: array, workspace_status: ?array{last_commit: ?string, has_changes: bool, is_drifted: bool}} */
     public function assemble(string $tenantId, \DateTimeImmutable $since, ?string $workspaceUuid = null, ?TimeSnapshot $snapshot = null): array
     {
         $snapshot ??= ($this->timeService ?? new AtomicTimeService)->now();
@@ -112,6 +112,10 @@ final class DayBriefAssembler
             fn (ContentEntityInterface $c) => $this->entityMatchesTenant($c, $tenantId) && $c->get('status') === 'pending',
         ));
         $drifting = $this->driftDetector->findDrifting($tenantId);
+        $waitingOn = array_values(array_filter(
+            $pending,
+            static fn (ContentEntityInterface $c) => $c->get('direction') === 'inbound',
+        ));
 
         $today = $snapshot->local()->format('Y-m-d');
         $dueToday = count(array_filter($pending, static fn (ContentEntityInterface $c) => ($c->get('due_date') ?? '') === $today));
@@ -132,6 +136,7 @@ final class DayBriefAssembler
             'commitments' => [
                 'pending' => $pending,
                 'drifting' => $drifting,
+                'waiting_on' => $waitingOn,
             ],
             'counts' => [
                 'job_alerts' => count($jobHunt),
@@ -139,6 +144,7 @@ final class DayBriefAssembler
                 'triage' => count($triage),
                 'due_today' => $dueToday,
                 'drifting' => count($drifting),
+                'waiting_on' => count($waitingOn),
             ],
             'generated_at' => $snapshot->utc()->format(\DateTimeInterface::ATOM),
             'time_snapshot' => $snapshot->toArray(),
