@@ -62,7 +62,7 @@ final class CodexExecutionPipeline
             messages: [['role' => 'user', 'content' => $prompt]],
             accountId: 'codex',
             tenantId: 'default',
-            apiBase: $_ENV['CLAUDRIEL_API_URL'] ?? getenv('CLAUDRIEL_API_URL') ?: 'http://localhost:8088',
+            apiBase: $_ENV['CLAUDRIEL_API_URL'] ?? getenv('CLAUDRIEL_API_URL') ?: throw new \RuntimeException('CLAUDRIEL_API_URL environment variable is not set'),
             apiToken: '',
             onToken: function (string $token) use (&$streamed): void {
                 $streamed .= $token;

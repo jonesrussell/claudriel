@@ -29,6 +29,9 @@ final class CodexExecutionPipelineTest extends TestCase
 
     public function test_execute_creates_completed_operation(): void
     {
+        $originalApiUrl = getenv('CLAUDRIEL_API_URL');
+        putenv('CLAUDRIEL_API_URL=http://localhost:8088');
+
         $dispatcher = new EventDispatcher;
         $workspaceRepo = new EntityRepository(
             new EntityType(id: 'workspace', label: 'Workspace', class: Workspace::class, keys: ['id' => 'wid', 'uuid' => 'uuid', 'label' => 'name']),
@@ -97,5 +100,11 @@ final class CodexExecutionPipelineTest extends TestCase
         self::assertSame('abc123', $operation->get('commit_hash'));
         self::assertSame('abc123', $workspace->get('last_commit_hash'));
         self::assertStringContainsString('patched', $operation->get('model_response'));
+
+        if ($originalApiUrl !== false) {
+            putenv("CLAUDRIEL_API_URL={$originalApiUrl}");
+        } else {
+            putenv('CLAUDRIEL_API_URL');
+        }
     }
 }

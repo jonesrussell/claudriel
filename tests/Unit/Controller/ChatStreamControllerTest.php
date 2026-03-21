@@ -263,8 +263,10 @@ final class ChatStreamControllerTest extends TestCase
     {
         $originalKey = getenv('ANTHROPIC_API_KEY');
         $originalSecret = getenv('AGENT_INTERNAL_SECRET');
+        $originalApiUrl = getenv('CLAUDRIEL_API_URL');
         putenv('ANTHROPIC_API_KEY=test-key');
         putenv('AGENT_INTERNAL_SECRET=test-secret-that-is-at-least-32-bytes-long');
+        putenv('CLAUDRIEL_API_URL=http://localhost:8088');
 
         $etm = $this->buildEntityTypeManager();
 
@@ -331,14 +333,21 @@ final class ChatStreamControllerTest extends TestCase
         } else {
             putenv('AGENT_INTERNAL_SECRET');
         }
+        if ($originalApiUrl !== false) {
+            putenv("CLAUDRIEL_API_URL={$originalApiUrl}");
+        } else {
+            putenv('CLAUDRIEL_API_URL');
+        }
     }
 
     public function test_stream_uses_tenant_uuid_not_entity_id_for_account_id(): void
     {
         $originalKey = getenv('ANTHROPIC_API_KEY');
         $originalSecret = getenv('AGENT_INTERNAL_SECRET');
+        $originalApiUrl = getenv('CLAUDRIEL_API_URL');
         putenv('ANTHROPIC_API_KEY=test-key');
         putenv('AGENT_INTERNAL_SECRET=test-secret-that-is-at-least-32-bytes-long');
+        putenv('CLAUDRIEL_API_URL=http://localhost:8088');
 
         $etm = $this->buildEntityTypeManager();
 
@@ -418,6 +427,11 @@ final class ChatStreamControllerTest extends TestCase
             putenv("AGENT_INTERNAL_SECRET={$originalSecret}");
         } else {
             putenv('AGENT_INTERNAL_SECRET');
+        }
+        if ($originalApiUrl !== false) {
+            putenv("CLAUDRIEL_API_URL={$originalApiUrl}");
+        } else {
+            putenv('CLAUDRIEL_API_URL');
         }
     }
 

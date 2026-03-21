@@ -396,7 +396,12 @@ final class ChatStreamController
         );
         $apiToken = $tokenGenerator->generate($accountId);
 
-        $apiBase = $_ENV['CLAUDRIEL_API_URL'] ?? getenv('CLAUDRIEL_API_URL') ?: 'http://localhost:8088';
+        $apiBase = $_ENV['CLAUDRIEL_API_URL'] ?? getenv('CLAUDRIEL_API_URL') ?: '';
+        if ($apiBase === '') {
+            $onError('CLAUDRIEL_API_URL environment variable is not set. The agent cannot call back to the PHP API without it.');
+
+            return;
+        }
 
         $this->emitSseEvent('chat-progress', [
             'phase' => 'prepare',
