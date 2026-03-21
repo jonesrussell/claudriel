@@ -35,12 +35,12 @@ use Claudriel\Controller\Audit\CommitmentExtractionAuditController;
 use Claudriel\Controller\BriefStreamController;
 use Claudriel\Controller\DashboardController;
 use Claudriel\Controller\DayBriefController;
-use Claudriel\Controller\GoogleSettingsController;
 use Claudriel\Controller\Governance\CodifiedContextIntegrityController;
 use Claudriel\Controller\NotFoundController;
 use Claudriel\Controller\Platform\ObservabilityDashboardController;
 use Claudriel\Controller\PrivacyPolicyController;
 use Claudriel\Controller\PublicHomepageController;
+use Claudriel\Controller\SettingsController;
 use Claudriel\Controller\TermsOfServiceController;
 use Claudriel\Controller\WorkspaceDriftController;
 use Claudriel\Domain\DayBrief\Assembler\DayBriefAssembler;
@@ -523,14 +523,14 @@ final class ClaudrielServiceProvider extends ServiceProvider
         $router->addRoute(
             'claudriel.api.google.status',
             RouteBuilder::create('/api/google/status')
-                ->controller(GoogleSettingsController::class.'::status')
+                ->controller(SettingsController::class.'::status')
                 ->allowAll()
                 ->methods('GET')
                 ->build(),
         );
 
         $googleDisconnectRoute = RouteBuilder::create('/api/google/disconnect')
-            ->controller(GoogleSettingsController::class.'::disconnect')
+            ->controller(SettingsController::class.'::disconnect')
             ->allowAll()
             ->methods('POST')
             ->build();
@@ -541,14 +541,14 @@ final class ClaudrielServiceProvider extends ServiceProvider
         $router->addRoute(
             'claudriel.api.github.status',
             RouteBuilder::create('/api/github/status')
-                ->controller(GoogleSettingsController::class.'::githubStatus')
+                ->controller(SettingsController::class.'::githubStatus')
                 ->allowAll()
                 ->methods('GET')
                 ->build(),
         );
 
         $githubDisconnectRoute = RouteBuilder::create('/api/github/disconnect')
-            ->controller(GoogleSettingsController::class.'::githubDisconnect')
+            ->controller(SettingsController::class.'::githubDisconnect')
             ->allowAll()
             ->methods('POST')
             ->build();
@@ -559,7 +559,7 @@ final class ClaudrielServiceProvider extends ServiceProvider
         $router->addRoute(
             'claudriel.settings',
             RouteBuilder::create('/settings')
-                ->controller(GoogleSettingsController::class.'::show')
+                ->controller(SettingsController::class.'::show')
                 ->allowAll()
                 ->methods('GET')
                 ->render()

@@ -12,7 +12,7 @@ use Waaseyaa\Access\AccountInterface;
 use Waaseyaa\Entity\EntityTypeManager;
 use Waaseyaa\SSR\SsrResponse;
 
-final class GoogleSettingsController
+final class SettingsController
 {
     public function __construct(
         private readonly EntityTypeManager $entityTypeManager,
