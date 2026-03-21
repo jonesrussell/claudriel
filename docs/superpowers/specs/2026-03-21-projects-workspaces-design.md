@@ -230,12 +230,12 @@ POST /api/workspaces/{uuid}/repos
 
 ### Reverse Lookups
 
-REST API provides reverse lookups only where operationally useful. GraphQL provides all reverse relationships via field resolvers. Specifically:
+REST API provides forward lookups from the parent being modified. Reverse lookups (e.g., "which projects contain this repo?") are not exposed in v1.8 via REST or GraphQL.
 
-- No `GET /api/repos/{uuid}/projects` — use GraphQL `repo(uuid).projects` instead
-- No `GET /api/projects/{uuid}/workspaces` — use GraphQL `project(uuid)` and query workspaces separately
+- No `GET /api/repos/{uuid}/projects`
+- No `GET /api/projects/{uuid}/workspaces`
 
-This asymmetry is intentional. REST routes exist for operational needs (linking, unlinking, listing within a parent). GraphQL serves the read-side query needs.
+These can be added when Waaseyaa's GraphQL package gains a `graphqlFieldOverrides()` extension point, or as additional REST endpoints if needed earlier.
 
 ### Controllers
 
@@ -247,6 +247,10 @@ Read-only for v1.8. REST API handles all writes.
 
 ### Types
 
+Auto-generated from entity type `fieldDefinitions`. All scalar fields are exposed automatically.
+
+**Relationship fields** (`Project.repos`, `Workspace.projects`, `Workspace.repos`, `Repo.projects`) require a `graphqlFieldOverrides()` extension point that does not yet exist in Waaseyaa's GraphQL package. These fields are **deferred** — a Waaseyaa issue should be filed for the extension point. Until then, junction relationships are accessible via the REST junction endpoints.
+
 ```graphql
 type Project {
   uuid: String!
@@ -256,7 +260,7 @@ type Project {
   accountId: String
   createdAt: String
   updatedAt: String
-  repos: [Repo!]!
+  # repos: [Repo!]!  — deferred: requires Waaseyaa graphqlFieldOverrides()
 }
 
 type Workspace {
@@ -269,8 +273,8 @@ type Workspace {
   accountId: String
   createdAt: String
   updatedAt: String
-  projects: [Project!]!
-  repos: [Repo!]!
+  # projects: [Project!]!  — deferred: requires Waaseyaa graphqlFieldOverrides()
+  # repos: [Repo!]!        — deferred: requires Waaseyaa graphqlFieldOverrides()
 }
 
 type Repo {
@@ -284,7 +288,7 @@ type Repo {
   accountId: String
   createdAt: String
   updatedAt: String
-  projects: [Project!]!
+  # projects: [Project!]!  — deferred: requires Waaseyaa graphqlFieldOverrides()
 }
 ```
 
