@@ -18,15 +18,27 @@ final class Repo extends ContentEntityBase
 
     public function __construct(array $values = [])
     {
-        // Compute full_name from owner + name before parent constructor
-        if (isset($values['owner'], $values['name']) && ! isset($values['full_name'])) {
-            $values['full_name'] = $values['owner'].'/'.$values['name'];
-        }
-
         parent::__construct($values, $this->entityTypeId, $this->entityKeys);
 
+        if ($this->get('owner') === null) {
+            $this->set('owner', '');
+        }
+        if ($this->get('name') === null) {
+            $this->set('name', '');
+        }
+        if ($this->get('full_name') === null) {
+            $owner = $this->get('owner');
+            $name = $this->get('name');
+            $this->set('full_name', ($owner !== '' && $name !== '') ? $owner . '/' . $name : '');
+        }
         if ($this->get('default_branch') === null) {
             $this->set('default_branch', 'main');
+        }
+        if ($this->get('local_path') === null) {
+            $this->set('local_path', null);
+        }
+        if ($this->get('account_id') === null) {
+            $this->set('account_id', null);
         }
         if ($this->get('tenant_id') === null) {
             $this->set('tenant_id', $_ENV['CLAUDRIEL_DEFAULT_TENANT'] ?? getenv('CLAUDRIEL_DEFAULT_TENANT') ?: 'default');
