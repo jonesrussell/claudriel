@@ -42,6 +42,48 @@ final class GoogleSettingsController
         ]);
     }
 
+    public function githubStatus(array $params, array $query, AccountInterface $account, Request $httpRequest): SsrResponse
+    {
+        $authenticatedAccount = $this->resolveAccount($account);
+
+        if ($authenticatedAccount === null) {
+            return $this->json(['connected' => false, 'username' => null, 'connected_at' => null]);
+        }
+
+        $integration = $this->findIntegration($authenticatedAccount->getUuid(), 'github');
+
+        if ($integration === null) {
+            return $this->json(['connected' => false, 'username' => null, 'connected_at' => null]);
+        }
+
+        return $this->json([
+            'connected' => true,
+            'username' => $integration->get('provider_email') ?? $integration->get('name') ?? null,
+            'connected_at' => $integration->get('created_at'),
+        ]);
+    }
+
+    public function githubDisconnect(array $params, array $query, AccountInterface $account, Request $httpRequest): SsrResponse
+    {
+        $authenticatedAccount = $this->resolveAccount($account);
+
+        if ($authenticatedAccount === null) {
+            return $this->json(['error' => 'Not authenticated'], 401);
+        }
+
+        $integration = $this->findIntegration($authenticatedAccount->getUuid(), 'github');
+
+        if ($integration === null) {
+            return $this->json(['error' => 'No GitHub connection found'], 404);
+        }
+
+        $integration->set('status', 'disconnected');
+        $integration->set('access_token', null);
+        $this->entityTypeManager->getStorage('integration')->save($integration);
+
+        return $this->json(['disconnected' => true]);
+    }
+
     public function disconnect(array $params, array $query, AccountInterface $account, Request $httpRequest): SsrResponse
     {
         $authenticatedAccount = $this->resolveAccount($account);
@@ -78,17 +120,26 @@ final class GoogleSettingsController
     {
         $authenticatedAccount = $this->resolveAccount($account);
         $accountUuid = $authenticatedAccount?->getUuid() ?? '';
-        $integration = $accountUuid !== '' ? $this->findGoogleIntegration($accountUuid) : null;
 
-        $connected = $integration !== null;
-        $email = $connected ? ($integration->get('provider_email') ?? $integration->get('name') ?? '') : '';
-        $connectedAt = $connected ? ($integration->get('created_at') ?? '') : '';
+        $googleIntegration = $accountUuid !== '' ? $this->findGoogleIntegration($accountUuid) : null;
+        $githubIntegration = $accountUuid !== '' ? $this->findIntegration($accountUuid, 'github') : null;
+
+        $googleConnected = $googleIntegration !== null;
+        $googleEmail = $googleConnected ? ($googleIntegration->get('provider_email') ?? $googleIntegration->get('name') ?? '') : '';
+        $googleConnectedAt = $googleConnected ? ($googleIntegration->get('created_at') ?? '') : '';
+
+        $githubConnected = $githubIntegration !== null;
+        $githubUsername = $githubConnected ? ($githubIntegration->get('provider_email') ?? $githubIntegration->get('name') ?? '') : '';
+        $githubConnectedAt = $githubConnected ? ($githubIntegration->get('created_at') ?? '') : '';
 
         if ($this->twig !== null) {
             $html = $this->twig->render('settings.html.twig', [
-                'google_connected' => $connected,
-                'google_email' => $email,
-                'google_connected_at' => $connectedAt,
+                'google_connected' => $googleConnected,
+                'google_email' => $googleEmail,
+                'google_connected_at' => $googleConnectedAt,
+                'github_connected' => $githubConnected,
+                'github_username' => $githubUsername,
+                'github_connected_at' => $githubConnectedAt,
             ]);
 
             return new SsrResponse(
@@ -100,18 +151,28 @@ final class GoogleSettingsController
 
         return $this->json([
             'google' => [
-                'connected' => $connected,
-                'email' => $email,
-                'connected_at' => $connectedAt,
+                'connected' => $googleConnected,
+                'email' => $googleEmail,
+                'connected_at' => $googleConnectedAt,
+            ],
+            'github' => [
+                'connected' => $githubConnected,
+                'username' => $githubUsername,
+                'connected_at' => $githubConnectedAt,
             ],
         ]);
     }
 
     private function findGoogleIntegration(string $accountUuid): ?object
     {
+        return $this->findIntegration($accountUuid, 'google');
+    }
+
+    private function findIntegration(string $accountUuid, string $provider): ?object
+    {
         $ids = $this->entityTypeManager->getStorage('integration')->getQuery()
             ->condition('account_id', $accountUuid)
-            ->condition('provider', 'google')
+            ->condition('provider', $provider)
             ->condition('status', 'active')
             ->range(0, 1)
             ->execute();

@@ -537,6 +537,24 @@ final class ClaudrielServiceProvider extends ServiceProvider
         $googleDisconnectRoute->setOption('_csrf', false);
         $router->addRoute('claudriel.api.google.disconnect', $googleDisconnectRoute);
 
+        // GitHub settings API
+        $router->addRoute(
+            'claudriel.api.github.status',
+            RouteBuilder::create('/api/github/status')
+                ->controller(GoogleSettingsController::class.'::githubStatus')
+                ->allowAll()
+                ->methods('GET')
+                ->build(),
+        );
+
+        $githubDisconnectRoute = RouteBuilder::create('/api/github/disconnect')
+            ->controller(GoogleSettingsController::class.'::githubDisconnect')
+            ->allowAll()
+            ->methods('POST')
+            ->build();
+        $githubDisconnectRoute->setOption('_csrf', false);
+        $router->addRoute('claudriel.api.github.disconnect', $githubDisconnectRoute);
+
         // Settings page
         $router->addRoute(
             'claudriel.settings',
