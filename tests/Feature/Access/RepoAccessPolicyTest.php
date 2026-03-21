@@ -18,7 +18,7 @@ final class RepoAccessPolicyTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->policy = new RepoAccessPolicy();
+        $this->policy = new RepoAccessPolicy;
     }
 
     #[Test]

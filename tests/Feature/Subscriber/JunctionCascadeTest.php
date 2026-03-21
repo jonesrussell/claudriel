@@ -16,6 +16,7 @@ use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Waaseyaa\Database\DBALDatabase;
+use Waaseyaa\Entity\EntityInterface;
 use Waaseyaa\Entity\EntityType;
 use Waaseyaa\Entity\EntityTypeManager;
 use Waaseyaa\EntityStorage\SqlEntityStorage;
@@ -25,17 +26,19 @@ use Waaseyaa\EntityStorage\SqlSchemaHandler;
 final class JunctionCascadeTest extends TestCase
 {
     private DBALDatabase $db;
+
     private EntityTypeManager $manager;
 
     protected function setUp(): void
     {
         $this->db = DBALDatabase::createSqlite(':memory:');
-        $dispatcher = new EventDispatcher();
+        $dispatcher = new EventDispatcher;
 
         $this->manager = new EntityTypeManager(
             $dispatcher,
             function ($definition) use ($dispatcher): SqlEntityStorage {
                 (new SqlSchemaHandler($definition, $this->db))->ensureTable();
+
                 return new SqlEntityStorage($definition, $this->db, $dispatcher);
             },
         );
@@ -172,7 +175,7 @@ final class JunctionCascadeTest extends TestCase
         self::assertCount(1, $this->loadAll($wsStorage));
     }
 
-    /** @return array<int|string, \Waaseyaa\Entity\EntityInterface> */
+    /** @return array<int|string, EntityInterface> */
     private function loadAll(SqlEntityStorage $storage): array
     {
         return $storage->loadMultiple($storage->getQuery()->execute());

@@ -18,7 +18,7 @@ final class WorkspaceAccessPolicyTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->policy = new WorkspaceAccessPolicy();
+        $this->policy = new WorkspaceAccessPolicy;
     }
 
     #[Test]

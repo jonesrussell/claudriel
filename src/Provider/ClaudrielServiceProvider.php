@@ -56,7 +56,6 @@ use Claudriel\Entity\Commitment;
 use Claudriel\Entity\McEvent;
 use Claudriel\Entity\Operation;
 use Claudriel\Entity\Person;
-use Claudriel\Entity\Project;
 use Claudriel\Entity\ScheduleEntry;
 use Claudriel\Entity\Skill;
 use Claudriel\Entity\TriageEntry;

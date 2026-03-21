@@ -10,13 +10,14 @@ use Waaseyaa\Entity\EntityInterface;
 trait AccessPolicyTestHelpers
 {
     /**
-     * @param array<string, mixed> $fields
+     * @param  array<string, mixed>  $fields
      */
     private function createEntity(string $entityTypeId, array $fields): EntityInterface
     {
-        return new class ($entityTypeId, $fields) implements EntityInterface {
+        return new class($entityTypeId, $fields) implements EntityInterface
+        {
             /**
-             * @param array<string, mixed> $fields
+             * @param  array<string, mixed>  $fields
              */
             public function __construct(
                 private readonly string $entityTypeId,
@@ -40,7 +41,7 @@ trait AccessPolicyTestHelpers
 
             public function label(): string
             {
-                return 'Test ' . $this->entityTypeId;
+                return 'Test '.$this->entityTypeId;
             }
 
             public function getEntityTypeId(): string
@@ -72,7 +73,8 @@ trait AccessPolicyTestHelpers
 
     private function createAuthenticatedAccount(int $id, ?string $tenantId, bool $isAdmin = false): AccountInterface
     {
-        return new class ($id, $tenantId, $isAdmin) implements AccountInterface {
+        return new class($id, $tenantId, $isAdmin) implements AccountInterface
+        {
             public function __construct(
                 private readonly int $accountId,
                 private readonly ?string $tenantId,
@@ -108,7 +110,8 @@ trait AccessPolicyTestHelpers
 
     private function createAnonymousAccount(): AccountInterface
     {
-        return new class implements AccountInterface {
+        return new class implements AccountInterface
+        {
             public function id(): int|string
             {
                 return 0;

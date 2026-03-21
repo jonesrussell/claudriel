@@ -29,7 +29,7 @@ final class Repo extends ContentEntityBase
         if ($this->get('full_name') === null) {
             $owner = $this->get('owner');
             $name = $this->get('name');
-            $this->set('full_name', ($owner !== '' && $name !== '') ? $owner . '/' . $name : '');
+            $this->set('full_name', ($owner !== '' && $name !== '') ? $owner.'/'.$name : '');
         }
         if ($this->get('default_branch') === null) {
             $this->set('default_branch', 'main');

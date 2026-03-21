@@ -52,6 +52,30 @@ parameters:
 			message: '#^Call to an undefined method Waaseyaa\\Access\\AccountInterface\:\:getTenantId\(\)\.$#'
 			identifier: method.notFound
 			count: 2
+			path: src/Access/ProjectAccessPolicy.php
+
+		-
+			message: '#^Call to an undefined method Waaseyaa\\Entity\\EntityInterface\:\:get\(\)\.$#'
+			identifier: method.notFound
+			count: 2
+			path: src/Access/ProjectAccessPolicy.php
+
+		-
+			message: '#^Call to an undefined method Waaseyaa\\Access\\AccountInterface\:\:getTenantId\(\)\.$#'
+			identifier: method.notFound
+			count: 2
+			path: src/Access/RepoAccessPolicy.php
+
+		-
+			message: '#^Call to an undefined method Waaseyaa\\Entity\\EntityInterface\:\:get\(\)\.$#'
+			identifier: method.notFound
+			count: 2
+			path: src/Access/RepoAccessPolicy.php
+
+		-
+			message: '#^Call to an undefined method Waaseyaa\\Access\\AccountInterface\:\:getTenantId\(\)\.$#'
+			identifier: method.notFound
+			count: 2
 			path: src/Access/ScheduleEntryAccessPolicy.php
 
 		-
@@ -73,15 +97,9 @@ parameters:
 			path: src/Access/TriageEntryAccessPolicy.php
 
 		-
-			message: '#^Call to an undefined method Waaseyaa\\Access\\AccountInterface\:\:getTenantId\(\)\.$#'
-			identifier: method.notFound
-			count: 2
-			path: src/Access/WorkspaceAccessPolicy.php
-
-		-
 			message: '#^Call to an undefined method Waaseyaa\\Entity\\EntityInterface\:\:get\(\)\.$#'
 			identifier: method.notFound
-			count: 2
+			count: 1
 			path: src/Access/WorkspaceAccessPolicy.php
 
 		-
@@ -165,11 +183,53 @@ parameters:
 		-
 			message: '#^Call to an undefined method Waaseyaa\\Entity\\EntityInterface\:\:get\(\)\.$#'
 			identifier: method.notFound
-			count: 19
+			count: 11
 			path: src/Controller/InternalWorkspaceController.php
+
+		-
+			message: '#^Call to an undefined method Waaseyaa\\Entity\\EntityInterface\:\:get\(\)\.$#'
+			identifier: method.notFound
+			count: 31
+			path: src/Controller/ProjectController.php
+
+		-
+			message: '#^Call to an undefined method Waaseyaa\\Entity\\EntityInterface\:\:set\(\)\.$#'
+			identifier: method.notFound
+			count: 3
+			path: src/Controller/ProjectController.php
+
+		-
+			message: '#^Call to an undefined method Waaseyaa\\Entity\\EntityInterface\:\:get\(\)\.$#'
+			identifier: method.notFound
+			count: 32
+			path: src/Controller/RepoController.php
+
+		-
+			message: '#^Call to an undefined method Waaseyaa\\Entity\\EntityInterface\:\:set\(\)\.$#'
+			identifier: method.notFound
+			count: 5
+			path: src/Controller/RepoController.php
+
+		-
+			message: '#^Call to an undefined method Waaseyaa\\Entity\\EntityInterface\:\:get\(\)\.$#'
+			identifier: method.notFound
+			count: 43
+			path: src/Controller/WorkspaceController.php
+
+		-
+			message: '#^Call to an undefined method Waaseyaa\\Entity\\EntityInterface\:\:set\(\)\.$#'
+			identifier: method.notFound
+			count: 5
+			path: src/Controller/WorkspaceController.php
 
 		-
 			message: '#^Call to an undefined method Waaseyaa\\Entity\\EntityInterface\:\:get\(\)\.$#'
 			identifier: method.notFound
 			count: 6
 			path: src/Domain/Chat/ChatSystemPromptBuilder.php
+
+		-
+			message: '#^Call to an undefined method Waaseyaa\\Entity\\EntityInterface\:\:get\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/Subscriber/JunctionCascadeSubscriber.php

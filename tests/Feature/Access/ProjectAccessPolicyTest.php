@@ -18,7 +18,7 @@ final class ProjectAccessPolicyTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->policy = new ProjectAccessPolicy();
+        $this->policy = new ProjectAccessPolicy;
     }
 
     #[Test]
