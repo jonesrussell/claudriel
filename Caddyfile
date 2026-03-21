@@ -1,16 +1,15 @@
-# claudriel.ai - included via import in main /etc/caddy/Caddyfile
-# Deploy path: ~/claudriel-prod, current release: ~/claudriel-prod/current
+# __CADDY_DOMAIN__ - included via import in main /etc/caddy/Caddyfile
+# Deploy path: __DEPLOY_PATH__, current release: __DEPLOY_PATH__/current
 
-claudriel.ai {
+__CADDY_DOMAIN__ {
   tls {
-    issuer acme {
-    }
+    issuer acme
   }
 
   # Keep browsers on HTTP/2 or HTTP/1.1 for SSE; QUIC has been flaky for EventSource.
   header Alt-Svc "clear"
 
-  root * /home/deployer/claudriel-prod/current/public
+  root * __DEPLOY_PATH__/current/public
 
   @not_stream {
     not path /stream/*
@@ -69,7 +68,7 @@ claudriel.ai {
   }
 
   log {
-    output file /home/deployer/claudriel-prod/log/access.log {
+    output file __DEPLOY_PATH__/log/access.log {
       mode 0644
     }
   }

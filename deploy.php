@@ -72,9 +72,13 @@ task('deploy:upload', function (): void {
     ]);
 });
 
-desc('Copy Caddyfile to deploy root');
+desc('Copy Caddyfile to deploy root with environment substitution');
 task('deploy:copy_caddyfile', function (): void {
-    run('cp {{release_path}}/Caddyfile {{deploy_path}}/Caddyfile');
+    $baseUrl = get('deploy_validation_base_url');
+    $domain = (string) parse_url($baseUrl, PHP_URL_HOST);
+    $deployPath = get('deploy_path');
+
+    run("sed -e 's|__CADDY_DOMAIN__|{$domain}|g' -e 's|__DEPLOY_PATH__|{$deployPath}|g' {{release_path}}/Caddyfile > {{deploy_path}}/Caddyfile");
 });
 
 desc('Ensure shared runtime directories exist');
