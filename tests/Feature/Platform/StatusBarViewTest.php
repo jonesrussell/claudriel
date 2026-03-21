@@ -43,16 +43,16 @@ final class StatusBarViewTest extends TestCase
 
     public function test_status_bar_renders_on_all_target_pages_with_badges(): void
     {
-        $twig = new Environment(new FilesystemLoader('/home/fsd42/dev/claudriel/templates'));
+        $twig = new Environment(new FilesystemLoader(dirname(__DIR__, 3).'/templates'));
         $entityTypeManager = $this->buildSeededEntityTypeManager();
         $batchDir = $this->buildBatchDirectory();
 
         $pages = [
-            (new ObservabilityDashboardController($entityTypeManager, $twig, '/home/fsd42/dev/claudriel', $batchDir))->index(query: ['days' => 14])->content,
-            (new CommitmentExtractionAuditController($entityTypeManager, $twig, '/home/fsd42/dev/claudriel', $batchDir))->index()->content,
-            (new CodifiedContextIntegrityController($entityTypeManager, $twig, '/home/fsd42/dev/claudriel', $batchDir))->index()->content,
-            (new ExtractionSelfAssessmentController($entityTypeManager, $twig, '/home/fsd42/dev/claudriel', $batchDir))->index(query: ['days' => 14])->content,
-            (new ExtractionImprovementSuggestionController($entityTypeManager, $twig, '/home/fsd42/dev/claudriel', $batchDir))->index(query: ['days' => 14])->content,
+            (new ObservabilityDashboardController($entityTypeManager, $twig, dirname(__DIR__, 3), $batchDir))->index(query: ['days' => 14])->content,
+            (new CommitmentExtractionAuditController($entityTypeManager, $twig, dirname(__DIR__, 3), $batchDir))->index()->content,
+            (new CodifiedContextIntegrityController($entityTypeManager, $twig, dirname(__DIR__, 3), $batchDir))->index()->content,
+            (new ExtractionSelfAssessmentController($entityTypeManager, $twig, dirname(__DIR__, 3), $batchDir))->index(query: ['days' => 14])->content,
+            (new ExtractionImprovementSuggestionController($entityTypeManager, $twig, dirname(__DIR__, 3), $batchDir))->index(query: ['days' => 14])->content,
         ];
 
         foreach ($pages as $content) {

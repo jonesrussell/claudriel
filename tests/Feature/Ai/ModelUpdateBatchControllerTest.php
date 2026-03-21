@@ -48,7 +48,7 @@ final class ModelUpdateBatchControllerTest extends TestCase
 
         self::assertSame(200, $response->statusCode);
         self::assertSame('application/json', $response->headers['Content-Type']);
-        self::assertSame('batch-2026-03-13-001', $payload['batch_id']);
+        self::assertSame('batch-'.date('Y-m-d').'-001', $payload['batch_id']);
         self::assertFileExists($payload['path']);
         self::assertSame(14, $payload['metadata']['window_days']);
     }

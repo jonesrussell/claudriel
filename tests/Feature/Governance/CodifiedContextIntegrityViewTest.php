@@ -24,8 +24,8 @@ final class CodifiedContextIntegrityViewTest extends TestCase
     {
         $controller = new CodifiedContextIntegrityController(
             $this->buildSeededEntityTypeManager(),
-            new Environment(new FilesystemLoader('/home/fsd42/dev/claudriel/templates')),
-            '/home/fsd42/dev/claudriel',
+            new Environment(new FilesystemLoader(dirname(__DIR__, 3).'/templates')),
+            dirname(__DIR__, 3),
         );
 
         $response = $controller->index();
@@ -38,7 +38,7 @@ final class CodifiedContextIntegrityViewTest extends TestCase
 
     public function test_json_view_returns_expected_structure(): void
     {
-        $controller = new CodifiedContextIntegrityController($this->buildSeededEntityTypeManager(), null, '/home/fsd42/dev/claudriel');
+        $controller = new CodifiedContextIntegrityController($this->buildSeededEntityTypeManager(), null, dirname(__DIR__, 3));
 
         $response = $controller->jsonView();
         $payload = json_decode($response->content, true, 512, JSON_THROW_ON_ERROR);

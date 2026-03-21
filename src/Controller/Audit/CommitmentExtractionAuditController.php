@@ -25,8 +25,8 @@ final class CommitmentExtractionAuditController
     public function index(array $params = [], array $query = [], ?AccountInterface $account = null, ?Request $httpRequest = null): SsrResponse
     {
         $service = new CommitmentExtractionAuditService($this->entityTypeManager);
-        $page = max(1, (int) ($query['page'] ?? $httpRequest->query->get('page', 1)));
-        $perPage = max(1, (int) ($query['per_page'] ?? $httpRequest->query->get('per_page', 25)));
+        $page = max(1, (int) ($query['page'] ?? $httpRequest?->query->get('page', 1) ?? 1));
+        $perPage = max(1, (int) ($query['per_page'] ?? $httpRequest?->query->get('per_page', 25) ?? 25));
 
         $payload = [
             'statusBarData' => $this->getStatusBarData(),

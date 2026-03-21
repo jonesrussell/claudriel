@@ -24,7 +24,7 @@ final class CommitmentExtractionFailureCategoryViewTest extends TestCase
     {
         $controller = new CommitmentExtractionAuditController(
             $this->buildSeededEntityTypeManager(),
-            new Environment(new FilesystemLoader('/home/fsd42/dev/claudriel/templates')),
+            new Environment(new FilesystemLoader(dirname(__DIR__, 3).'/templates')),
         );
 
         $response = $controller->index(query: ['page' => 1, 'per_page' => 10]);
@@ -39,7 +39,7 @@ final class CommitmentExtractionFailureCategoryViewTest extends TestCase
     {
         $controller = new CommitmentExtractionAuditController(
             $this->buildSeededEntityTypeManager(),
-            new Environment(new FilesystemLoader('/home/fsd42/dev/claudriel/templates')),
+            new Environment(new FilesystemLoader(dirname(__DIR__, 3).'/templates')),
         );
 
         $trendsResponse = $controller->trends(query: ['sender_email' => 'alpha@example.com']);

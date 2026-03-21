@@ -24,7 +24,7 @@ final class CommitmentExtractionDriftViewTest extends TestCase
     {
         $controller = new CommitmentExtractionAuditController(
             $this->buildSeededEntityTypeManager(),
-            new Environment(new FilesystemLoader('/home/fsd42/dev/claudriel/templates')),
+            new Environment(new FilesystemLoader(dirname(__DIR__, 3).'/templates')),
         );
 
         $response = $controller->drift(query: ['sender_email' => 'alpha@example.com']);
@@ -55,7 +55,7 @@ final class CommitmentExtractionDriftViewTest extends TestCase
     {
         $controller = new CommitmentExtractionAuditController(
             $this->buildSeededEntityTypeManager(),
-            new Environment(new FilesystemLoader('/home/fsd42/dev/claudriel/templates')),
+            new Environment(new FilesystemLoader(dirname(__DIR__, 3).'/templates')),
         );
 
         $response = $controller->senderDrift(['email' => rawurlencode('alpha@example.com')]);

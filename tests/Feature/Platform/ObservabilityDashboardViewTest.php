@@ -66,8 +66,8 @@ final class ObservabilityDashboardViewTest extends TestCase
     {
         $controller = new ObservabilityDashboardController(
             $this->buildSeededEntityTypeManager(),
-            new Environment(new FilesystemLoader('/home/fsd42/dev/claudriel/templates')),
-            '/home/fsd42/dev/claudriel',
+            new Environment(new FilesystemLoader(dirname(__DIR__, 3).'/templates')),
+            dirname(__DIR__, 3),
             $this->buildBatchDirectory(),
             $this->referenceDate,
         );
@@ -105,7 +105,7 @@ final class ObservabilityDashboardViewTest extends TestCase
         $controller = new ObservabilityDashboardController(
             $this->buildSeededEntityTypeManager(),
             null,
-            '/home/fsd42/dev/claudriel',
+            dirname(__DIR__, 3),
             $this->buildBatchDirectory(),
             $this->referenceDate,
         );

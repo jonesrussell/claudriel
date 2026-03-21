@@ -23,7 +23,7 @@ final class CommitmentExtractionAuditViewTest extends TestCase
     public function test_index_view_renders_expected_structures(): void
     {
         ['entity_type_manager' => $entityTypeManager] = $this->seedEntityTypeManager();
-        $twig = new Environment(new FilesystemLoader('/home/fsd42/dev/claudriel/templates'));
+        $twig = new Environment(new FilesystemLoader(dirname(__DIR__, 3).'/templates'));
         $controller = new CommitmentExtractionAuditController($entityTypeManager, $twig);
 
         $response = $controller->index(query: ['page' => 1, 'per_page' => 10]);
@@ -39,7 +39,7 @@ final class CommitmentExtractionAuditViewTest extends TestCase
     public function test_show_view_renders_log_payload_sections(): void
     {
         ['entity_type_manager' => $entityTypeManager, 'log_id' => $logId] = $this->seedEntityTypeManager();
-        $twig = new Environment(new FilesystemLoader('/home/fsd42/dev/claudriel/templates'));
+        $twig = new Environment(new FilesystemLoader(dirname(__DIR__, 3).'/templates'));
         $controller = new CommitmentExtractionAuditController($entityTypeManager, $twig);
 
         $response = $controller->show(['id' => $logId]);

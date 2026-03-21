@@ -202,7 +202,7 @@ final class TemporalGuidanceSmokeTest extends TestCase
         $controller = new ObservabilityDashboardController(
             $entityTypeManager,
             null,
-            '/home/fsd42/dev/claudriel',
+            dirname(__DIR__, 4),
             sys_get_temp_dir(),
             $snapshot->local(),
         );

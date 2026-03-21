@@ -24,7 +24,7 @@ final class CommitmentExtractionAuditTrendsViewTest extends TestCase
     {
         $controller = new CommitmentExtractionAuditController(
             $this->buildSeededEntityTypeManager(),
-            new Environment(new FilesystemLoader('/home/fsd42/dev/claudriel/templates')),
+            new Environment(new FilesystemLoader(dirname(__DIR__, 3).'/templates')),
         );
 
         $response = $controller->trends(query: ['sender_email' => 'alpha@example.com']);
@@ -58,7 +58,7 @@ final class CommitmentExtractionAuditTrendsViewTest extends TestCase
     {
         $controller = new CommitmentExtractionAuditController(
             $this->buildSeededEntityTypeManager(),
-            new Environment(new FilesystemLoader('/home/fsd42/dev/claudriel/templates')),
+            new Environment(new FilesystemLoader(dirname(__DIR__, 3).'/templates')),
         );
 
         $response = $controller->sender(['email' => rawurlencode('alpha@example.com')]);

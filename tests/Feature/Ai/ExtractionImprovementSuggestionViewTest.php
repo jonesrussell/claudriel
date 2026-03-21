@@ -24,7 +24,7 @@ final class ExtractionImprovementSuggestionViewTest extends TestCase
     {
         $controller = new ExtractionImprovementSuggestionController(
             $this->buildSeededEntityTypeManager(),
-            new Environment(new FilesystemLoader('/home/fsd42/dev/claudriel/templates')),
+            new Environment(new FilesystemLoader(dirname(__DIR__, 3).'/templates')),
         );
 
         $response = $controller->index(query: ['days' => 14]);

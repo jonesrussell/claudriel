@@ -44,8 +44,8 @@ final class HeartbeatIndicatorViewTest extends TestCase
         $reference = new \DateTimeImmutable('2026-03-13T12:00:00+00:00');
         $controller = new ObservabilityDashboardController(
             $this->buildSeededEntityTypeManager(),
-            new Environment(new FilesystemLoader('/home/fsd42/dev/claudriel/templates')),
-            '/home/fsd42/dev/claudriel',
+            new Environment(new FilesystemLoader(dirname(__DIR__, 3).'/templates')),
+            dirname(__DIR__, 3),
             $this->buildBatchDirectory(),
             $reference,
             new \DateTimeImmutable($heartbeatTimestamp),

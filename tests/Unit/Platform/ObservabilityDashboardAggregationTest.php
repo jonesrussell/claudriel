@@ -114,7 +114,7 @@ final class ObservabilityDashboardAggregationTest extends TestCase
         return new ObservabilityDashboardController(
             $this->buildSeededEntityTypeManager(),
             null,
-            '/home/fsd42/dev/claudriel',
+            dirname(__DIR__, 3),
             $this->batchDir,
             $this->referenceDate,
         );
