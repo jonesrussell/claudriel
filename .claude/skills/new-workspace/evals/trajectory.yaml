@@ -1,0 +1,61 @@
+schema_version: "1.0"
+skill: new-workspace
+entity_type: workspace
+eval_type: trajectory
+max_turns: 10
+subject_model: sonnet
+judge_model: haiku
+
+tests:
+  - name: full-crud-lifecycle
+    description: "Create, list, update, delete a workspace"
+    turns:
+      - input: "create a workspace for Acme Corp"
+        operation: create
+        assertions:
+          - type: graphql_operation
+            operation: createWorkspace
+          - type: confirmation_shown
+        mock_response:
+          createWorkspace:
+            uuid: "test-001"
+            name: "Acme Corp"
+
+      - input: "show my workspaces"
+        operation: list
+        assertions:
+          - type: graphql_operation
+            operation: workspaceList
+            mutation: false
+        mock_response:
+          workspaceList:
+            items:
+              - uuid: "test-001"
+                name: "Acme Corp"
+
+      - input: "rename Acme Corp to Acme Corporation"
+        operation: update
+        assertions:
+          - type: resolve_first
+          - type: before_after_shown
+          - type: graphql_operation
+            operation: updateWorkspace
+        mock_response:
+          updateWorkspace:
+            uuid: "test-001"
+            name: "Acme Corporation"
+
+      - input: "delete the Acme Corporation workspace"
+        operation: delete
+        assertions:
+          - type: resolve_first
+          - type: echo_back_required
+            field: name
+          - type: graphql_operation
+            operation: deleteWorkspace
+        mock_response:
+          deleteWorkspace:
+            success: true
+
+    rubric: new-workspace
+    tags: [trajectory, lifecycle]

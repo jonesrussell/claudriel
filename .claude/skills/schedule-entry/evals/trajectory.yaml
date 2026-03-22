@@ -1,0 +1,64 @@
+schema_version: "1.0"
+skill: schedule-entry
+entity_type: schedule_entry
+eval_type: trajectory
+max_turns: 10
+subject_model: sonnet
+judge_model: haiku
+
+tests:
+  - name: full-crud-lifecycle
+    description: "Create, list, update, delete a schedule entry"
+    turns:
+      - input: "schedule a meeting tomorrow at 2pm"
+        operation: create
+        assertions:
+          - type: graphql_operation
+            operation: createScheduleEntry
+          - type: confirmation_shown
+        mock_response:
+          createScheduleEntry:
+            uuid: "test-001"
+            title: "Meeting"
+            start_time: "2026-03-22T14:00:00"
+
+      - input: "show my schedule"
+        operation: list
+        assertions:
+          - type: graphql_operation
+            operation: scheduleEntryList
+            mutation: false
+        mock_response:
+          scheduleEntryList:
+            items:
+              - uuid: "test-001"
+                title: "Meeting"
+                start_time: "2026-03-22T14:00:00"
+
+      - input: "move the meeting to 3pm"
+        operation: update
+        assertions:
+          - type: resolve_first
+          - type: before_after_shown
+          - type: graphql_operation
+            operation: updateScheduleEntry
+        mock_response:
+          updateScheduleEntry:
+            uuid: "test-001"
+            title: "Meeting"
+            start_time: "2026-03-22T15:00:00"
+
+      - input: "cancel the meeting"
+        operation: delete
+        assertions:
+          - type: resolve_first
+          - type: echo_back_required
+            field: title
+          - type: graphql_operation
+            operation: deleteScheduleEntry
+        mock_response:
+          deleteScheduleEntry:
+            success: true
+
+    rubric: schedule-entry
+    tags: [trajectory, lifecycle]

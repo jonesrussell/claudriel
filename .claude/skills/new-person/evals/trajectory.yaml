@@ -1,0 +1,64 @@
+schema_version: "1.0"
+skill: new-person
+entity_type: person
+eval_type: trajectory
+max_turns: 10
+subject_model: sonnet
+judge_model: haiku
+
+tests:
+  - name: full-crud-lifecycle
+    description: "Create, list, update, delete a person"
+    turns:
+      - input: "add Sarah Chen, VP of Engineering"
+        operation: create
+        assertions:
+          - type: graphql_operation
+            operation: createPerson
+          - type: confirmation_shown
+        mock_response:
+          createPerson:
+            uuid: "test-001"
+            name: "Sarah Chen"
+            role: "VP of Engineering"
+
+      - input: "show my contacts"
+        operation: list
+        assertions:
+          - type: graphql_operation
+            operation: personList
+            mutation: false
+        mock_response:
+          personList:
+            items:
+              - uuid: "test-001"
+                name: "Sarah Chen"
+                role: "VP of Engineering"
+
+      - input: "change Sarah's email to sarah@new.com"
+        operation: update
+        assertions:
+          - type: resolve_first
+          - type: before_after_shown
+          - type: graphql_operation
+            operation: updatePerson
+        mock_response:
+          updatePerson:
+            uuid: "test-001"
+            name: "Sarah Chen"
+            email: "sarah@new.com"
+
+      - input: "remove Sarah Chen"
+        operation: delete
+        assertions:
+          - type: resolve_first
+          - type: echo_back_required
+            field: name
+          - type: graphql_operation
+            operation: deletePerson
+        mock_response:
+          deletePerson:
+            success: true
+
+    rubric: new-person
+    tags: [trajectory, lifecycle]

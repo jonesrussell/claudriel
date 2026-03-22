@@ -1,0 +1,61 @@
+schema_version: "1.0"
+skill: judgment-rule
+entity_type: judgment_rule
+eval_type: trajectory
+max_turns: 10
+subject_model: sonnet
+judge_model: haiku
+
+tests:
+  - name: full-crud-lifecycle
+    description: "Create, list, update, delete a judgment rule"
+    turns:
+      - input: "from now on, always CC the team lead"
+        operation: create
+        assertions:
+          - type: graphql_operation
+            operation: createJudgmentRule
+          - type: confirmation_shown
+        mock_response:
+          createJudgmentRule:
+            uuid: "test-001"
+            rule_text: "Always CC the team lead"
+
+      - input: "show my rules"
+        operation: list
+        assertions:
+          - type: graphql_operation
+            operation: judgmentRuleList
+            mutation: false
+        mock_response:
+          judgmentRuleList:
+            items:
+              - uuid: "test-001"
+                rule_text: "Always CC the team lead"
+
+      - input: "update the CC rule to include managers"
+        operation: update
+        assertions:
+          - type: resolve_first
+          - type: before_after_shown
+          - type: graphql_operation
+            operation: updateJudgmentRule
+        mock_response:
+          updateJudgmentRule:
+            uuid: "test-001"
+            rule_text: "Always CC the team lead and managers"
+
+      - input: "delete the CC rule"
+        operation: delete
+        assertions:
+          - type: resolve_first
+          - type: echo_back_required
+            field: rule_text
+          - type: graphql_operation
+            operation: deleteJudgmentRule
+        mock_response:
+          deleteJudgmentRule:
+            success: true
+
+    rubric: judgment-rule
+    tags: [trajectory, lifecycle]

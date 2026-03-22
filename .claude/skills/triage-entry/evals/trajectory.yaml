@@ -1,0 +1,67 @@
+schema_version: "1.0"
+skill: triage-entry
+entity_type: triage_entry
+eval_type: trajectory
+max_turns: 10
+subject_model: sonnet
+judge_model: haiku
+
+tests:
+  - name: full-crud-lifecycle
+    description: "Create, list, update, delete a triage entry"
+    turns:
+      - input: "triage this email from Sarah about the proposal"
+        operation: create
+        assertions:
+          - type: graphql_operation
+            operation: createTriageEntry
+          - type: confirmation_shown
+        mock_response:
+          createTriageEntry:
+            uuid: "test-001"
+            sender_name: "Sarah"
+            subject: "Proposal"
+            status: pending
+
+      - input: "show triage queue"
+        operation: list
+        assertions:
+          - type: graphql_operation
+            operation: triageEntryList
+            mutation: false
+        mock_response:
+          triageEntryList:
+            items:
+              - uuid: "test-001"
+                sender_name: "Sarah"
+                subject: "Proposal"
+                status: pending
+
+      - input: "dismiss the proposal triage"
+        operation: update
+        assertions:
+          - type: resolve_first
+          - type: before_after_shown
+          - type: graphql_operation
+            operation: updateTriageEntry
+        mock_response:
+          updateTriageEntry:
+            uuid: "test-001"
+            sender_name: "Sarah"
+            subject: "Proposal"
+            status: dismissed
+
+      - input: "delete the Sarah triage"
+        operation: delete
+        assertions:
+          - type: resolve_first
+          - type: echo_back_required
+            field: sender_name
+          - type: graphql_operation
+            operation: deleteTriageEntry
+        mock_response:
+          deleteTriageEntry:
+            success: true
+
+    rubric: triage-entry
+    tags: [trajectory, lifecycle]
