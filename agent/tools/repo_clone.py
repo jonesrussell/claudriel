@@ -1,5 +1,7 @@
 """Tool: Clone a Git repository into a workspace."""
 
+import re
+
 TOOL_DEF = {
     "name": "repo_clone",
     "description": (
@@ -17,6 +19,7 @@ TOOL_DEF = {
             "repo": {
                 "type": "string",
                 "description": "Repository in owner/name format (e.g., 'jonesrussell/me').",
+                "pattern": "^[a-zA-Z0-9_.-]+/[a-zA-Z0-9_.-]+$",
             },
             "branch": {
                 "type": "string",
@@ -29,8 +32,16 @@ TOOL_DEF = {
 
 
 def execute(api, args: dict) -> dict:
+    repo = args["repo"]
+    if not re.match(r"^[a-zA-Z0-9_.-]+/[a-zA-Z0-9_.-]+$", repo):
+        return {"error": f"Invalid repo format: {repo!r}. Expected owner/name."}
+
+    branch = args.get("branch", "main")
+    if not re.match(r"^[a-zA-Z0-9_./%-]+$", branch):
+        return {"error": f"Invalid branch name: {branch!r}."}
+
     uuid = args["workspace_uuid"]
     return api.post(f"/api/internal/workspaces/{uuid}/clone-repo", json_data={
-        "repo": args["repo"],
-        "branch": args.get("branch", "main"),
+        "repo": repo,
+        "branch": branch,
     })

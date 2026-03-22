@@ -32,5 +32,4 @@ def execute(api, args: dict) -> dict:
     return api.post("/api/internal/workspaces/create", json_data={
         "name": args["name"],
         "description": args.get("description", ""),
-        "mode": args.get("mode", "persistent"),
     })
