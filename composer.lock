@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "18285d6649542af555522d6dbd2af132",
+    "content-hash": "aa17fa99abd420d4de8cb5b3240e7df8",
     "packages": [
         {
             "name": "doctrine/dbal",
@@ -5119,7 +5119,7 @@
         },
         {
             "name": "waaseyaa/state",
-            "version": "v0.1.0-alpha.41",
+            "version": "dev-main",
             "source": {
                 "type": "git",
                 "url": "https://github.com/waaseyaa/state.git",
@@ -5138,6 +5138,7 @@
             "require-dev": {
                 "phpunit/phpunit": "^10.5"
             },
+            "default-branch": true,
             "type": "library",
             "extra": {
                 "branch-alias": {
@@ -5157,7 +5158,7 @@
             "description": "Key-value state storage for Waaseyaa",
             "support": {
                 "issues": "https://github.com/waaseyaa/state/issues",
-                "source": "https://github.com/waaseyaa/state/tree/v0.1.0-alpha.41"
+                "source": "https://github.com/waaseyaa/state/tree/v0.1.0-alpha.21"
             },
             "time": "2026-03-18T23:44:26+00:00"
         },
@@ -5714,6 +5715,7 @@
         "waaseyaa/path": 20,
         "waaseyaa/routing": 20,
         "waaseyaa/ssr": 20,
+        "waaseyaa/state": 20,
         "waaseyaa/telescope": 20,
         "waaseyaa/user": 20
     },

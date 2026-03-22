@@ -21,6 +21,7 @@
         "waaseyaa/path": "dev-main",
         "waaseyaa/routing": "dev-main",
         "waaseyaa/ssr": "dev-main",
+        "waaseyaa/state": "dev-main",
         "waaseyaa/telescope": "dev-main",
         "waaseyaa/user": "dev-main"
     },
@@ -65,6 +66,7 @@
                 "Claudriel\\Provider\\WorkspaceToolServiceProvider",
                 "Claudriel\\Provider\\TelescopeServiceProvider",
                 "Claudriel\\Provider\\CacheServiceProvider",
+                "Claudriel\\Provider\\StateServiceProvider",
                 "Claudriel\\Provider\\ClaudrielServiceProvider",
                 "Claudriel\\Provider\\I18nServiceProvider",
                 "Claudriel\\Provider\\SearchToolServiceProvider",
