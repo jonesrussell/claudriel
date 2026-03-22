@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "18285d6649542af555522d6dbd2af132",
+    "content-hash": "7b6cf87782a8912a22148dc04fd09a88",
     "packages": [
         {
             "name": "doctrine/dbal",
@@ -4875,6 +4875,55 @@
             "time": "2026-03-16T21:50:01+00:00"
         },
         {
+            "name": "waaseyaa/mail",
+            "version": "dev-main",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/waaseyaa/mail.git",
+                "reference": "45ca1165261e0c7ae8ec13dd481bff8167da3720"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/waaseyaa/mail/zipball/45ca1165261e0c7ae8ec13dd481bff8167da3720",
+                "reference": "45ca1165261e0c7ae8ec13dd481bff8167da3720",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=8.4",
+                "waaseyaa/foundation": "^0.1"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "^10.5",
+                "twig/twig": "^3.0"
+            },
+            "suggest": {
+                "twig/twig": "Required for TwigMailRenderer template support"
+            },
+            "default-branch": true,
+            "type": "library",
+            "extra": {
+                "branch-alias": {
+                    "dev-main": "0.1.x-dev",
+                    "dev-develop/v1.1": "0.1.x-dev"
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Waaseyaa\\Mail\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "GPL-2.0-or-later"
+            ],
+            "description": "Transport-agnostic mail API for Waaseyaa",
+            "support": {
+                "issues": "https://github.com/waaseyaa/mail/issues",
+                "source": "https://github.com/waaseyaa/mail/tree/v0.1.0-alpha.10"
+            },
+            "time": "2026-03-16T21:50:01+00:00"
+        },
+        {
             "name": "waaseyaa/path",
             "version": "dev-main",
             "source": {
@@ -5711,6 +5760,7 @@
         "waaseyaa/foundation": 20,
         "waaseyaa/github": 20,
         "waaseyaa/graphql": 20,
+        "waaseyaa/mail": 20,
         "waaseyaa/path": 20,
         "waaseyaa/routing": 20,
         "waaseyaa/ssr": 20,
