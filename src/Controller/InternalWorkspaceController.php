@@ -111,7 +111,7 @@ final class InternalWorkspaceController
             'name' => $workspace->get('name'),
             'status' => 'active',
             'mode' => $mode,
-            'created_at' => (new \DateTimeImmutable())->format('c'),
+            'created_at' => (new \DateTimeImmutable)->format('c'),
         ]);
     }
 
@@ -168,7 +168,7 @@ final class InternalWorkspaceController
         try {
             $this->gitManager->clone($repoUrl, $localPath, $branch);
         } catch (\RuntimeException $e) {
-            return $this->jsonError('Clone failed: ' . $e->getMessage(), 500);
+            return $this->jsonError('Clone failed: '.$e->getMessage(), 500);
         }
 
         return $this->jsonResponse([
