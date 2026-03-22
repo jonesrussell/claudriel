@@ -18,6 +18,7 @@ final class CachedDayBriefAssembler
         'entity:person',
         'entity:triage_entry',
         'entity:skill',
+        'entity:workspace',
     ];
 
     public function __construct(
@@ -25,6 +26,14 @@ final class CachedDayBriefAssembler
         private readonly TagAwareCacheInterface $cache,
     ) {}
 
+    /**
+     * Cache-aside wrapper for DayBriefAssembler::assemble().
+     *
+     * The $snapshot parameter from the real assembler is intentionally omitted.
+     * It defaults to now() and is per-request, so including it in the cache key
+     * would bust every cache entry. Callers needing a custom snapshot should
+     * call the inner assembler directly, bypassing the cache.
+     */
     public function assemble(
         string $tenantId,
         \DateTimeImmutable $since,
