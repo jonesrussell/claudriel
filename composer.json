@@ -5,6 +5,7 @@
     "license": "GPL-2.0-or-later",
     "require": {
         "php": ">=8.4",
+        "waaseyaa/admin-surface": "dev-main",
         "waaseyaa/ai-pipeline": "dev-main",
         "waaseyaa/api": "dev-main",
         "waaseyaa/cli": "dev-main",
@@ -19,7 +20,7 @@
         "waaseyaa/path": "dev-main",
         "waaseyaa/routing": "dev-main",
         "waaseyaa/ssr": "dev-main",
-        "waaseyaa/admin-surface": "dev-main",
+        "waaseyaa/telescope": "dev-main",
         "waaseyaa/user": "dev-main"
     },
     "require-dev": {
@@ -61,6 +62,7 @@
                 "Claudriel\\Provider\\TemporalServiceProvider",
                 "Claudriel\\Provider\\PersonToolServiceProvider",
                 "Claudriel\\Provider\\WorkspaceToolServiceProvider",
+                "Claudriel\\Provider\\TelescopeServiceProvider",
                 "Claudriel\\Provider\\ClaudrielServiceProvider",
                 "Claudriel\\Provider\\I18nServiceProvider",
                 "Claudriel\\Provider\\SearchToolServiceProvider",

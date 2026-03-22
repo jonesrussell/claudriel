@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "35714e369682bda22a2ae873c2abb8ca",
+    "content-hash": "daf1e714ebd1ba19108ee0b721294bef",
     "packages": [
         {
             "name": "doctrine/dbal",
@@ -5162,7 +5162,7 @@
         },
         {
             "name": "waaseyaa/telescope",
-            "version": "v0.1.0-alpha.39",
+            "version": "dev-main",
             "source": {
                 "type": "git",
                 "url": "https://github.com/waaseyaa/telescope.git",
@@ -5180,6 +5180,7 @@
             "require-dev": {
                 "phpunit/phpunit": "^10.5"
             },
+            "default-branch": true,
             "type": "library",
             "extra": {
                 "branch-alias": {
@@ -5199,7 +5200,7 @@
             "description": "Application observability and debugging for Waaseyaa",
             "support": {
                 "issues": "https://github.com/waaseyaa/telescope/issues",
-                "source": "https://github.com/waaseyaa/telescope/tree/v0.1.0-alpha.39"
+                "source": "https://github.com/waaseyaa/telescope/tree/v0.1.0-alpha.10"
             },
             "time": "2026-03-16T21:50:01+00:00"
         },
@@ -5711,6 +5712,7 @@
         "waaseyaa/path": 20,
         "waaseyaa/routing": 20,
         "waaseyaa/ssr": 20,
+        "waaseyaa/telescope": 20,
         "waaseyaa/user": 20
     },
     "prefer-stable": true,
