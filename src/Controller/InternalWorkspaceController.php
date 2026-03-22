@@ -95,7 +95,7 @@ final class InternalWorkspaceController
 
         $mode = $data['mode'] ?? 'persistent';
         $allowedModes = ['persistent', 'ephemeral'];
-        if (!in_array($mode, $allowedModes, true)) {
+        if (! in_array($mode, $allowedModes, true)) {
             return $this->jsonError('Invalid mode. Allowed: persistent, ephemeral', 400);
         }
         $description = $data['description'] ?? '';
