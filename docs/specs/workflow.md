@@ -60,7 +60,7 @@ For the marketing-homepage and app-entry split, also use [v1.3-public-entry-funn
 ### Serve The App Locally
 
 - Repo-native path: `bin/serve <port>`
-- Lightweight PHP path when Docker is unnecessary: `php -d variables_order=EGPCS -S 127.0.0.1:<port> -t public public/index.php`
+- Lightweight PHP path when Docker is unnecessary: `PHP_CLI_SERVER_WORKERS=4 php -d variables_order=EGPCS -S 127.0.0.1:<port> -t public public/index.php`
 
 ### Minimum Local Smoke Set
 
