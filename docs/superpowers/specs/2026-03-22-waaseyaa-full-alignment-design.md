@@ -8,6 +8,12 @@
 
 Claudriel uses 16 of Waaseyaa's 48 packages. An audit revealed 11 packages that would reduce custom code, add new capabilities, and keep Claudriel aligned as the framework's reference application. Framework bugs and gaps discovered during adoption are fixed upstream in Waaseyaa, not worked around in Claudriel.
 
+## Global Constraints
+
+- **Preserve OAuth connections.** The test account (jonesrussell42@gmail.com) has live Google and GitHub OAuth integrations in both staging and production. Any work that touches entity storage, the Integration entity, or the agent subprocess must not break these connections. The `account_id`, `provider`, `access_token`, `refresh_token`, and `provider_email` fields in the Integration entity's `_data` blob are the source of truth.
+- **Fix upstream, not around.** Framework bugs and gaps are fixed in Waaseyaa, not patched in Claudriel.
+- **No data migration needed.** No real user data beyond the test account in each environment.
+
 ## Approach: Dependency-Ordered Waves
 
 Three milestones, each independently deployable, ordered by actual package dependency chains.
@@ -108,7 +114,8 @@ Transitions:
   defer:     active → pending    (no guard)
   reopen:    completed → active  (no guard)
   archive:   any → archived      (no guard)
-  restore:   archived → pending  (no guard)
+  restore:   archived → pending  (no guard, intentional: restoring always returns to pending
+                                   regardless of pre-archive state, to force re-triage)
 ```
 
 Replace string-field `status` and PHP conditionals in `DriftDetector`, `CommitmentHandler`. Wire audit trail for all state changes.
@@ -116,10 +123,10 @@ Replace string-field `status` and PHP conditionals in `DriftDetector`, `Commitme
 **Acceptance criteria:**
 - Commitment entity has `workflow_state` field managed by `ContentModerator`
 - `CommitmentHandler` confidence gate is a workflow transition guard
-- `DriftDetector` queries `workflow_state=active` + `workflow_last_transition.timestamp < 48h`
+- `DriftDetector` queries `workflow_state=active` + `workflow_audit` last entry timestamp < 48h (verify `ContentModerator` persists transition timestamps; current code uses entity `updated_at`)
 - All state changes produce audit entries
 - Invalid transitions throw (e.g., pending→completed is not allowed)
-- Migration path: existing commitments with string `status` normalized to `workflow_state`
+- No data migration needed (no real data in production beyond test account). Replace `status` field with `workflow_state` directly.
 
 **Framework work:** Depends on v3.1 Issue 1.
 
@@ -194,7 +201,7 @@ Three Waaseyaa framework issues gate the agent replacement. MCP server is the ca
 - Audit log captures all agent actions
 - `agent/` directory removed
 - `SubprocessChatClient` removed
-- HMAC internal API routes removed
+- HMAC internal API routes removed (including `InternalApiTokenGenerator` and entire `/api/internal/*` route group)
 - Prompt caching active (verified via token telemetry)
 **Framework work:** Depends on v3.2 Issues 1-3.
 
@@ -208,7 +215,8 @@ Three Waaseyaa framework issues gate the agent replacement. MCP server is the ca
 - Embedding jobs processed via queue (async)
 - Similarity search endpoint: "find entities similar to [text]"
 - Cosine similarity with configurable threshold
-**Framework work:** Verify `SqliteEmbeddingStorage` handles Claudriel's entity volume. May need embedding provider config (OpenAI vs Ollama).
+- Embedding provider: OpenAI (text-embedding-3-small) for initial integration. Ollama as future local alternative, but not required for v3.2.
+**Framework work:** Verify `SqliteEmbeddingStorage` handles Claudriel's entity volume.
 
 ### Issue 6: Expose Claudriel as MCP server via `waaseyaa/mcp`
 
@@ -245,9 +253,14 @@ Three Waaseyaa framework issues gate the agent replacement. MCP server is the ca
 4. In Claudriel: `composer update 'waaseyaa/*'`
 5. Commit composer.json + composer.lock, continue
 
-### Existing Claudriel milestones that benefit
+### Relationship to existing Claudriel milestones
 
-- **v2.2** (Memory & Graph): relationship + ai-vector provide the foundation
-- **v2.4** (Observability): telescope provides production observability
-- **v2.9** (Scheduled Tasks): queue provides the job processing layer
-- **v2.1 / Agent Reliability**: ai-agent replacement changes the architecture these build on
+v3.x milestones run **alongside** v2.x, not replacing them. v3.x is infrastructure; v2.x is features.
+
+Once a v3.x wave completes, specific v2.x issues may become easier or unnecessary:
+- **v2.2** (Memory & Graph): relationship + ai-vector provide the foundation. Some v2.2 issues may be re-scoped to build on v3.1/v3.2 primitives.
+- **v2.4** (Observability): telescope from v3.0 covers the production observability gap. v2.4 issues about dashboards and CI remain separate.
+- **v2.9** (Scheduled Tasks): queue from v3.0 provides the job processing layer. v2.9 `ScheduledTask` entity work builds on top.
+- **v2.1 / Agent Reliability**: ai-agent replacement in v3.2 changes the architecture. v2.1 issues about context/model selection will need re-evaluation after v3.2 lands.
+
+No milestones are closed or merged. Issues that become obsolete after v3.x work are closed individually with a reference to the superseding v3.x issue.
