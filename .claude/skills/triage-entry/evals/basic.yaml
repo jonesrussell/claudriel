@@ -1,0 +1,280 @@
+# Triage Entry CRUD Eval
+# Tests GraphQL-based triage entry lifecycle operations
+
+schema_version: "1.0"
+skill: triage-entry
+entity_type: triage_entry
+
+tests:
+  # === CREATE ===
+
+  - name: create-from-natural-language
+    operation: create
+    input: "triage this email from Sarah about the proposal"
+    assertions:
+      - type: field_extraction
+        field: sender_name
+        should_match: "Sarah"
+      - type: field_extraction
+        field: summary
+        should_match: "the proposal"
+      - type: field_extraction
+        field: status
+        should_match: pending
+      - type: confirmation_shown
+      - type: graphql_operation
+        operation: createTriageEntry
+      - type: no_file_operations
+
+  - name: create-with-email-address
+    operation: create
+    input: "new triage entry: meeting request from James Wright, email james@corp.com"
+    assertions:
+      - type: field_extraction
+        field: sender_name
+        should_match: "James Wright"
+      - type: field_extraction
+        field: sender_email
+        should_match: "james@corp.com"
+      - type: field_extraction
+        field: summary
+        should_match: "meeting request"
+      - type: confirmation_shown
+
+  - name: create-urgent-invoice
+    operation: create
+    input: "add to triage queue: urgent invoice from Acme Corp"
+    assertions:
+      - type: field_extraction
+        field: sender_name
+        should_match: "Acme Corp"
+      - type: field_extraction
+        field: summary
+        should_match: "urgent invoice"
+      - type: field_extraction
+        field: status
+        should_match: pending
+      - type: graphql_operation
+        operation: createTriageEntry
+
+  # === LIST ===
+
+  - name: list-triage-queue
+    operation: list
+    input: "show triage queue"
+    assertions:
+      - type: graphql_operation
+        operation: triageEntryList
+        mutation: false
+      - type: filter_applied
+        field: status
+        value: pending
+      - type: table_presented
+        columns: [sender_name, summary, status, occurred_at]
+      - type: no_file_operations
+
+  - name: list-pending-natural-language
+    operation: list
+    input: "what needs triaging?"
+    assertions:
+      - type: graphql_operation
+        operation: triageEntryList
+        mutation: false
+      - type: filter_applied
+        field: status
+        value: pending
+
+  - name: list-all-entries
+    operation: list
+    input: "list all triage entries"
+    context:
+      notes: "User said 'all' so no pending filter should be applied"
+    assertions:
+      - type: graphql_operation
+        operation: triageEntryList
+        mutation: false
+
+  # === UPDATE ===
+
+  - name: update-dismiss-by-sender
+    operation: update
+    input: "dismiss the triage from Sarah"
+    context:
+      existing_entities:
+        - uuid: "abc-123"
+          fields:
+            sender_name: "Sarah Chen"
+            summary: "Proposal review request"
+            status: "pending"
+    assertions:
+      - type: resolve_first
+      - type: field_extraction
+        field: status
+        should_match: dismissed
+      - type: before_after_shown
+      - type: graphql_operation
+        operation: updateTriageEntry
+
+  - name: update-process-by-summary
+    operation: update
+    input: "process the proposal triage"
+    context:
+      existing_entities:
+        - uuid: "def-456"
+          fields:
+            sender_name: "James Wright"
+            summary: "Proposal deadline reminder"
+            status: "pending"
+    assertions:
+      - type: resolve_first
+      - type: field_extraction
+        field: status
+        should_match: processed
+      - type: graphql_operation
+        operation: updateTriageEntry
+
+  - name: update-defer-by-summary
+    operation: update
+    input: "defer the meeting request"
+    context:
+      existing_entities:
+        - uuid: "ghi-789"
+          fields:
+            sender_name: "Acme Corp"
+            summary: "Meeting request for Q2 planning"
+            status: "pending"
+    assertions:
+      - type: resolve_first
+      - type: field_extraction
+        field: status
+        should_match: deferred
+      - type: before_after_shown
+      - type: graphql_operation
+        operation: updateTriageEntry
+
+  # === DELETE ===
+
+  - name: delete-by-sender-with-echo
+    operation: delete
+    input: "delete the triage entry from Sarah"
+    context:
+      existing_entities:
+        - uuid: "abc-123"
+          fields:
+            sender_name: "Sarah Chen"
+            summary: "Proposal review request"
+            status: "dismissed"
+    assertions:
+      - type: resolve_first
+      - type: echo_back_required
+        field: sender_name
+      - type: echo_back_required
+        field: summary
+      - type: graphql_operation
+        operation: deleteTriageEntry
+
+  - name: delete-acme-with-echo
+    operation: delete
+    input: "remove the Acme Corp triage"
+    context:
+      existing_entities:
+        - uuid: "ghi-789"
+          fields:
+            sender_name: "Acme Corp"
+            summary: "Meeting request for Q2 planning"
+    assertions:
+      - type: resolve_first
+      - type: echo_back_required
+        field: sender_name
+      - type: echo_back_required
+        field: summary
+      - type: graphql_operation
+        operation: deleteTriageEntry
+
+  # === EDGE CASES ===
+
+  - name: edge-dismiss-is-update-not-delete
+    operation: update
+    input: "dismiss the invoice triage"
+    context:
+      existing_entities:
+        - uuid: "abc-123"
+          fields:
+            sender_name: "Acme Corp"
+            summary: "Urgent invoice"
+            status: "pending"
+    assertions:
+      - type: graphql_operation
+        operation: updateTriageEntry
+      - type: field_extraction
+        field: status
+        should_match: dismissed
+      - type: before_after_shown
+    tags: [edge-case]
+
+  - name: edge-disambiguation-multiple-sarahs
+    operation: update
+    input: "process Sarah's triage entry"
+    context:
+      existing_entities:
+        - uuid: "abc-123"
+          fields:
+            sender_name: "Sarah Chen"
+            summary: "Proposal review"
+        - uuid: "def-456"
+          fields:
+            sender_name: "Sarah Park"
+            summary: "Budget approval"
+    assertions:
+      - type: resolve_first
+      - type: disambiguation
+    tags: [edge-case]
+
+  - name: edge-no-conjunction-split
+    operation: update
+    input: "update the entry about budget approval and also send a follow-up"
+    context:
+      existing_entities:
+        - uuid: "def-456"
+          fields:
+            sender_name: "Sarah Park"
+            summary: "Budget approval and also send a follow-up"
+    assertions:
+      - type: no_conjunction_split
+      - type: resolve_first
+    tags: [edge-case]
+
+  # === ERROR HANDLING ===
+
+  - name: error-no-match-found
+    operation: update
+    input: "dismiss the triage from NonExistent Person"
+    context:
+      notes: "No triage entry matches this sender"
+    assertions:
+      - type: resolve_first
+      - type: error_surfaced
+      - type: offers_alternative
+        alternative: create
+    tags: [error-handling]
+
+  - name: error-entity-deleted-between-resolve-and-mutate
+    operation: delete
+    input: "delete triage entry abc-gone"
+    context:
+      notes: "Entry was deleted between resolution and mutation call, API returns not-found"
+    assertions:
+      - type: error_surfaced
+    tags: [error-handling]
+
+  - name: error-missing-required-fields
+    operation: create
+    input: "create triage entry"
+    context:
+      notes: "User provides no sender_name or summary"
+    assertions:
+      - type: asks_for_field
+        field: sender_name
+      - type: asks_for_field
+        field: summary
+    tags: [error-handling]
