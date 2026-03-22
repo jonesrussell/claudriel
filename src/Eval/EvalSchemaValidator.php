@@ -12,6 +12,7 @@ use Claudriel\Eval\Rules\CrossFileRule;
 use Claudriel\Eval\Rules\EvalRule;
 use Claudriel\Eval\Rules\ResolveFirstRule;
 use Claudriel\Eval\Rules\TagConsistencyRule;
+use Claudriel\Eval\Rules\TrajectorySchemaRule;
 use Claudriel\Eval\Rules\UniqueNameRule;
 use Claudriel\Eval\Schema\EvalFileSchema;
 use Claudriel\Eval\Schema\TestCaseSchema;
@@ -41,6 +42,7 @@ final class EvalSchemaValidator
             new AssertionCompatibilityRule,
             new ResolveFirstRule,
             new TagConsistencyRule,
+            new TrajectorySchemaRule,
         ];
         $this->crossFileRules = [
             new CoverageRule,
@@ -85,19 +87,39 @@ final class EvalSchemaValidator
             if (isset($parsed['tests']) && is_array($parsed['tests'])) {
                 $testsScanned += count($parsed['tests']);
 
-                foreach ($parsed['tests'] as $test) {
-                    if (is_array($test)) {
-                        $results = array_merge($results, $this->testCaseSchema->validate($test, $relativePath));
+                $evalType = $parsed['eval_type'] ?? 'basic';
+                $isTrajectory = in_array($evalType, ['trajectory', 'multi-turn'], true);
+
+                if (! $isTrajectory) {
+                    foreach ($parsed['tests'] as $test) {
+                        if (is_array($test)) {
+                            $results = array_merge($results, $this->testCaseSchema->validate($test, $relativePath));
+                        }
                     }
                 }
 
                 foreach ($this->fileRules as $rule) {
+                    if ($isTrajectory && ($rule instanceof AssertionCompatibilityRule || $rule instanceof ResolveFirstRule)) {
+                        continue; // TrajectorySchemaRule handles per-turn validation
+                    }
                     $results = array_merge($results, $rule->validate($parsed, $relativePath));
                 }
 
                 $allFilesBySkill[$skillDir][] = $parsed;
 
-                $ops = array_unique(array_column($parsed['tests'], 'operation'));
+                if ($isTrajectory) {
+                    $ops = [];
+                    foreach ($parsed['tests'] as $test) {
+                        foreach ($test['turns'] ?? [] as $turn) {
+                            if (isset($turn['operation'])) {
+                                $ops[] = $turn['operation'];
+                            }
+                        }
+                    }
+                    $ops = array_unique($ops);
+                } else {
+                    $ops = array_unique(array_column($parsed['tests'], 'operation'));
+                }
                 $operationCoverage[$skillDir] = array_values(array_unique(
                     array_merge($operationCoverage[$skillDir] ?? [], $ops),
                 ));
