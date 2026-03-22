@@ -1,180 +1,328 @@
 # Schedule Entry CRUD Eval
 # Tests GraphQL-based schedule entry lifecycle operations
 
-prompts:
+schema_version: "1.0"
+skill: schedule-entry
+entity_type: schedule_entry
+
+tests:
   # === CREATE ===
 
-  - prompt: "schedule a call with Sarah at 3pm"
-    expectations:
-      - "extracts title as 'Call with Sarah', not the full sentence"
-      - "extracts starts_at as today 3pm in ISO 8601"
-      - "defaults ends_at to starts_at + 1 hour"
-      - "shows confirmation with fields before creating"
-      - "calls createScheduleEntry GraphQL mutation"
-      - "does NOT create files or directories"
+  - name: create-call-with-time
+    operation: create
+    input: "schedule a call with Sarah at 3pm"
+    assertions:
+      - type: field_extraction
+        field: title
+        should_match: "Call with Sarah"
+        must_not_equal: "schedule a call with Sarah at 3pm"
+      - type: field_extraction
+        field: starts_at
+        should_match: "today 3pm in ISO 8601"
+      - type: field_extraction
+        field: ends_at
+        should_match: "starts_at + 1 hour"
+      - type: confirmation_shown
+      - type: graphql_operation
+        operation: createScheduleEntry
+      - type: no_file_operations
 
-  - prompt: "add standup and retro to my schedule tomorrow at 10am"
-    expectations:
-      - "extracts title as 'Standup and Retro' (preserves conjunction in title)"
-      - "does NOT split into two separate entries"
-      - "converts 'tomorrow' to absolute ISO 8601 date"
-      - "shows confirmation before calling API"
+  - name: create-conjunction-title
+    operation: create
+    input: "add standup and retro to my schedule tomorrow at 10am"
+    assertions:
+      - type: field_extraction
+        field: title
+        should_match: "Standup and Retro"
+      - type: no_conjunction_split
+      - type: field_extraction
+        field: starts_at
+        should_match: "tomorrow ISO 8601 date"
+      - type: confirmation_shown
+    tags: [edge-case]
 
-  - prompt: "book a dentist appointment on Friday from 2pm to 3:30pm"
-    expectations:
-      - "extracts title as 'Dentist Appointment'"
-      - "extracts starts_at as next Friday 2pm ISO 8601"
-      - "extracts ends_at as next Friday 3:30pm ISO 8601"
-      - "calls createScheduleEntry GraphQL mutation"
+  - name: create-explicit-time-range
+    operation: create
+    input: "book a dentist appointment on Friday from 2pm to 3:30pm"
+    assertions:
+      - type: field_extraction
+        field: title
+        should_match: "Dentist Appointment"
+      - type: field_extraction
+        field: starts_at
+        should_match: "next Friday 2pm ISO 8601"
+      - type: field_extraction
+        field: ends_at
+        should_match: "next Friday 3:30pm ISO 8601"
+      - type: graphql_operation
+        operation: createScheduleEntry
 
-  - prompt: "schedule something for next Monday"
-    context: "User provides a date but no title or time"
-    expectations:
-      - "asks for the event title since it cannot be extracted"
-      - "asks for a time or uses a reasonable default"
-      - "does NOT use 'something' as the title"
+  - name: create-missing-title-and-time
+    operation: create
+    input: "schedule something for next Monday"
+    context:
+      notes: "User provides a date but no title or time"
+    assertions:
+      - type: asks_for_field
+        field: title
+      - type: field_extraction
+        field: title
+        must_not_equal: "something"
+    tags: [edge-case]
 
   # === LIST ===
 
-  - prompt: "show my schedule"
-    expectations:
-      - "calls scheduleEntryList GraphQL query"
-      - "presents results sorted chronologically by starts_at"
-      - "shows title, starts_at, ends_at, status in table format"
-      - "does NOT attempt to read files or directories"
+  - name: list-all-schedule
+    operation: list
+    input: "show my schedule"
+    assertions:
+      - type: graphql_operation
+        operation: scheduleEntryList
+        mutation: false
+      - type: table_presented
+        columns: [title, starts_at, ends_at, status]
+      - type: no_file_operations
 
-  - prompt: "what's on my calendar this week?"
-    expectations:
-      - "calls scheduleEntryList GraphQL query"
-      - "filters or post-filters entries to current week"
-      - "presents chronologically sorted table"
+  - name: list-filtered-by-week
+    operation: list
+    input: "what's on my calendar this week?"
+    assertions:
+      - type: graphql_operation
+        operation: scheduleEntryList
+        mutation: false
+      - type: filter_applied
+        field: starts_at
+        value: "current week"
+      - type: table_presented
+        columns: [title, starts_at, ends_at, status]
 
   # === UPDATE ===
 
-  - prompt: "reschedule the dentist to Thursday at 4pm"
-    context: "Schedule entry 'Dentist Appointment' exists with uuid abc-123, currently Friday 2pm"
-    expectations:
-      - "fetches existing entries via scheduleEntryList BEFORE parsing"
-      - "matches 'dentist' against existing entry titles using substring match"
-      - "shows before/after: starts_at and ends_at changes"
-      - "calls updateScheduleEntry GraphQL mutation with correct uuid"
+  - name: update-reschedule-by-title
+    operation: update
+    input: "reschedule the dentist to Thursday at 4pm"
+    context:
+      existing_entities:
+        - uuid: "abc-123"
+          fields:
+            title: "Dentist Appointment"
+            starts_at: "Friday 2pm"
+    assertions:
+      - type: resolve_first
+      - type: before_after_shown
+      - type: graphql_operation
+        operation: updateScheduleEntry
 
-  - prompt: "move the standup and retro to Wednesday"
-    context: "Schedule entry 'Standup and Retro' exists with uuid def-456"
-    expectations:
-      - "fetches existing entries via scheduleEntryList BEFORE parsing"
-      - "does NOT split on 'and' when resolving against existing entries"
-      - "matches 'standup and retro' against 'Standup and Retro'"
-      - "shows before/after with new date"
-      - "calls updateScheduleEntry GraphQL mutation"
+  - name: update-conjunction-resolve
+    operation: update
+    input: "move the standup and retro to Wednesday"
+    context:
+      existing_entities:
+        - uuid: "def-456"
+          fields:
+            title: "Standup and Retro"
+    assertions:
+      - type: resolve_first
+      - type: no_conjunction_split
+      - type: before_after_shown
+      - type: graphql_operation
+        operation: updateScheduleEntry
+    tags: [edge-case]
 
-  - prompt: "cancel the call with Sarah"
-    context: "Schedule entry 'Call with Sarah' exists with uuid ghi-789"
-    expectations:
-      - "resolves 'call with Sarah' against existing entries"
-      - "treats 'cancel' as a status update, NOT a deletion"
-      - "shows before/after: status change from 'confirmed' to 'cancelled'"
-      - "calls updateScheduleEntry with status 'cancelled'"
-      - "does NOT call deleteScheduleEntry"
+  - name: update-cancel-as-status-change
+    operation: update
+    input: "cancel the call with Sarah"
+    context:
+      existing_entities:
+        - uuid: "ghi-789"
+          fields:
+            title: "Call with Sarah"
+            status: "confirmed"
+    assertions:
+      - type: resolve_first
+      - type: before_after_shown
+      - type: graphql_operation
+        operation: updateScheduleEntry
+    tags: [regression]
 
-  - prompt: "add notes to the dentist: bring insurance card"
-    context: "Schedule entry 'Dentist Appointment' exists with uuid abc-123"
-    expectations:
-      - "resolves 'dentist' against existing entries"
-      - "updates notes field to 'bring insurance card'"
-      - "calls updateScheduleEntry GraphQL mutation"
+  - name: update-add-notes
+    operation: update
+    input: "add notes to the dentist: bring insurance card"
+    context:
+      existing_entities:
+        - uuid: "abc-123"
+          fields:
+            title: "Dentist Appointment"
+    assertions:
+      - type: resolve_first
+      - type: field_extraction
+        field: notes
+        should_match: "bring insurance card"
+      - type: graphql_operation
+        operation: updateScheduleEntry
 
   # === DELETE ===
 
-  - prompt: "delete the standup and retro"
-    context: "Schedule entry 'Standup and Retro' exists with uuid def-456"
-    expectations:
-      - "fetches existing entries via scheduleEntryList BEFORE parsing"
-      - "does NOT split on 'and' when resolving"
-      - "matches against 'Standup and Retro'"
-      - "shows what will be deleted with uuid and key details"
-      - "requires the entry title echoed back, not just 'yes'"
-      - "calls deleteScheduleEntry GraphQL mutation only after title confirmation"
+  - name: delete-conjunction-entry
+    operation: delete
+    input: "delete the standup and retro"
+    context:
+      existing_entities:
+        - uuid: "def-456"
+          fields:
+            title: "Standup and Retro"
+    assertions:
+      - type: resolve_first
+      - type: no_conjunction_split
+      - type: confirmation_shown
+      - type: echo_back_required
+        field: title
+      - type: graphql_operation
+        operation: deleteScheduleEntry
 
-  - prompt: "remove the old meeting"
-    context: "Two entries match 'meeting': 'Team Meeting' (uuid aaa) and 'Client Meeting' (uuid bbb)"
-    expectations:
-      - "fetches existing entries via scheduleEntryList"
-      - "finds multiple matches for 'meeting'"
-      - "presents both options and asks which one to delete"
-      - "does NOT delete both or pick one silently"
+  - name: delete-ambiguous-match
+    operation: delete
+    input: "remove the old meeting"
+    context:
+      existing_entities:
+        - uuid: "aaa"
+          fields:
+            title: "Team Meeting"
+        - uuid: "bbb"
+          fields:
+            title: "Client Meeting"
+    assertions:
+      - type: resolve_first
+      - type: disambiguation
 
   # === CANCEL VS DELETE DISTINCTION ===
 
-  - prompt: "cancel my Friday appointment"
-    context: "Schedule entry 'Dentist Appointment' exists on Friday with uuid abc-123"
-    expectations:
-      - "resolves against existing entries"
-      - "updates status to 'cancelled' (preserves history)"
-      - "does NOT call deleteScheduleEntry"
-      - "explains that the entry is cancelled but preserved"
+  - name: update-cancel-preserves-history
+    operation: update
+    input: "cancel my Friday appointment"
+    context:
+      existing_entities:
+        - uuid: "abc-123"
+          fields:
+            title: "Dentist Appointment"
+            starts_at: "Friday"
+    assertions:
+      - type: resolve_first
+      - type: graphql_operation
+        operation: updateScheduleEntry
+      - type: confirmation_shown
+    tags: [regression]
 
-  - prompt: "delete my Friday appointment"
-    context: "Schedule entry 'Dentist Appointment' exists on Friday with uuid abc-123"
-    expectations:
-      - "resolves against existing entries"
-      - "proceeds with actual deletion (user explicitly said 'delete')"
-      - "requires title echo-back before deletion"
-      - "calls deleteScheduleEntry mutation"
+  - name: delete-explicit-delete
+    operation: delete
+    input: "delete my Friday appointment"
+    context:
+      existing_entities:
+        - uuid: "abc-123"
+          fields:
+            title: "Dentist Appointment"
+            starts_at: "Friday"
+    assertions:
+      - type: resolve_first
+      - type: echo_back_required
+        field: title
+      - type: graphql_operation
+        operation: deleteScheduleEntry
+    tags: [regression]
 
   # === RELATIVE DATE HANDLING ===
 
-  - prompt: "schedule lunch in 2 hours"
-    expectations:
-      - "extracts title as 'Lunch'"
-      - "converts 'in 2 hours' to absolute ISO 8601 timestamp"
-      - "defaults ends_at to starts_at + 1 hour"
-      - "shows confirmation with absolute times"
+  - name: create-relative-hours
+    operation: create
+    input: "schedule lunch in 2 hours"
+    assertions:
+      - type: field_extraction
+        field: title
+        should_match: "Lunch"
+      - type: field_extraction
+        field: starts_at
+        should_match: "current time + 2 hours ISO 8601"
+      - type: field_extraction
+        field: ends_at
+        should_match: "starts_at + 1 hour"
+      - type: confirmation_shown
 
-  - prompt: "add team standup every day at 9am starting next Monday"
-    expectations:
-      - "extracts title as 'Team Standup'"
-      - "converts 'next Monday' to absolute ISO 8601 date"
-      - "sets starts_at to next Monday 9am"
-      - "notes recurring intent but creates single entry (no recurring_series_id logic yet)"
+  - name: create-recurring-intent
+    operation: create
+    input: "add team standup every day at 9am starting next Monday"
+    assertions:
+      - type: field_extraction
+        field: title
+        should_match: "Team Standup"
+      - type: field_extraction
+        field: starts_at
+        should_match: "next Monday 9am ISO 8601"
+      - type: graphql_operation
+        operation: createScheduleEntry
 
   # === INTENT PARSING EDGE CASES ===
 
-  - prompt: "schedule a meeting and also set a commitment"
-    expectations:
-      - "extracts create operation for schedule entry"
-      - "does NOT use 'a meeting and also set a commitment' as the title"
-      - "extracts title as 'Meeting' or asks for clarification"
-      - "queues 'set a commitment' as a secondary intent"
+  - name: create-secondary-intent
+    operation: create
+    input: "schedule a meeting and also set a commitment"
+    assertions:
+      - type: field_extraction
+        field: title
+        must_not_equal: "schedule a meeting and also set a commitment"
+        should_match: "Meeting"
+      - type: secondary_intent_queued
+        intent: "set a commitment"
+    tags: [edge-case]
 
-  - prompt: "update the entry I just added"
-    context: "Only one entry was created recently: 'Lunch with Dave'"
-    expectations:
-      - "fetches existing entries via scheduleEntryList"
-      - "if only one recent match, resolves to 'Lunch with Dave'"
-      - "asks what field to update"
+  - name: update-recent-entry-resolve
+    operation: update
+    input: "update the entry I just added"
+    context:
+      existing_entities:
+        - uuid: "lwd-001"
+          fields:
+            title: "Lunch with Dave"
+      notes: "Only one entry was created recently"
+    assertions:
+      - type: resolve_first
+      - type: asks_for_field
+        field: title
 
   # === ERROR HANDLING ===
 
-  - prompt: "delete the yoga class"
-    context: "No schedule entry with 'yoga' in the title exists"
-    expectations:
-      - "fetches existing entries via scheduleEntryList"
-      - "reports no match found"
-      - "offers to create a new entry instead"
-      - "does NOT call deleteScheduleEntry mutation"
+  - name: delete-no-match
+    operation: delete
+    input: "delete the yoga class"
+    context:
+      notes: "No schedule entry with 'yoga' in the title exists"
+    assertions:
+      - type: resolve_first
+      - type: error_surfaced
+      - type: offers_alternative
+        alternative: create
+    tags: [error-handling]
 
-  - prompt: "reschedule the meeting to blurgsday"
-    context: "Schedule entry 'Team Meeting' exists with uuid aaa"
-    expectations:
-      - "resolves 'meeting' against existing entries"
-      - "cannot parse 'blurgsday' as a valid date"
-      - "asks user to provide a valid date/time"
-      - "does NOT call updateScheduleEntry with invalid data"
+  - name: update-invalid-date
+    operation: update
+    input: "reschedule the meeting to blurgsday"
+    context:
+      existing_entities:
+        - uuid: "aaa"
+          fields:
+            title: "Team Meeting"
+    assertions:
+      - type: resolve_first
+      - type: error_surfaced
+    tags: [error-handling]
 
-  - prompt: "schedule a call at sometime maybe"
-    expectations:
-      - "extracts title as 'Call' or similar"
-      - "cannot parse 'sometime maybe' as a valid time"
-      - "asks user for a specific date and time"
-      - "does NOT send null or invalid starts_at to the API"
+  - name: create-vague-time
+    operation: create
+    input: "schedule a call at sometime maybe"
+    assertions:
+      - type: field_extraction
+        field: title
+        should_match: "Call"
+      - type: error_surfaced
+      - type: asks_for_field
+        field: starts_at
+    tags: [error-handling]
