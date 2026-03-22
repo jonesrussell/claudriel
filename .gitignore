@@ -2,7 +2,7 @@ vendor/
 .env
 *.cache
 .phpstan-cache/
-var/
+storage/telescope.sqlite
 storage/framework/cache/
 storage/framework/entity-audit.jsonl
 storage/framework/packages.php

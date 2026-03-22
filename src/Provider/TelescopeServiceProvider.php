@@ -33,7 +33,7 @@ final class TelescopeServiceProvider extends ServiceProvider
         if ($this->telescope === null) {
             $storagePath = $this->getStoragePath();
             if ($storagePath === null) {
-                error_log('Telescope: could not create var/ directory, falling back to in-memory store');
+                error_log('Telescope: could not create storage/ directory, falling back to in-memory store');
             }
 
             $store = $storagePath !== null
@@ -65,12 +65,12 @@ final class TelescopeServiceProvider extends ServiceProvider
 
     private function getStoragePath(): ?string
     {
-        $varDir = dirname(__DIR__, 2).'/var';
-        if (is_dir($varDir) || mkdir($varDir, 0o755, true)) {
-            return $varDir.'/telescope.sqlite';
+        $storageDir = dirname(__DIR__, 2).'/storage';
+        if (is_dir($storageDir) || mkdir($storageDir, 0o755, true)) {
+            return $storageDir.'/telescope.sqlite';
         }
 
-        error_log('Telescope: could not create var/ directory, falling back to in-memory store');
+        error_log('Telescope: could not create storage/ directory, falling back to in-memory store');
 
         return null;
     }

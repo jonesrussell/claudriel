@@ -800,12 +800,12 @@ final class ClaudrielServiceProvider extends ServiceProvider
 
     private function buildTelescopeCommand(): TelescopeCommand
     {
-        $varDir = dirname(__DIR__, 2).'/var';
-        if (! is_dir($varDir)) {
-            mkdir($varDir, 0o755, true);
+        $storageDir = dirname(__DIR__, 2).'/storage';
+        if (! is_dir($storageDir)) {
+            mkdir($storageDir, 0o755, true);
         }
 
-        $store = SqliteTelescopeStore::createFromPath($varDir.'/telescope.sqlite');
+        $store = SqliteTelescopeStore::createFromPath($storageDir.'/telescope.sqlite');
 
         $telescope = new WaaseyaaTelescopeServiceProvider(
             config: [
