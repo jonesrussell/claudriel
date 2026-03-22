@@ -192,7 +192,7 @@ final class PublicAccountSignupService
                 'subject' => "New user registration: {$name}",
                 'text' => "A new user has verified their Claudriel account.\n\nName: {$name}\nEmail: {$email}\nVerified at: {$timestamp}",
             ]);
-        } catch (\RuntimeException) {
+        } catch (\Throwable) {
             // Admin notification is best-effort; do not fail the verification flow.
         }
     }
