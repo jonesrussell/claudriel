@@ -1,0 +1,34 @@
+name: Eval Schema Validation
+on:
+  pull_request:
+    paths:
+      - '.claude/skills/*/evals/**'
+      - 'src/Eval/**'
+      - 'bin/eval-validate'
+
+jobs:
+  validate-evals:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+      - run: composer install --no-dev --prefer-dist
+      - run: php bin/eval-validate --strict --output eval-report.json
+      - name: Upload validation report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-validation-report
+          path: eval-report.json
+      - name: Comment on PR (failures only)
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const report = JSON.parse(fs.readFileSync('eval-report.json', 'utf8'));
+            const errors = report.results.filter(r => r.severity === 'error');
+            const body = `## Eval Validation Failed\n\n${errors.length} error(s) found:\n\n${errors.map(e => `- **${e.rule}** in \`${e.file}\`${e.test ? ` (test: ${e.test})` : ''}: ${e.message}`).join('\n')}\n\nRun \`php bin/eval-validate\` locally to see full details.`;
+            github.rest.issues.createComment({ owner: context.repo.owner, repo: context.repo.repo, issue_number: context.issue.number, body });
