@@ -45,7 +45,7 @@ final class TelescopeCommand extends Command
         return Command::SUCCESS;
     }
 
-    public function formatEntries(string $type, int $limit): string
+    private function formatEntries(string $type, int $limit): string
     {
         $entries = $this->telescope->getStore()->query($type, $limit);
 
