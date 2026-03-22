@@ -38,11 +38,7 @@ final class PersonAccessPolicy implements AccessPolicyInterface
             return AccessResult::forbidden('Tenant mismatch.');
         }
 
-        return match ($operation) {
-            'view' => AccessResult::allowed('Tenant member can view people.'),
-            'update', 'delete' => AccessResult::neutral('Only admins can modify people.'),
-            default => AccessResult::neutral('Unknown operation.'),
-        };
+        return AccessResult::allowed('Tenant member can access own people.');
     }
 
     public function createAccess(string $entityTypeId, string $bundle, AccountInterface $account): AccessResult
@@ -55,6 +51,6 @@ final class PersonAccessPolicy implements AccessPolicyInterface
             return AccessResult::allowed('Admin permission.');
         }
 
-        return AccessResult::neutral('Only admins can create people.');
+        return AccessResult::allowed('Authenticated users can create people.');
     }
 }

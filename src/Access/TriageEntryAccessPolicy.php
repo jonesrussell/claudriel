@@ -38,10 +38,7 @@ final class TriageEntryAccessPolicy implements AccessPolicyInterface
             return AccessResult::forbidden('Tenant mismatch.');
         }
 
-        return match ($operation) {
-            'view' => AccessResult::allowed('Tenant member can view triage entries.'),
-            default => AccessResult::neutral('Only system or admin can modify triage entries.'),
-        };
+        return AccessResult::allowed('Tenant member can access own triage entries.');
     }
 
     public function createAccess(string $entityTypeId, string $bundle, AccountInterface $account): AccessResult
@@ -54,6 +51,6 @@ final class TriageEntryAccessPolicy implements AccessPolicyInterface
             return AccessResult::allowed('Admin permission.');
         }
 
-        return AccessResult::neutral('Only system or admin can create triage entries.');
+        return AccessResult::allowed('Authenticated users can create triage entries.');
     }
 }

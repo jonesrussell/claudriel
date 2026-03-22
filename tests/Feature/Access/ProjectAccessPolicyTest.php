@@ -52,19 +52,15 @@ final class ProjectAccessPolicyTest extends TestCase
     }
 
     #[Test]
-    public function tenant_member_can_view_but_not_update_or_delete(): void
+    public function tenant_member_can_view_update_and_delete(): void
     {
         $entity = $this->createEntity('project', ['account_id' => '42', 'tenant_id' => 'tenant-1']);
         $account = $this->createAuthenticatedAccount(99, 'tenant-1');
 
-        $viewResult = $this->policy->access($entity, 'view', $account);
-        self::assertTrue($viewResult->isAllowed(), 'Tenant member should view.');
-
-        $updateResult = $this->policy->access($entity, 'update', $account);
-        self::assertTrue($updateResult->isNeutral(), 'Tenant member should not update.');
-
-        $deleteResult = $this->policy->access($entity, 'delete', $account);
-        self::assertTrue($deleteResult->isNeutral(), 'Tenant member should not delete.');
+        foreach (['view', 'update', 'delete'] as $operation) {
+            $result = $this->policy->access($entity, $operation, $account);
+            self::assertTrue($result->isAllowed(), "Tenant member should be allowed to {$operation}.");
+        }
     }
 
     #[Test]

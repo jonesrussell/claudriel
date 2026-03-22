@@ -41,11 +41,7 @@ final class ProjectAccessPolicy implements AccessPolicyInterface
         $accountTenantId = $account->getTenantId();
 
         if ($entityTenantId !== null && $accountTenantId !== null && $entityTenantId === $accountTenantId) {
-            return match ($operation) {
-                'view' => AccessResult::allowed('Tenant member can view projects.'),
-                'update', 'delete' => AccessResult::neutral('Only owner or admin can modify projects.'),
-                default => AccessResult::neutral('Unknown operation.'),
-            };
+            return AccessResult::allowed('Tenant member can access own projects.');
         }
 
         return AccessResult::neutral('No access granted.');
