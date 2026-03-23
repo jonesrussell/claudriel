@@ -4,6 +4,8 @@ on:
   pull_request:
     paths:
       - '.claude/skills/**'
+      - 'src/Provider/*ServiceProvider.php'
+      - 'src/Entity/*.php'
   schedule:
     - cron: '0 6 * * *'
   workflow_dispatch:
@@ -25,6 +27,23 @@ jobs:
       - name: Run deterministic evals
         working-directory: ${{ github.workspace }}
         run: python agent/eval_runner.py --deterministic --markdown
+
+  schema-contracts:
+    name: Schema Contract Validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+
+      - name: Install dependencies
+        run: pip install -r agent/requirements.txt
+
+      - name: Validate skill-schema contracts
+        working-directory: ${{ github.workspace }}
+        run: python agent/eval_contracts.py
 
   llm-judge:
     name: LLM Judge Evaluation
