@@ -8,12 +8,11 @@ use Claudriel\Entity\Commitment;
 use Claudriel\Entity\CommitmentExtractionLog;
 use Claudriel\Entity\McEvent;
 use Claudriel\Service\Audit\CommitmentExtractionFailureClassifier;
+use Claudriel\Workflow\CommitmentWorkflowPreset;
 use Waaseyaa\Entity\Repository\EntityRepositoryInterface;
 
 final class CommitmentHandler
 {
-    private const CONFIDENCE_THRESHOLD = 0.7;
-
     public function __construct(
         private readonly EntityRepositoryInterface $repo,
         private readonly EntityRepositoryInterface $logRepo,
@@ -24,7 +23,7 @@ final class CommitmentHandler
     public function handle(array $candidates, McEvent $event, string $personId, string $tenantId): void
     {
         foreach ($candidates as $candidate) {
-            if ($candidate['confidence'] < self::CONFIDENCE_THRESHOLD) {
+            if (! CommitmentWorkflowPreset::canActivate($candidate['confidence'])) {
                 $this->logLowConfidenceCandidate($candidate, $event);
 
                 continue;
@@ -32,7 +31,7 @@ final class CommitmentHandler
             $this->repo->save(new Commitment([
                 'title' => $candidate['title'],
                 'confidence' => $candidate['confidence'],
-                'status' => 'pending',
+                'workflow_state' => CommitmentWorkflowPreset::STATE_PENDING,
                 'direction' => $candidate['direction'] ?? 'outbound',
                 'source_event_id' => $event->id(),
                 'person_id' => $personId,

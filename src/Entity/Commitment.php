@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Claudriel\Entity;
 
+use Claudriel\Workflow\CommitmentWorkflowPreset;
 use Waaseyaa\Entity\ContentEntityBase;
 
 final class Commitment extends ContentEntityBase
@@ -18,8 +19,15 @@ final class Commitment extends ContentEntityBase
 
     public function __construct(array $values = [])
     {
-        if (! array_key_exists('status', $values)) {
-            $values['status'] = 'pending';
+        // Sync workflow_state and status: workflow_state is canonical,
+        // status is kept for backward compatibility.
+        if (array_key_exists('workflow_state', $values) && ! array_key_exists('status', $values)) {
+            $values['status'] = $values['workflow_state'];
+        } elseif (! array_key_exists('workflow_state', $values) && array_key_exists('status', $values)) {
+            $values['workflow_state'] = $values['status'];
+        } elseif (! array_key_exists('workflow_state', $values) && ! array_key_exists('status', $values)) {
+            $values['workflow_state'] = CommitmentWorkflowPreset::STATE_PENDING;
+            $values['status'] = CommitmentWorkflowPreset::STATE_PENDING;
         }
         if (! array_key_exists('confidence', $values)) {
             $values['confidence'] = 1.0;
