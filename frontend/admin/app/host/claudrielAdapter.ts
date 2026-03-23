@@ -13,6 +13,8 @@ const LABEL_FIELDS: Record<string, string> = {
   project: 'name',
   judgment_rule: 'rule_text',
   repo: 'name',
+  taxonomy_term: 'name',
+  taxonomy_vocabulary: 'name',
 }
 
 /** Fields to request per GraphQL entity type. */
@@ -28,6 +30,8 @@ const GRAPHQL_FIELDS: Record<string, string> = {
   schedule_entry: 'uuid title starts_at ends_at notes source status external_id calendar_id recurring_series_id tenant_id created_at updated_at',
   triage_entry: 'uuid sender_name sender_email summary status source tenant_id occurred_at external_id content_hash raw_payload created_at updated_at',
   judgment_rule: 'uuid rule_text context source confidence application_count last_applied_at status tenant_id created_at updated_at',
+  taxonomy_term: 'uuid name vid description weight parent_id status created_at updated_at',
+  taxonomy_vocabulary: 'uuid name description weight created_at updated_at',
 }
 
 function toPascalCase(s: string): string {

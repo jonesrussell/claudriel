@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "9c7530394b4d05e68340e2a4303c1304",
+    "content-hash": "eca930187f7cb8ede0191a36dd5c3d3c",
     "packages": [
         {
             "name": "doctrine/dbal",
@@ -5213,6 +5213,57 @@
             "time": "2026-03-18T23:44:26+00:00"
         },
         {
+            "name": "waaseyaa/taxonomy",
+            "version": "dev-main",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/waaseyaa/taxonomy.git",
+                "reference": "0cf4d44e3b9739acd7ea113ce7de09cffccc6cb8"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/waaseyaa/taxonomy/zipball/0cf4d44e3b9739acd7ea113ce7de09cffccc6cb8",
+                "reference": "0cf4d44e3b9739acd7ea113ce7de09cffccc6cb8",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=8.4",
+                "waaseyaa/access": "^0.1",
+                "waaseyaa/entity": "^0.1"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "^10.5"
+            },
+            "default-branch": true,
+            "type": "library",
+            "extra": {
+                "waaseyaa": {
+                    "providers": [
+                        "Waaseyaa\\Taxonomy\\TaxonomyServiceProvider"
+                    ]
+                },
+                "branch-alias": {
+                    "dev-main": "0.1.x-dev",
+                    "dev-develop/v1.1": "0.1.x-dev"
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Waaseyaa\\Taxonomy\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "GPL-2.0-or-later"
+            ],
+            "description": "Taxonomy vocabulary and term entity types for Waaseyaa",
+            "support": {
+                "issues": "https://github.com/waaseyaa/taxonomy/issues",
+                "source": "https://github.com/waaseyaa/taxonomy/tree/v0.1.0-alpha.21"
+            },
+            "time": "2026-03-18T16:06:13+00:00"
+        },
+        {
             "name": "waaseyaa/telescope",
             "version": "dev-main",
             "source": {
@@ -5768,6 +5819,7 @@
         "waaseyaa/routing": 20,
         "waaseyaa/ssr": 20,
         "waaseyaa/state": 20,
+        "waaseyaa/taxonomy": 20,
         "waaseyaa/telescope": 20,
         "waaseyaa/user": 20
     },
