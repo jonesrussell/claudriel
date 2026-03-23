@@ -247,11 +247,11 @@ def main() -> None:
                         wait = min(RATE_LIMIT_INITIAL_BACKOFF * (2 ** attempt), RATE_LIMIT_MAX_BACKOFF)
                     emit("progress", phase="rate_limit", summary=f"Rate limited on {current_model}, retrying in {int(wait)}s...", level="warning")
                     time.sleep(wait)
-                except anthropic.APIError:
+                except anthropic.APIError as api_err:
                     # API error (not rate limit): try escalating to a higher-tier model
                     fallback = MODEL_ESCALATION.get(current_model)
                     if fallback:
-                        emit("progress", phase="fallback", summary=f"API error on {current_model}, escalating to {fallback}", level="warning")
+                        emit("progress", phase="fallback", summary=f"API error on {current_model}, escalating to {fallback}: {api_err}", level="warning")
                         current_model = fallback
                         continue
                     raise

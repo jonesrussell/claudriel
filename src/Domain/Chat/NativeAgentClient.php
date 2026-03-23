@@ -315,12 +315,14 @@ class NativeAgentClient
 
             // Check for other API errors
             if (isset($decoded['error'])) {
+                $errorMsg = $decoded['error']['message'] ?? $decoded['error']['type'] ?? 'unknown';
+                error_log("[NativeAgentClient] API error on {$currentModel}: {$errorMsg}");
                 $fallback = self::MODEL_ESCALATION[$currentModel] ?? null;
                 if ($fallback !== null) {
                     if ($onProgress !== null) {
                         $onProgress([
                             'phase' => 'fallback',
-                            'summary' => "API error on {$currentModel}, escalating to {$fallback}",
+                            'summary' => "API error on {$currentModel}, escalating to {$fallback}: {$errorMsg}",
                             'level' => 'warning',
                         ]);
                     }
@@ -355,6 +357,12 @@ class NativeAgentClient
 
         $response = @file_get_contents($url, false, $context);
         if ($response === false) {
+            /** @phpstan-ignore isset.variable, booleanAnd.alwaysTrue */
+            $status = isset($http_response_header) && is_array($http_response_header)
+                ? ($http_response_header[0] ?? 'unknown')
+                : 'network error';
+            error_log("[NativeAgentClient] HTTP request failed: {$status}");
+
             return null;
         }
 
