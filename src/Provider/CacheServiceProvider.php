@@ -21,10 +21,14 @@ final class CacheServiceProvider extends ServiceProvider
 
     private ?EntityCacheInvalidator $entityCacheInvalidator = null;
 
-    public function register(): void
+    public function register(): void {}
+
+    public function boot(): void
     {
-        // EntityCacheInvalidator wiring requires EventDispatcher access.
-        // Wire in ClaudrielServiceProvider where dispatcher is available.
+        $dispatcher = $this->resolve(EventDispatcherInterface::class);
+        if ($dispatcher instanceof EventDispatcherInterface) {
+            $this->wireInvalidator($dispatcher);
+        }
     }
 
     public function getCacheFactory(): CacheFactory
