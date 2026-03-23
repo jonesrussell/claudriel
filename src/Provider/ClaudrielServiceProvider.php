@@ -664,6 +664,8 @@ final class ClaudrielServiceProvider extends ServiceProvider
         $triageRepo = new StorageRepositoryAdapter(new SqlEntityStorage($triageType, $database, $dispatcher));
 
         $artifactRepo = new StorageRepositoryAdapter($entityTypeManager->getStorage('artifact'));
+        $repoRepo = new StorageRepositoryAdapter($entityTypeManager->getStorage('repo'));
+        $workspaceRepoRepo = new StorageRepositoryAdapter($entityTypeManager->getStorage('workspace_repo'));
 
         $operationType = new EntityType(
             id: 'operation',
@@ -691,14 +693,14 @@ final class ClaudrielServiceProvider extends ServiceProvider
             new SkillsCommand($skillRepo),
             new WorkspacesCommand($workspaceRepo),
             new WorkspaceCreateCommand($workspaceRepo),
-            new WorkspaceCloneCommand($workspaceRepo, $artifactRepo, $gitRepositoryManager),
+            new WorkspaceCloneCommand($workspaceRepo, $artifactRepo, $gitRepositoryManager, $repoRepo, $workspaceRepoRepo),
             new WorkspacePullCommand($workspaceRepo, $artifactRepo, $gitRepositoryManager),
             new WorkspaceIterateCommand($workspaceRepo, $operationRepo, $promptBuilder, $gitOperator),
-            new WorkspaceStatusCommand($workspaceRepo),
-            new WorkspaceLinkRepoCommand($workspaceRepo),
-            new WorkspaceRunLoopCommand($workspaceRepo, $operationRepo, $promptBuilder, $gitOperator),
+            new WorkspaceStatusCommand($workspaceRepo, $repoRepo, $workspaceRepoRepo),
+            new WorkspaceLinkRepoCommand($workspaceRepo, $repoRepo, $workspaceRepoRepo),
+            new WorkspaceRunLoopCommand($workspaceRepo, $operationRepo, $promptBuilder, $gitOperator, $repoRepo, $workspaceRepoRepo),
             new WorkspaceOpsCommand($workspaceRepo, $operationRepo),
-            new WorkspaceVerifyCommand($workspaceRepo),
+            new WorkspaceVerifyCommand($workspaceRepo, $repoRepo, $workspaceRepoRepo),
             new RecategorizeEventsCommand($entityTypeManager, new EventCategorizer(new AutomatedSenderDetector, $personRepo)),
             $this->buildTelescopeCommand(),
         ];
