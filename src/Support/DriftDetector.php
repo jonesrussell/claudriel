@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Claudriel\Support;
 
+use Claudriel\Workflow\CommitmentWorkflowPreset;
 use Waaseyaa\Entity\ContentEntityInterface;
 use Waaseyaa\Entity\Repository\EntityRepositoryInterface;
 
@@ -17,12 +18,12 @@ final class DriftDetector
     public function findDrifting(string $tenantId): array
     {
         $cutoff = new \DateTimeImmutable(sprintf('-%d hours', self::DRIFT_HOURS));
-        // Load all commitments and filter in memory — status is stored in the _data JSON blob.
+        // Load all commitments and filter in memory — workflow_state is stored in the _data JSON blob.
         /** @var ContentEntityInterface[] $all */
         $all = $this->repo->findBy([]);
         $active = array_filter(
             $all,
-            static fn (ContentEntityInterface $c) => $c->get('status') === 'active',
+            static fn (ContentEntityInterface $c) => ($c->get('workflow_state') ?? $c->get('status')) === CommitmentWorkflowPreset::STATE_ACTIVE,
         );
 
         return array_values(array_filter(

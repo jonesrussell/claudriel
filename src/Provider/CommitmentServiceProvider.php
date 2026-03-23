@@ -27,6 +27,7 @@ final class CommitmentServiceProvider extends ServiceProvider
                 'uuid' => ['type' => 'string', 'readOnly' => true],
                 'title' => ['type' => 'string', 'required' => true],
                 'status' => ['type' => 'string'],
+                'workflow_state' => ['type' => 'string'],
                 'confidence' => ['type' => 'float'],
                 'direction' => ['type' => 'string'],
                 'due_date' => ['type' => 'datetime'],

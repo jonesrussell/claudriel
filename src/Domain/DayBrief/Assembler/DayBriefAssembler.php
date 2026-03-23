@@ -138,7 +138,7 @@ final class DayBriefAssembler
         $allCommitments = $this->commitmentRepo->findBy([]);
         $pending = array_values(array_filter(
             $allCommitments,
-            fn (ContentEntityInterface $c) => $this->entityMatchesTenant($c, $tenantId) && $c->get('status') === 'pending',
+            fn (ContentEntityInterface $c) => $this->entityMatchesTenant($c, $tenantId) && ($c->get('workflow_state') ?? $c->get('status')) === 'pending',
         ));
         $drifting = $this->driftDetector->findDrifting($tenantId);
         $waitingOn = array_values(array_filter(
