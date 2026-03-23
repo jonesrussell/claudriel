@@ -5,10 +5,21 @@ declare(strict_types=1);
 namespace Claudriel\Controller;
 
 use Claudriel\Access\AuthenticatedAccount;
+use Claudriel\Domain\Chat\AgentToolInterface;
 use Claudriel\Domain\Chat\ChatSystemPromptBuilder;
-use Claudriel\Domain\Chat\InternalApiTokenGenerator;
 use Claudriel\Domain\Chat\IssueIntentDetector;
-use Claudriel\Domain\Chat\SubprocessChatClient;
+use Claudriel\Domain\Chat\NativeAgentClient;
+use Claudriel\Domain\Chat\Tool\BriefGenerateTool;
+use Claudriel\Domain\Chat\Tool\CalendarCreateTool;
+use Claudriel\Domain\Chat\Tool\CalendarListTool;
+use Claudriel\Domain\Chat\Tool\CommitmentListTool;
+use Claudriel\Domain\Chat\Tool\CommitmentUpdateTool;
+use Claudriel\Domain\Chat\Tool\GmailListTool;
+use Claudriel\Domain\Chat\Tool\GmailReadTool;
+use Claudriel\Domain\Chat\Tool\GmailSendTool;
+use Claudriel\Domain\Chat\Tool\WorkspaceCreateTool;
+use Claudriel\Domain\Chat\Tool\WorkspaceDeleteTool;
+use Claudriel\Domain\Chat\Tool\WorkspaceListTool;
 use Claudriel\Domain\DayBrief\Assembler\DayBriefAssembler;
 use Claudriel\Domain\IssueOrchestrator;
 use Claudriel\Entity\ChatMessage;
@@ -17,6 +28,8 @@ use Claudriel\Routing\RequestScopeViolation;
 use Claudriel\Routing\TenantWorkspaceResolver;
 use Claudriel\Support\AuthenticatedAccountSessionResolver;
 use Claudriel\Support\DriftDetector;
+use Claudriel\Support\GoogleTokenManager;
+use Claudriel\Support\GoogleTokenManagerInterface;
 use Claudriel\Support\StorageRepositoryAdapter;
 use Claudriel\Temporal\TemporalContextFactory;
 use Claudriel\Temporal\TimeSnapshot;
@@ -30,8 +43,7 @@ final class ChatStreamController
 {
     public function __construct(
         private readonly EntityTypeManager $entityTypeManager,
-        private readonly ?InternalApiTokenGenerator $tokenGenerator = null,
-        private readonly mixed $subprocessClientFactory = null,
+        private readonly mixed $agentClientFactory = null,
         private readonly ?IssueOrchestrator $orchestrator = null,
     ) {}
 
@@ -197,17 +209,6 @@ final class ChatStreamController
 
         $authenticatedAccount = $this->resolveAuthenticatedAccount($account);
         $accountId = $authenticatedAccount?->getUuid() ?? $tenantId;
-        $tokenGenerator = $this->tokenGenerator ?? new InternalApiTokenGenerator(
-            $_ENV['AGENT_INTERNAL_SECRET'] ?? getenv('AGENT_INTERNAL_SECRET') ?: '',
-        );
-        $apiToken = $tokenGenerator->generate($accountId);
-
-        $apiBase = $_ENV['CLAUDRIEL_API_URL'] ?? getenv('CLAUDRIEL_API_URL') ?: '';
-        if ($apiBase === '') {
-            $onError('CLAUDRIEL_API_URL environment variable is not set. The agent cannot call back to the PHP API without it.');
-
-            return;
-        }
 
         $this->emitSseEvent('chat-progress', [
             'phase' => 'prepare',
@@ -215,15 +216,15 @@ final class ChatStreamController
             'level' => 'info',
         ]);
 
-        $client = $this->createSubprocessClient($projectRoot);
+        $client = $this->createAgentClient($accountId, $tenantId);
 
         $client->stream(
             systemPrompt: $systemPrompt,
             messages: $apiMessages,
             accountId: $accountId,
             tenantId: $tenantId,
-            apiBase: $apiBase,
-            apiToken: $apiToken,
+            apiBase: '',
+            apiToken: '',
             onToken: $onToken,
             onDone: $onDone,
             onError: $onError,
@@ -317,26 +318,107 @@ final class ChatStreamController
         return new ChatSystemPromptBuilder($assembler, $projectRoot);
     }
 
-    private function createSubprocessClient(string $projectRoot): SubprocessChatClient
+    private function createAgentClient(string $accountId, string $tenantId): NativeAgentClient
     {
-        if (is_callable($this->subprocessClientFactory)) {
-            return ($this->subprocessClientFactory)();
+        if (is_callable($this->agentClientFactory)) {
+            return ($this->agentClientFactory)();
         }
 
-        $dockerImage = $_ENV['AGENT_DOCKER_IMAGE'] ?? getenv('AGENT_DOCKER_IMAGE') ?: '';
+        $apiKey = $_ENV['ANTHROPIC_API_KEY'] ?? getenv('ANTHROPIC_API_KEY') ?: '';
+        $model = $_ENV['ANTHROPIC_MODEL'] ?? getenv('ANTHROPIC_MODEL') ?: 'claude-sonnet-4-6';
 
-        if ($dockerImage !== '') {
-            // Production: run agent inside Docker container, pass API key
-            $apiKey = $_ENV['ANTHROPIC_API_KEY'] ?? getenv('ANTHROPIC_API_KEY') ?: '';
-            $command = ['docker', 'run', '--rm', '-i', '--network=host', '-e', 'ANTHROPIC_API_KEY='.$apiKey, $dockerImage, 'python', '/srv/agent/main.py'];
-        } else {
-            // Local dev: run agent directly via venv
-            $venv = $_ENV['AGENT_VENV'] ?? getenv('AGENT_VENV') ?: $projectRoot.'/agent/.venv';
-            $agentPath = $_ENV['AGENT_PATH'] ?? getenv('AGENT_PATH') ?: $projectRoot.'/agent/main.py';
-            $command = [$venv.'/bin/python', $agentPath];
+        $tools = $this->buildAgentTools($accountId, $tenantId);
+
+        return new NativeAgentClient($apiKey, $tools, $model);
+    }
+
+    /**
+     * @return list<AgentToolInterface>
+     */
+    private function buildAgentTools(string $accountId, string $tenantId): array
+    {
+        $tools = [];
+
+        // Google tools (Gmail + Calendar) — requires GoogleTokenManager
+        try {
+            $tokenManager = $this->resolveGoogleTokenManager();
+            if ($tokenManager !== null) {
+                $tools[] = new GmailListTool($tokenManager, $accountId);
+                $tools[] = new GmailReadTool($tokenManager, $accountId);
+                $tools[] = new GmailSendTool($tokenManager, $accountId);
+                $tools[] = new CalendarListTool($tokenManager, $accountId);
+                $tools[] = new CalendarCreateTool($tokenManager, $accountId);
+            }
+        } catch (\Throwable) {
+            // Google integration not configured, skip Gmail/Calendar tools
         }
 
-        return new SubprocessChatClient($command);
+        // Workspace tools
+        try {
+            $workspaceStorage = $this->entityTypeManager->getStorage('workspace');
+            $workspaceRepo = new StorageRepositoryAdapter($workspaceStorage);
+            $tools[] = new WorkspaceListTool($workspaceRepo, $tenantId);
+            $tools[] = new WorkspaceCreateTool($workspaceRepo, $tenantId, $accountId);
+            $tools[] = new WorkspaceDeleteTool($workspaceRepo, $tenantId);
+        } catch (\Throwable) {
+            // Workspace entity type not registered
+        }
+
+        // Commitment tools
+        try {
+            $commitmentStorage = $this->entityTypeManager->getStorage('commitment');
+            $commitmentRepo = new StorageRepositoryAdapter($commitmentStorage);
+            $tools[] = new CommitmentListTool($commitmentRepo, $tenantId);
+            $tools[] = new CommitmentUpdateTool($commitmentRepo, $tenantId);
+        } catch (\Throwable) {
+            // Commitment entity type not registered
+        }
+
+        // Brief generation tool
+        try {
+            $eventStorage = $this->entityTypeManager->getStorage('mc_event');
+            $commitmentStorage = $this->entityTypeManager->getStorage('commitment');
+            $skillStorage = $this->entityTypeManager->getStorage('skill');
+            $eventRepo = new StorageRepositoryAdapter($eventStorage);
+            $commitmentRepo = new StorageRepositoryAdapter($commitmentStorage);
+            $skillRepo = new StorageRepositoryAdapter($skillStorage);
+            $driftDetector = new DriftDetector($commitmentRepo);
+
+            $personRepo = null;
+            try {
+                $personRepo = new StorageRepositoryAdapter($this->entityTypeManager->getStorage('person'));
+            } catch (\Throwable) {
+            }
+
+            $triageRepo = null;
+            try {
+                $triageRepo = new StorageRepositoryAdapter($this->entityTypeManager->getStorage('triage_entry'));
+            } catch (\Throwable) {
+            }
+
+            $assembler = new DayBriefAssembler($eventRepo, $commitmentRepo, $driftDetector, $personRepo, $skillRepo, null, null, $triageRepo);
+            $tools[] = new BriefGenerateTool($assembler, $tenantId);
+        } catch (\Throwable) {
+            // Brief dependencies not available
+        }
+
+        return $tools;
+    }
+
+    private function resolveGoogleTokenManager(): ?GoogleTokenManagerInterface
+    {
+        $clientId = $_ENV['GOOGLE_CLIENT_ID'] ?? getenv('GOOGLE_CLIENT_ID') ?: '';
+        $clientSecret = $_ENV['GOOGLE_CLIENT_SECRET'] ?? getenv('GOOGLE_CLIENT_SECRET') ?: '';
+
+        if ($clientId === '' || $clientSecret === '') {
+            return null;
+        }
+
+        return new GoogleTokenManager(
+            $this->entityTypeManager,
+            $clientId,
+            $clientSecret,
+        );
     }
 
     private function generateUuid(): string

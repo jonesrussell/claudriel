@@ -6,7 +6,7 @@ namespace Claudriel\Tests\Unit\Controller;
 
 use Claudriel\Access\AuthenticatedAccount;
 use Claudriel\Controller\ChatStreamController;
-use Claudriel\Domain\Chat\SubprocessChatClient;
+use Claudriel\Domain\Chat\NativeAgentClient;
 use Claudriel\Entity\Account;
 use Claudriel\Entity\ChatMessage;
 use Claudriel\Entity\ChatSession;
@@ -78,14 +78,10 @@ final class ChatStreamControllerTest extends TestCase
         }
     }
 
-    public function test_stream_forwards_sanitized_progress_events_from_subprocess(): void
+    public function test_stream_emits_progress_and_token_events(): void
     {
         $originalKey = getenv('ANTHROPIC_API_KEY');
-        $originalSecret = getenv('AGENT_INTERNAL_SECRET');
-        $originalApiUrl = getenv('CLAUDRIEL_API_URL');
         putenv('ANTHROPIC_API_KEY=test-key');
-        putenv('AGENT_INTERNAL_SECRET=test-secret-that-is-at-least-32-bytes-long');
-        putenv('CLAUDRIEL_API_URL=http://localhost:8088');
 
         $etm = $this->buildEntityTypeManager();
 
@@ -101,26 +97,9 @@ final class ChatStreamControllerTest extends TestCase
             'created_at' => date('c'),
         ]));
 
-        // Create a mock script that emits progress + token events
-        $script = sys_get_temp_dir().'/mock_agent_progress_'.uniqid().'.php';
-        file_put_contents($script, <<<'PHP'
-        <?php
-        // Read stdin (the request JSON) and discard
-        file_get_contents('php://stdin');
-        echo json_encode(['event' => 'tool_call', 'tool' => 'calendar_list', 'args' => []]) . "\n";
-        echo json_encode(['event' => 'tool_result', 'tool' => 'calendar_list', 'result' => ['items' => []]]) . "\n";
-        echo json_encode(['event' => 'message', 'content' => 'Today looks clear.']) . "\n";
-        echo json_encode(['event' => 'done']) . "\n";
-        PHP);
-
         $controller = new ChatStreamController(
             $etm,
-            subprocessClientFactory: static function () use ($script) {
-                return new SubprocessChatClient(
-                    command: [PHP_BINARY, $script],
-                    timeoutSeconds: 10,
-                );
-            },
+            agentClientFactory: static fn (): NativeAgentClient => self::createMockAgent(),
         );
 
         $response = $controller->stream(['messageId' => 'msg-6'], [], null, null);
@@ -140,33 +119,17 @@ final class ChatStreamControllerTest extends TestCase
         self::assertStringContainsString('event: chat-token', $output);
         self::assertStringContainsString('event: chat-done', $output);
 
-        unlink($script);
-
         if ($originalKey !== false) {
             putenv("ANTHROPIC_API_KEY={$originalKey}");
         } else {
             putenv('ANTHROPIC_API_KEY');
-        }
-        if ($originalSecret !== false) {
-            putenv("AGENT_INTERNAL_SECRET={$originalSecret}");
-        } else {
-            putenv('AGENT_INTERNAL_SECRET');
-        }
-        if ($originalApiUrl !== false) {
-            putenv("CLAUDRIEL_API_URL={$originalApiUrl}");
-        } else {
-            putenv('CLAUDRIEL_API_URL');
         }
     }
 
     public function test_stream_uses_tenant_uuid_not_entity_id_for_account_id(): void
     {
         $originalKey = getenv('ANTHROPIC_API_KEY');
-        $originalSecret = getenv('AGENT_INTERNAL_SECRET');
-        $originalApiUrl = getenv('CLAUDRIEL_API_URL');
         putenv('ANTHROPIC_API_KEY=test-key');
-        putenv('AGENT_INTERNAL_SECRET=test-secret-that-is-at-least-32-bytes-long');
-        putenv('CLAUDRIEL_API_URL=http://localhost:8088');
 
         $etm = $this->buildEntityTypeManager();
 
@@ -185,7 +148,6 @@ final class ChatStreamControllerTest extends TestCase
             'tenant_id' => $tenantUuid,
         ]));
 
-        // Create an Account entity with a sequential id different from the tenant UUID
         $account = new Account([
             'aid' => 42,
             'uuid' => $tenantUuid,
@@ -195,24 +157,40 @@ final class ChatStreamControllerTest extends TestCase
             'email_verified_at' => date('c'),
         ]);
 
-        // Mock script that writes stdin to a temp file so we can inspect the payload
-        $stdinCapture = sys_get_temp_dir().'/stdin_capture_'.uniqid().'.json';
-        $script = sys_get_temp_dir().'/mock_agent_acctid_'.uniqid().'.php';
-        file_put_contents($script, <<<PHP
-        <?php
-        \$stdin = file_get_contents('php://stdin');
-        file_put_contents('{$stdinCapture}', \$stdin);
-        echo json_encode(['event' => 'message', 'content' => 'Done.']) . "\\n";
-        echo json_encode(['event' => 'done']) . "\\n";
-        PHP);
-
+        // Capture the accountId passed to the agent client
+        $capturedAccountId = null;
         $controller = new ChatStreamController(
             $etm,
-            subprocessClientFactory: static function () use ($script) {
-                return new SubprocessChatClient(
-                    command: [PHP_BINARY, $script],
-                    timeoutSeconds: 10,
-                );
+            agentClientFactory: static function () use (&$capturedAccountId): NativeAgentClient {
+                return new class('fake-key', $capturedAccountId) extends NativeAgentClient
+                {
+                    private mixed $captureRef;
+
+                    public function __construct(string $apiKey, mixed &$captureRef = null)
+                    {
+                        parent::__construct($apiKey);
+                        $this->captureRef = &$captureRef;
+                    }
+
+                    public function stream(
+                        string $systemPrompt,
+                        array $messages,
+                        string $accountId,
+                        string $tenantId,
+                        string $apiBase,
+                        string $apiToken,
+                        \Closure $onToken,
+                        \Closure $onDone,
+                        \Closure $onError,
+                        ?\Closure $onProgress = null,
+                        ?string $model = null,
+                        ?\Closure $onNeedsContinuation = null,
+                    ): void {
+                        $this->captureRef = $accountId;
+                        $onToken('Done.');
+                        $onDone('Done.');
+                    }
+                };
             },
         );
 
@@ -227,30 +205,13 @@ final class ChatStreamControllerTest extends TestCase
         ob_end_flush();
         ob_get_clean();
 
-        // Verify the subprocess received the tenant UUID, not the sequential entity ID
-        self::assertFileExists($stdinCapture, 'Subprocess should have received stdin');
-        $payload = json_decode((string) file_get_contents($stdinCapture), true);
-        self::assertIsArray($payload);
-        self::assertSame($tenantUuid, $payload['account_id'], 'account_id must be the tenant UUID, not the sequential entity ID');
-        self::assertNotSame('42', $payload['account_id'], 'account_id must not be the sequential entity ID');
-
-        @unlink($script);
-        @unlink($stdinCapture);
+        // Verify the agent received the tenant UUID, not the sequential entity ID
+        self::assertSame($tenantUuid, $capturedAccountId, 'account_id must be the tenant UUID, not the sequential entity ID');
 
         if ($originalKey !== false) {
             putenv("ANTHROPIC_API_KEY={$originalKey}");
         } else {
             putenv('ANTHROPIC_API_KEY');
-        }
-        if ($originalSecret !== false) {
-            putenv("AGENT_INTERNAL_SECRET={$originalSecret}");
-        } else {
-            putenv('AGENT_INTERNAL_SECRET');
-        }
-        if ($originalApiUrl !== false) {
-            putenv("CLAUDRIEL_API_URL={$originalApiUrl}");
-        } else {
-            putenv('CLAUDRIEL_API_URL');
         }
     }
 
@@ -289,6 +250,43 @@ final class ChatStreamControllerTest extends TestCase
         if ($originalKey !== false) {
             putenv("ANTHROPIC_API_KEY={$originalKey}");
         }
+    }
+
+    private static function createMockAgent(): NativeAgentClient
+    {
+        return new class('fake-key') extends NativeAgentClient
+        {
+            public function __construct(string $apiKey)
+            {
+                parent::__construct($apiKey);
+            }
+
+            public function stream(
+                string $systemPrompt,
+                array $messages,
+                string $accountId,
+                string $tenantId,
+                string $apiBase,
+                string $apiToken,
+                \Closure $onToken,
+                \Closure $onDone,
+                \Closure $onError,
+                ?\Closure $onProgress = null,
+                ?string $model = null,
+                ?\Closure $onNeedsContinuation = null,
+            ): void {
+                if ($onProgress !== null) {
+                    $onProgress([
+                        'phase' => 'tool_call',
+                        'tool' => 'calendar_list',
+                        'summary' => 'Using calendar_list',
+                        'level' => 'info',
+                    ]);
+                }
+                $onToken('Today looks clear.');
+                $onDone('Today looks clear.');
+            }
+        };
     }
 
     private function buildEntityTypeManager(): EntityTypeManager
