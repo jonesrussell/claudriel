@@ -1,3 +1,13 @@
+pre-commit:
+  parallel: true
+  commands:
+    php-lint:
+      glob: "*.php"
+      run: vendor/bin/pint --dirty --test
+    python-lint:
+      glob: "agent/*.py"
+      run: python3 -m py_compile {staged_files}
+
 pre-push:
   parallel: false
   commands:
@@ -5,3 +15,7 @@ pre-push:
       run: composer lint
     analyse:
       run: composer analyse
+    php-tests:
+      run: vendor/bin/phpunit --testsuite Unit
+    python-eval-tests:
+      run: cd agent && python3 -m pytest tests/test_eval_schema.py tests/test_eval_judge.py tests/test_eval_report.py tests/test_eval_runner.py -q
