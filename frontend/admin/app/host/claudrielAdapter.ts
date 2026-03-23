@@ -17,18 +17,37 @@ const LABEL_FIELDS: Record<string, string> = {
   taxonomy_vocabulary: 'name',
 }
 
+/** Fields that are TextValue types (text_long) and need { value } wrapping for mutations. */
+const TEXT_VALUE_FIELDS: Record<string, string[]> = {
+  workspace: ['saved_context'],
+  triage_entry: ['raw_payload'],
+}
+
+/** Wrap plain strings into TextValueInput format for text_long fields. */
+function wrapTextValues(type: string, attrs: Record<string, any>): Record<string, any> {
+  const textFields = TEXT_VALUE_FIELDS[type]
+  if (!textFields) return attrs
+  const out = { ...attrs }
+  for (const field of textFields) {
+    if (field in out && typeof out[field] === 'string') {
+      out[field] = { value: out[field] }
+    }
+  }
+  return out
+}
+
 /** Fields to request per GraphQL entity type. */
 const GRAPHQL_FIELDS: Record<string, string> = {
   commitment: 'uuid title status workflow_state confidence direction due_date person_uuid source tenant_id created_at updated_at',
   person: 'uuid name email tier source tenant_id latest_summary last_interaction_at last_inbox_category created_at updated_at',
   project: 'uuid name description status account_id tenant_id created_at updated_at',
-  workspace: 'uuid name description saved_context account_id tenant_id mode status created_at updated_at',
+  workspace: 'uuid name description saved_context { value } account_id tenant_id mode status created_at updated_at',
   repo: 'uuid owner name full_name url default_branch local_path account_id tenant_id created_at updated_at',
   project_repo: 'uuid project_uuid repo_uuid created_at',
   workspace_project: 'uuid workspace_uuid project_uuid created_at',
   workspace_repo: 'uuid workspace_uuid repo_uuid is_active created_at',
   schedule_entry: 'uuid title starts_at ends_at notes source status external_id calendar_id recurring_series_id tenant_id created_at updated_at',
-  triage_entry: 'uuid sender_name sender_email summary status source tenant_id occurred_at external_id content_hash raw_payload created_at updated_at',
+  triage_entry: 'uuid sender_name sender_email summary status source tenant_id occurred_at external_id content_hash raw_payload { value } created_at updated_at',
   judgment_rule: 'uuid rule_text context source confidence application_count last_applied_at status tenant_id created_at updated_at',
   taxonomy_term: 'uuid name vid description weight parent_id status created_at updated_at',
   taxonomy_vocabulary: 'uuid name description weight created_at updated_at',
@@ -51,6 +70,17 @@ function fieldsFor(type: string): string {
   return fields
 }
 
+/** Flatten GraphQL TextValue objects ({ value: "..." }) to plain strings. */
+function flattenTextValues(item: Record<string, any>): Record<string, any> {
+  const out: Record<string, any> = {}
+  for (const [key, val] of Object.entries(item)) {
+    out[key] = val !== null && typeof val === 'object' && 'value' in val && Object.keys(val).length === 1
+      ? val.value
+      : val
+  }
+  return out
+}
+
 function toResource(type: string, item: Record<string, any>): JsonApiResource {
   const id = typeof item.uuid === 'string' && item.uuid !== ''
     ? item.uuid
@@ -59,7 +89,7 @@ function toResource(type: string, item: Record<string, any>): JsonApiResource {
   return {
     type,
     id,
-    attributes: { ...item },
+    attributes: flattenTextValues(item),
   }
 }
 
@@ -145,7 +175,7 @@ export const claudrielHostAdapter: HostAdapter = {
       const fields = fieldsFor(type)
       const data = await graphqlFetch<Record<string, Record<string, any>>>(
         `mutation($input: ${pascal}CreateInput!) { create${pascal}(input: $input) { ${fields} } }`,
-        { input: attributes },
+        { input: wrapTextValues(type, attributes) },
       )
       const created = data[`create${pascal}`]
       if (!created) throw new Error(`GraphQL: create ${type} returned no data`)
@@ -157,7 +187,7 @@ export const claudrielHostAdapter: HostAdapter = {
       const fields = fieldsFor(type)
       const data = await graphqlFetch<Record<string, Record<string, any>>>(
         `mutation($id: ID!, $input: ${pascal}UpdateInput!) { update${pascal}(id: $id, input: $input) { ${fields} } }`,
-        { id, input: attributes },
+        { id, input: wrapTextValues(type, attributes) },
       )
       const updated = data[`update${pascal}`]
       if (!updated) throw new Error(`GraphQL: update ${type} returned no data`)
