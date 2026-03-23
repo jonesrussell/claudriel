@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace Claudriel\Tests\Unit\Middleware;
 
-use Claudriel\Middleware\TelescopeRequestMiddleware;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Waaseyaa\Foundation\Middleware\HttpHandlerInterface;
+use Waaseyaa\Telescope\Middleware\TelescopeRequestMiddleware;
 use Waaseyaa\Telescope\Storage\SqliteTelescopeStore;
 use Waaseyaa\Telescope\TelescopeServiceProvider as WaaseyaaTelescopeServiceProvider;
 

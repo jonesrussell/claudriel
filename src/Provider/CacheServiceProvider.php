@@ -10,7 +10,7 @@ use Waaseyaa\Cache\CacheConfiguration;
 use Waaseyaa\Cache\CacheFactory;
 use Waaseyaa\Cache\CacheTagsInvalidator;
 use Waaseyaa\Cache\Listener\EntityCacheInvalidator;
-use Waaseyaa\Entity\Event\EntityEvents;
+use Waaseyaa\Cache\Listener\EntityCacheSubscriber;
 use Waaseyaa\Foundation\ServiceProvider\ServiceProvider;
 
 final class CacheServiceProvider extends ServiceProvider
@@ -57,17 +57,7 @@ final class CacheServiceProvider extends ServiceProvider
 
     public function wireInvalidator(EventDispatcherInterface $dispatcher): void
     {
-        $invalidator = $this->getEntityCacheInvalidator();
-
-        $dispatcher->addListener(
-            EntityEvents::POST_SAVE->value,
-            [$invalidator, 'onPostSave'],
-        );
-
-        $dispatcher->addListener(
-            EntityEvents::POST_DELETE->value,
-            [$invalidator, 'onPostDelete'],
-        );
+        EntityCacheSubscriber::register($dispatcher, $this->getEntityCacheInvalidator());
     }
 
     public function getEntityCacheInvalidator(): EntityCacheInvalidator

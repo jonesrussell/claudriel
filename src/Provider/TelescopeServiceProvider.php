@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Claudriel\Provider;
 
-use Claudriel\Middleware\TelescopeRequestMiddleware;
 use Waaseyaa\Entity\EntityTypeManager;
 use Waaseyaa\Foundation\ServiceProvider\ServiceProvider;
+use Waaseyaa\Telescope\Middleware\TelescopeRequestMiddleware;
 use Waaseyaa\Telescope\Storage\SqliteTelescopeStore;
 use Waaseyaa\Telescope\TelescopeServiceProvider as WaaseyaaTelescopeServiceProvider;
 
