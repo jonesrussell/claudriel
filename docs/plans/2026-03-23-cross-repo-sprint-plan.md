@@ -289,15 +289,22 @@ Phase 3C: Claudriel Frontend Polish ──────────────�
 
 ---
 
-## Decision Points Before Implementation
+## Decisions (Locked 2026-03-23)
 
-These questions need answers before code is written:
+### 1. Session `cookie_secure` — Conditional on request scheme
+`session.cookie_secure = $request->isSecure() ? 1 : 0`. Security flags follow the transport, not the environment. httponly, samesite, strict_mode are always on.
 
-1. **Session cookie_secure (#543):** Should `cookie_secure` be conditional on HTTPS, or always on (breaking local HTTP dev)?
-2. **Entity type package (#535-539):** Do Workspace/Project/Repo live in a new `workspace` package, in `entity`, or split across existing packages?
-3. **Junction entity pattern (#539):** No precedent exists. What's the pattern? Separate entity type per junction, or generic junction entity with type field?
-4. **Claudriel Workspace migration (#406/#535):** When Waaseyaa gets a framework Workspace entity, how does Claudriel's existing Workspace entity relate? Extend? Replace? Coexist?
-5. **Token telemetry storage (#408):** New entity type, or additional fields on ChatSession?
+### 2. Entity type package — New `project` package
+All four entities (Workspace, Project, Repo, Milestone) plus junctions live in a single `project` package. Packages represent domain aggregates, not technical categories.
+
+### 3. Junction entity pattern — Separate entity types
+One entity type per junction (ProjectRepo, WorkspaceProject, WorkspaceRepo, MilestoneProject). Junctions are first-class entities with type safety, per-junction access control, and GraphQL fields. Not generic metadata.
+
+### 4. Claudriel Workspace migration — Claudriel drives the framework design
+Extract the framework Workspace from Claudriel's existing entity (common fields: account_id, tenant_id, description, status). Claudriel extends it for app-specific fields (saved_context, mode). Framework entities emerge from real consumers, not speculation.
+
+### 5. Token telemetry — TokenUsage entity
+Separate entity with per-turn granularity: session_uuid, turn_number, model, input_tokens, output_tokens, cache_read_tokens, cache_write_tokens. Telemetry is append-only, queryable, and never aggregated at write time.
 
 ---
 
