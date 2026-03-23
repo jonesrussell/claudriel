@@ -73,6 +73,7 @@
                 "Claudriel\\Provider\\StateServiceProvider",
                 "Claudriel\\Provider\\MailServiceProvider",
                 "Waaseyaa\\Relationship\\RelationshipServiceProvider",
+                "Claudriel\\Provider\\AiVectorServiceProvider",
                 "Claudriel\\Provider\\ClaudrielServiceProvider",
                 "Claudriel\\Provider\\I18nServiceProvider",
                 "Claudriel\\Provider\\SearchToolServiceProvider",
