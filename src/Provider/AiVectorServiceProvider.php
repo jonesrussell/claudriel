@@ -20,7 +20,11 @@ final class AiVectorServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        $dispatcher = $this->resolve(EventDispatcherInterface::class);
+        try {
+            $dispatcher = $this->resolve(EventDispatcherInterface::class);
+        } catch (\Throwable) {
+            return;
+        }
         if (! $dispatcher instanceof EventDispatcherInterface) {
             return;
         }
