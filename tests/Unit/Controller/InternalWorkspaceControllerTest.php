@@ -103,6 +103,11 @@ final class InternalWorkspaceControllerTest extends TestCase
         self::assertSame('persistent', $data['mode']);
         self::assertArrayHasKey('uuid', $data);
         self::assertArrayHasKey('created_at', $data);
+
+        // Verify account_id was set from the HMAC token (#495)
+        $workspaces = $this->repo->findBy(['uuid' => $data['uuid']]);
+        self::assertCount(1, $workspaces);
+        self::assertSame('acct-123', $workspaces[0]->get('account_id'));
     }
 
     public function test_create_rejects_missing_name(): void

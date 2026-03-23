@@ -82,7 +82,8 @@ final class InternalWorkspaceController
 
     public function create(array $params = [], array $query = [], ?AccountInterface $account = null, ?Request $httpRequest = null): SsrResponse
     {
-        if ($this->authenticate($httpRequest) === null) {
+        $authenticatedId = $this->authenticate($httpRequest);
+        if ($authenticatedId === null) {
             return $this->jsonError('Unauthorized', 401);
         }
 
@@ -106,6 +107,7 @@ final class InternalWorkspaceController
             'description' => $description,
             'mode' => $mode,
             'status' => 'active',
+            'account_id' => $authenticatedId,
             'tenant_id' => $this->resolveTenantId($httpRequest),
         ]);
         $this->workspaceRepo->save($workspace);

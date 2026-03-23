@@ -31,9 +31,7 @@ final class WorkspaceAccessPolicy implements AccessPolicyInterface
             return AccessResult::allowed('Admin permission.');
         }
 
-        $accountId = (string) $account->id();
-
-        if ($entity->get('account_id') !== $accountId) {
+        if (! $this->isOwner($entity, $account)) {
             return AccessResult::forbidden('Workspaces are personal. Only the owner can access.');
         }
 
@@ -50,5 +48,34 @@ final class WorkspaceAccessPolicy implements AccessPolicyInterface
         }
 
         return AccessResult::allowed('Authenticated user can create workspaces.');
+    }
+
+    /**
+     * Match workspace owner by numeric ID or UUID.
+     *
+     * The agent subprocess creates workspaces with account_id set to the
+     * account UUID (from the HMAC token), while the admin SPA session
+     * resolves $account->id() as the numeric entity ID. Accept either.
+     */
+    private function isOwner(EntityInterface $entity, AccountInterface $account): bool
+    {
+        $storedId = $entity->get('account_id');
+        if ($storedId === null || $storedId === '') {
+            return false;
+        }
+
+        $storedId = (string) $storedId;
+
+        // Match numeric entity ID
+        if ($storedId === (string) $account->id()) {
+            return true;
+        }
+
+        // Match UUID (agent subprocess path)
+        if ($account instanceof AuthenticatedAccount && $storedId === $account->getUuid()) {
+            return true;
+        }
+
+        return false;
     }
 }

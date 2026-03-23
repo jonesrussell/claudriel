@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Claudriel\Tests\Feature\Access;
 
+use Claudriel\Access\AuthenticatedAccount;
 use Claudriel\Access\WorkspaceAccessPolicy;
+use Claudriel\Entity\Account;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
@@ -102,5 +104,35 @@ final class WorkspaceAccessPolicyTest extends TestCase
         $result = $this->policy->createAccess('workspace', 'workspace', $account);
 
         self::assertTrue($result->isUnauthenticated());
+    }
+
+    #[Test]
+    public function owner_matched_by_uuid_from_agent_tool(): void
+    {
+        $accountUuid = 'a1b2c3d4-e5f6-4789-abcd-ef0123456789';
+        $entity = $this->createEntity('workspace', ['account_id' => $accountUuid]);
+
+        // Simulate AuthenticatedAccount where id() returns numeric but getUuid() matches
+        $account = new AuthenticatedAccount(new Account([
+            'aid' => 42,
+            'uuid' => $accountUuid,
+            'name' => 'Test User',
+            'email' => 'test@example.com',
+        ]));
+
+        $result = $this->policy->access($entity, 'view', $account);
+
+        self::assertTrue($result->isAllowed(), 'Owner should be matched by UUID when account_id stores a UUID.');
+    }
+
+    #[Test]
+    public function null_account_id_denies_access(): void
+    {
+        $entity = $this->createEntity('workspace', ['account_id' => null]);
+        $account = $this->createAuthenticatedAccount(42, 'tenant-1');
+
+        $result = $this->policy->access($entity, 'view', $account);
+
+        self::assertTrue($result->isForbidden(), 'Workspace without account_id should deny access.');
     }
 }
