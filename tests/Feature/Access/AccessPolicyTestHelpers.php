@@ -21,12 +21,19 @@ trait AccessPolicyTestHelpers
              */
             public function __construct(
                 private readonly string $entityTypeId,
-                private readonly array $fields,
+                private array $fields,
             ) {}
 
             public function get(string $field): mixed
             {
                 return $this->fields[$field] ?? null;
+            }
+
+            public function set(string $name, mixed $value): static
+            {
+                $this->fields[$name] = $value;
+
+                return $this;
             }
 
             public function id(): int|string|null
