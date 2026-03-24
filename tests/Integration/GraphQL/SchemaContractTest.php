@@ -5,7 +5,12 @@ declare(strict_types=1);
 namespace Claudriel\Tests\Integration\GraphQL;
 
 use Claudriel\Entity\Commitment;
+use Claudriel\Entity\FilteredProspect;
 use Claudriel\Entity\Person;
+use Claudriel\Entity\PipelineConfig;
+use Claudriel\Entity\Prospect;
+use Claudriel\Entity\ProspectAttachment;
+use Claudriel\Entity\ProspectAudit;
 use Claudriel\Entity\ScheduleEntry;
 use Claudriel\Entity\TriageEntry;
 use Claudriel\Entity\Workspace;
@@ -150,6 +155,118 @@ final class SchemaContractTest extends TestCase
                 'updated_at' => ['type' => 'timestamp', 'readOnly' => true],
             ],
         ));
+
+        $this->entityTypeManager->registerCoreEntityType(new EntityType(
+            id: 'prospect',
+            label: 'Prospect',
+            class: Prospect::class,
+            keys: ['id' => 'prid', 'uuid' => 'uuid', 'label' => 'name'],
+            fieldDefinitions: [
+                'prid' => ['type' => 'integer', 'readOnly' => true],
+                'uuid' => ['type' => 'string', 'readOnly' => true],
+                'name' => ['type' => 'string', 'required' => true],
+                'description' => ['type' => 'text_long'],
+                'stage' => ['type' => 'string'],
+                'value' => ['type' => 'string'],
+                'contact_name' => ['type' => 'string'],
+                'contact_email' => ['type' => 'string'],
+                'source_url' => ['type' => 'string'],
+                'closing_date' => ['type' => 'string'],
+                'sector' => ['type' => 'string'],
+                'qualify_rating' => ['type' => 'integer'],
+                'qualify_keywords' => ['type' => 'text_long'],
+                'qualify_confidence' => ['type' => 'float'],
+                'qualify_notes' => ['type' => 'string'],
+                'qualify_raw' => ['type' => 'text_long'],
+                'draft_email_subject' => ['type' => 'string'],
+                'draft_email_body' => ['type' => 'text_long'],
+                'draft_pdf_markdown' => ['type' => 'text_long'],
+                'draft_pdf_latex' => ['type' => 'text_long'],
+                'external_id' => ['type' => 'string'],
+                'workspace_uuid' => ['type' => 'string'],
+                'person_uuid' => ['type' => 'string'],
+                'tenant_id' => ['type' => 'string'],
+                'deleted_at' => ['type' => 'datetime'],
+                'created_at' => ['type' => 'timestamp', 'readOnly' => true],
+                'updated_at' => ['type' => 'timestamp', 'readOnly' => true],
+            ],
+        ));
+
+        $this->entityTypeManager->registerCoreEntityType(new EntityType(
+            id: 'prospect_attachment',
+            label: 'Prospect Attachment',
+            class: ProspectAttachment::class,
+            keys: ['id' => 'paid', 'uuid' => 'uuid', 'label' => 'filename'],
+            fieldDefinitions: [
+                'paid' => ['type' => 'integer', 'readOnly' => true],
+                'uuid' => ['type' => 'string', 'readOnly' => true],
+                'prospect_uuid' => ['type' => 'string'],
+                'filename' => ['type' => 'string', 'required' => true],
+                'storage_path' => ['type' => 'string'],
+                'content_type' => ['type' => 'string'],
+                'workspace_uuid' => ['type' => 'string'],
+                'tenant_id' => ['type' => 'string'],
+                'created_at' => ['type' => 'timestamp', 'readOnly' => true],
+            ],
+        ));
+
+        $this->entityTypeManager->registerCoreEntityType(new EntityType(
+            id: 'prospect_audit',
+            label: 'Prospect Audit',
+            class: ProspectAudit::class,
+            keys: ['id' => 'paud', 'uuid' => 'uuid'],
+            fieldDefinitions: [
+                'paud' => ['type' => 'integer', 'readOnly' => true],
+                'uuid' => ['type' => 'string', 'readOnly' => true],
+                'prospect_uuid' => ['type' => 'string'],
+                'action' => ['type' => 'string', 'required' => true],
+                'payload' => ['type' => 'text_long'],
+                'confirmed_at' => ['type' => 'datetime'],
+                'tenant_id' => ['type' => 'string'],
+                'created_at' => ['type' => 'timestamp', 'readOnly' => true],
+            ],
+        ));
+
+        $this->entityTypeManager->registerCoreEntityType(new EntityType(
+            id: 'filtered_prospect',
+            label: 'Filtered Prospect',
+            class: FilteredProspect::class,
+            keys: ['id' => 'fpid', 'uuid' => 'uuid', 'label' => 'title'],
+            fieldDefinitions: [
+                'fpid' => ['type' => 'integer', 'readOnly' => true],
+                'uuid' => ['type' => 'string', 'readOnly' => true],
+                'external_id' => ['type' => 'string'],
+                'title' => ['type' => 'string', 'required' => true],
+                'description' => ['type' => 'text_long'],
+                'reject_reason' => ['type' => 'string'],
+                'import_batch' => ['type' => 'string'],
+                'workspace_uuid' => ['type' => 'string'],
+                'tenant_id' => ['type' => 'string'],
+                'created_at' => ['type' => 'timestamp', 'readOnly' => true],
+            ],
+        ));
+
+        $this->entityTypeManager->registerCoreEntityType(new EntityType(
+            id: 'pipeline_config',
+            label: 'Pipeline Config',
+            class: PipelineConfig::class,
+            keys: ['id' => 'pcid', 'uuid' => 'uuid', 'label' => 'name'],
+            fieldDefinitions: [
+                'pcid' => ['type' => 'integer', 'readOnly' => true],
+                'uuid' => ['type' => 'string', 'readOnly' => true],
+                'name' => ['type' => 'string', 'required' => true],
+                'workspace_uuid' => ['type' => 'string', 'required' => true],
+                'source_type' => ['type' => 'string'],
+                'source_url' => ['type' => 'string'],
+                'sectors' => ['type' => 'text_long'],
+                'company_profile' => ['type' => 'text_long'],
+                'qualification_prompt_override' => ['type' => 'text_long'],
+                'auto_qualify' => ['type' => 'boolean'],
+                'tenant_id' => ['type' => 'string'],
+                'created_at' => ['type' => 'timestamp', 'readOnly' => true],
+                'updated_at' => ['type' => 'timestamp', 'readOnly' => true],
+            ],
+        ));
     }
 
     private function buildSchema(): Schema
@@ -187,6 +304,16 @@ final class SchemaContractTest extends TestCase
         self::assertTrue($queryType->hasField('scheduleEntryList'));
         self::assertTrue($queryType->hasField('triageEntry'));
         self::assertTrue($queryType->hasField('triageEntryList'));
+        self::assertTrue($queryType->hasField('prospect'));
+        self::assertTrue($queryType->hasField('prospectList'));
+        self::assertTrue($queryType->hasField('prospectAttachment'));
+        self::assertTrue($queryType->hasField('prospectAttachmentList'));
+        self::assertTrue($queryType->hasField('prospectAudit'));
+        self::assertTrue($queryType->hasField('prospectAuditList'));
+        self::assertTrue($queryType->hasField('filteredProspect'));
+        self::assertTrue($queryType->hasField('filteredProspectList'));
+        self::assertTrue($queryType->hasField('pipelineConfig'));
+        self::assertTrue($queryType->hasField('pipelineConfigList'));
     }
 
     #[Test]
@@ -540,6 +667,147 @@ final class SchemaContractTest extends TestCase
         self::assertTrue($listType->hasField('total'), 'triageEntryList missing field: total');
 
         self::assertSame('Int', $this->unwrapTypeName($listType->getField('total')->getType()));
+    }
+
+    #[Test]
+    public function prospect_queries_and_mutations_exist(): void
+    {
+        $schema = $this->buildSchema();
+        $queryType = $schema->getQueryType();
+        $mutationType = $schema->getMutationType();
+
+        self::assertNotNull($queryType);
+        self::assertNotNull($mutationType);
+
+        self::assertTrue($queryType->hasField('prospect'));
+        self::assertTrue($queryType->hasField('prospectList'));
+        self::assertTrue($mutationType->hasField('createProspect'));
+        self::assertTrue($mutationType->hasField('updateProspect'));
+        self::assertTrue($mutationType->hasField('deleteProspect'));
+    }
+
+    #[Test]
+    public function prospect_type_has_expected_fields(): void
+    {
+        $schema = $this->buildSchema();
+        $queryType = $schema->getQueryType();
+        $type = $queryType->getField('prospect')->getType();
+
+        self::assertInstanceOf(ObjectType::class, $type);
+
+        $expectedFields = ['id', 'uuid', 'name', 'description', 'stage', 'value', 'contact_name', 'contact_email', 'source_url', 'closing_date', 'sector', 'qualify_rating', 'qualify_confidence', 'external_id', 'workspace_uuid', 'person_uuid', 'tenant_id', 'created_at', 'updated_at'];
+        foreach ($expectedFields as $fieldName) {
+            self::assertTrue($type->hasField($fieldName), "Prospect missing field: {$fieldName}");
+        }
+
+        self::assertSame('Int', $this->unwrapTypeName($type->getField('qualify_rating')->getType()));
+        self::assertSame('Float', $this->unwrapTypeName($type->getField('qualify_confidence')->getType()));
+    }
+
+    #[Test]
+    public function prospect_create_input_excludes_read_only_fields(): void
+    {
+        $schema = $this->buildSchema();
+        $mutationType = $schema->getMutationType();
+        $createField = $mutationType->getField('createProspect');
+        $inputType = $createField->getArg('input')->getType();
+
+        if ($inputType instanceof NonNull) {
+            $inputType = $inputType->getWrappedType();
+        }
+
+        self::assertInstanceOf(InputObjectType::class, $inputType);
+
+        self::assertTrue($inputType->hasField('name'));
+        self::assertTrue($inputType->hasField('stage'));
+        self::assertTrue($inputType->hasField('workspace_uuid'));
+
+        self::assertFalse($inputType->hasField('prid'));
+        self::assertFalse($inputType->hasField('id'));
+        self::assertFalse($inputType->hasField('uuid'));
+        self::assertFalse($inputType->hasField('created_at'));
+        self::assertFalse($inputType->hasField('updated_at'));
+    }
+
+    #[Test]
+    public function prospect_attachment_queries_and_mutations_exist(): void
+    {
+        $schema = $this->buildSchema();
+        $queryType = $schema->getQueryType();
+        $mutationType = $schema->getMutationType();
+
+        self::assertTrue($queryType->hasField('prospectAttachment'));
+        self::assertTrue($queryType->hasField('prospectAttachmentList'));
+        self::assertTrue($mutationType->hasField('createProspectAttachment'));
+        self::assertTrue($mutationType->hasField('deleteProspectAttachment'));
+    }
+
+    #[Test]
+    public function prospect_audit_queries_and_mutations_exist(): void
+    {
+        $schema = $this->buildSchema();
+        $queryType = $schema->getQueryType();
+        $mutationType = $schema->getMutationType();
+
+        self::assertTrue($queryType->hasField('prospectAudit'));
+        self::assertTrue($queryType->hasField('prospectAuditList'));
+        self::assertTrue($mutationType->hasField('createProspectAudit'));
+        self::assertTrue($mutationType->hasField('deleteProspectAudit'));
+    }
+
+    #[Test]
+    public function filtered_prospect_queries_and_mutations_exist(): void
+    {
+        $schema = $this->buildSchema();
+        $queryType = $schema->getQueryType();
+        $mutationType = $schema->getMutationType();
+
+        self::assertTrue($queryType->hasField('filteredProspect'));
+        self::assertTrue($queryType->hasField('filteredProspectList'));
+        self::assertTrue($mutationType->hasField('createFilteredProspect'));
+        self::assertTrue($mutationType->hasField('deleteFilteredProspect'));
+    }
+
+    #[Test]
+    public function pipeline_config_queries_and_mutations_exist(): void
+    {
+        $schema = $this->buildSchema();
+        $queryType = $schema->getQueryType();
+        $mutationType = $schema->getMutationType();
+
+        self::assertTrue($queryType->hasField('pipelineConfig'));
+        self::assertTrue($queryType->hasField('pipelineConfigList'));
+        self::assertTrue($mutationType->hasField('createPipelineConfig'));
+        self::assertTrue($mutationType->hasField('updatePipelineConfig'));
+        self::assertTrue($mutationType->hasField('deletePipelineConfig'));
+    }
+
+    #[Test]
+    public function pipeline_config_type_has_expected_fields(): void
+    {
+        $schema = $this->buildSchema();
+        $queryType = $schema->getQueryType();
+        $type = $queryType->getField('pipelineConfig')->getType();
+
+        self::assertInstanceOf(ObjectType::class, $type);
+
+        $expectedFields = ['id', 'uuid', 'name', 'workspace_uuid', 'source_type', 'source_url', 'sectors', 'company_profile', 'auto_qualify', 'tenant_id', 'created_at', 'updated_at'];
+        foreach ($expectedFields as $fieldName) {
+            self::assertTrue($type->hasField($fieldName), "PipelineConfig missing field: {$fieldName}");
+        }
+    }
+
+    #[Test]
+    public function prospect_list_returns_items_and_total(): void
+    {
+        $schema = $this->buildSchema();
+        $queryType = $schema->getQueryType();
+        $listField = $queryType->getField('prospectList');
+        $listType = $listField->getType();
+
+        self::assertInstanceOf(ObjectType::class, $listType);
+        self::assertTrue($listType->hasField('items'), 'prospectList missing field: items');
+        self::assertTrue($listType->hasField('total'), 'prospectList missing field: total');
     }
 
     private function unwrapTypeName(Type $type): string

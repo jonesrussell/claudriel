@@ -15,12 +15,20 @@ const LABEL_FIELDS: Record<string, string> = {
   repo: 'name',
   taxonomy_term: 'name',
   taxonomy_vocabulary: 'name',
+  prospect: 'name',
+  prospect_attachment: 'filename',
+  filtered_prospect: 'title',
+  pipeline_config: 'name',
 }
 
 /** Fields that are TextValue types (text_long) and need { value } wrapping for mutations. */
 const TEXT_VALUE_FIELDS: Record<string, string[]> = {
   workspace: ['saved_context'],
   triage_entry: ['raw_payload'],
+  prospect: ['description', 'qualify_keywords', 'qualify_raw', 'draft_email_body', 'draft_pdf_markdown', 'draft_pdf_latex'],
+  prospect_audit: ['payload'],
+  filtered_prospect: ['description'],
+  pipeline_config: ['sectors', 'company_profile', 'qualification_prompt_override'],
 }
 
 /** Wrap plain strings into TextValueInput format for text_long fields. */
@@ -51,6 +59,11 @@ const GRAPHQL_FIELDS: Record<string, string> = {
   judgment_rule: 'uuid rule_text context source confidence application_count last_applied_at status tenant_id created_at updated_at',
   taxonomy_term: 'uuid name vid description weight parent_id status created_at updated_at',
   taxonomy_vocabulary: 'uuid name description weight created_at updated_at',
+  prospect: 'uuid name description { value } stage value contact_name contact_email source_url closing_date sector qualify_rating qualify_keywords { value } qualify_confidence qualify_notes qualify_raw { value } draft_email_subject draft_email_body { value } draft_pdf_markdown { value } draft_pdf_latex { value } external_id workspace_uuid person_uuid tenant_id deleted_at created_at updated_at',
+  prospect_attachment: 'uuid prospect_uuid filename storage_path content_type workspace_uuid tenant_id created_at',
+  prospect_audit: 'uuid prospect_uuid action payload { value } confirmed_at tenant_id created_at',
+  filtered_prospect: 'uuid external_id title description { value } reject_reason import_batch workspace_uuid tenant_id created_at',
+  pipeline_config: 'uuid name workspace_uuid source_type source_url sectors { value } company_profile { value } qualification_prompt_override { value } auto_qualify tenant_id created_at updated_at',
 }
 
 function toPascalCase(s: string): string {
