@@ -19,6 +19,11 @@ final class PipelineNormalizeDraftController
 
     public function normalize(array $params = [], array $query = [], ?AccountInterface $account = null, ?Request $httpRequest = null): JsonResponse
     {
+        $authError = $this->requireApiKey($httpRequest);
+        if ($authError !== null) {
+            return $authError;
+        }
+
         $uuid = $params['uuid'] ?? '';
         if ($uuid === '') {
             return new JsonResponse(['error' => 'prospect uuid is required'], 400);
@@ -68,5 +73,26 @@ final class PipelineNormalizeDraftController
             'uuid' => $prospect->uuid(),
             'draft_pdf_markdown' => $normalized,
         ]);
+    }
+
+    private function requireApiKey(?Request $httpRequest): ?JsonResponse
+    {
+        if (! $httpRequest instanceof Request) {
+            return new JsonResponse(['error' => 'Unauthorized'], 401);
+        }
+
+        $header = $httpRequest->headers->get('Authorization', '');
+        if (! is_string($header) || ! str_starts_with($header, 'Bearer ')) {
+            return new JsonResponse(['error' => 'Unauthorized'], 401);
+        }
+
+        $token = substr($header, 7);
+        $validKey = $_ENV['CLAUDRIEL_API_KEY'] ?? getenv('CLAUDRIEL_API_KEY') ?: '';
+
+        if ($token === '' || $validKey === '' || $token !== $validKey) {
+            return new JsonResponse(['error' => 'Unauthorized'], 401);
+        }
+
+        return null;
     }
 }

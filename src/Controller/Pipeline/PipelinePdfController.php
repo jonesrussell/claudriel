@@ -24,6 +24,11 @@ final class PipelinePdfController
 
     public function generate(array $params = [], array $query = [], ?AccountInterface $account = null, ?Request $httpRequest = null): JsonResponse
     {
+        $authError = $this->requireApiKey($httpRequest);
+        if ($authError !== null) {
+            return $authError;
+        }
+
         $uuid = $params['uuid'] ?? '';
         $prospect = $this->loadProspect($uuid);
         if (!$prospect instanceof Prospect) {
@@ -73,7 +78,6 @@ final class PipelinePdfController
         return new JsonResponse([
             'uuid' => $attachment->uuid(),
             'filename' => $filename,
-            'storage_path' => $storedPath,
         ], 201);
     }
 
@@ -115,6 +119,27 @@ final class PipelinePdfController
         $latex = $builder->buildLatex($prospect, $config);
 
         return new Response($latex, 200, ['Content-Type' => 'text/plain; charset=utf-8']);
+    }
+
+    private function requireApiKey(?Request $httpRequest): ?JsonResponse
+    {
+        if (! $httpRequest instanceof Request) {
+            return new JsonResponse(['error' => 'Unauthorized'], 401);
+        }
+
+        $header = $httpRequest->headers->get('Authorization', '');
+        if (! is_string($header) || ! str_starts_with($header, 'Bearer ')) {
+            return new JsonResponse(['error' => 'Unauthorized'], 401);
+        }
+
+        $token = substr($header, 7);
+        $validKey = $_ENV['CLAUDRIEL_API_KEY'] ?? getenv('CLAUDRIEL_API_KEY') ?: '';
+
+        if ($token === '' || $validKey === '' || $token !== $validKey) {
+            return new JsonResponse(['error' => 'Unauthorized'], 401);
+        }
+
+        return null;
     }
 
     private function loadProspect(string $uuid): ?Prospect

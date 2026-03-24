@@ -72,18 +72,19 @@ final class ProspectIngestHandler implements IngestHandlerInterface
                 'workspace_uuid' => $workspaceUuid,
                 'tenant_id' => $data['tenant_id'] ?? null,
             ]);
-        }
 
-        $prospectStorage = $this->entityTypeManager->getStorage('prospect');
-        $prospectStorage->save($prospect);
+            // Upsert Person from contact info before first save
+            $personUuid = null;
+            $contactEmail = (string) ($payload['contact_email'] ?? '');
+            if ($contactEmail !== '') {
+                $personUuid = $this->upsertPerson($payload, $data);
+                $prospect->set('person_uuid', $personUuid);
+            }
 
-        // Upsert Person from contact info
-        $personUuid = null;
-        $contactEmail = (string) ($payload['contact_email'] ?? '');
-        if ($contactEmail !== '') {
-            $personUuid = $this->upsertPerson($payload, $data);
-            $prospect->set('person_uuid', $personUuid);
+            $prospectStorage = $this->entityTypeManager->getStorage('prospect');
             $prospectStorage->save($prospect);
+        } else {
+            $personUuid = null;
         }
 
         return array_filter([
