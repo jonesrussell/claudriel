@@ -24,7 +24,7 @@ const LABEL_FIELDS: Record<string, string> = {
 /** Fields that are TextValue types (text_long) and need { value } wrapping for mutations. */
 const TEXT_VALUE_FIELDS: Record<string, string[]> = {
   workspace: ['saved_context'],
-  triage_entry: ['raw_payload'],
+  triage_entry: [],
   prospect: ['description', 'qualify_keywords', 'qualify_raw', 'draft_email_body', 'draft_pdf_markdown', 'draft_pdf_latex'],
   prospect_audit: ['payload'],
   filtered_prospect: ['description'],
@@ -55,7 +55,7 @@ const GRAPHQL_FIELDS: Record<string, string> = {
   workspace_project: 'uuid workspace_uuid project_uuid created_at',
   workspace_repo: 'uuid workspace_uuid repo_uuid is_active created_at',
   schedule_entry: 'uuid title starts_at ends_at notes source status external_id calendar_id recurring_series_id tenant_id created_at updated_at',
-  triage_entry: 'uuid sender_name sender_email summary status source tenant_id occurred_at external_id content_hash raw_payload { value } created_at updated_at',
+  triage_entry: 'uuid sender_name sender_email summary status source tenant_id occurred_at external_id content_hash raw_payload created_at updated_at',
   judgment_rule: 'uuid rule_text context source confidence application_count last_applied_at status tenant_id created_at updated_at',
   taxonomy_term: 'uuid name vid description weight parent_id status created_at updated_at',
   taxonomy_vocabulary: 'uuid name description weight created_at updated_at',
