@@ -23,9 +23,18 @@ Chat → ChatStreamController → SubprocessChatClient
   → tools call back to /api/internal/* (HMAC Bearer auth)
   → InternalGoogleController → GoogleTokenManager → Google APIs
 
+Pipeline (lead management):
+  NorthCloud API → NorthCloudLeadNormalizer → ProspectIngestHandler
+  → McEvent (audit) + Prospect (stored) + Person (upserted from contact)
+  LeadFilterStep (AI relevance) → FilteredProspect (rejected) or Prospect (accepted)
+  LeadQualificationStep (AI) → qualify_rating, keywords, sector, confidence
+  PipelineConfig → per-workspace source URL, branding, sectors, auto_qualify
+  ProspectWorkflowPreset → lead > qualified > contacted > proposal > negotiation > won/lost
+  BrandedResponseBuilder → LatexPdfGenerator / HtmlPdfGenerator → ProspectAttachment
+
 GraphQL (waaseyaa/graphql):
   POST /graphql → auto-generated schema from entity types
-  Commitment, Person, Workspace, ScheduleEntry, TriageEntry fully migrated (REST controllers removed)
+  Commitment, Person, Workspace, ScheduleEntry, TriageEntry, Prospect, PipelineConfig fully migrated
   Frontend uses graphqlFetch() composables
 ```
 
@@ -61,6 +70,9 @@ Rule: higher layers import lower layers only. Never import from src/Command insi
 | `src/Controller/Chat*.php` | `claudriel:chat` | `docs/specs/chat.md` |
 | `src/Controller/InternalGoogle*` | `claudriel:chat` | `docs/specs/agent-subprocess.md` |
 | `agent/*` | `claudriel:chat` | `docs/specs/agent-subprocess.md` |
+| `src/Domain/Pipeline/*` | `claudriel` | `docs/specs/pipeline.md` |
+| `src/Controller/Pipeline/*` | `claudriel` | `docs/specs/pipeline.md` |
+| `src/Entity/Prospect*.php`, `src/Entity/FilteredProspect.php`, `src/Entity/PipelineConfig.php` | `claudriel` | `docs/specs/pipeline.md` |
 | `src/Controller/*, src/Command/*` | — | `docs/specs/web-cli.md` |
 | `src/Provider/*` | — | `docs/specs/infrastructure.md` |
 | `src/Entity/*`, `src/Provider/*`, `src/Access/*` | `waaseyaa-app-development` | `docs/specs/entity.md` |
@@ -186,3 +198,10 @@ All require HMAC Bearer token via `InternalApiTokenGenerator`. See `docs/specs/a
 - Workspace creation/deletion is handled by agent subprocess tools (`workspace_create`, `workspace_delete`, `repo_clone`), NOT by ChatStreamController regex (removed in #477); the agent handles intent parsing naturally
 - PHP built-in dev server (`php -S`) is single-threaded; agent callbacks hang while SSE streams hold the thread. Use `PHP_CLI_SERVER_WORKERS=4 php -S 0.0.0.0:8081 -t public` for local dev (#490)
 - `GitRepositoryManager` is NOT registered in the DI container; instantiate inline with `new GitRepositoryManager` (same pattern as `ClaudrielServiceProvider`)
+- Pipeline entity types (prospect, prospect_attachment, prospect_audit, filtered_prospect, pipeline_config) are registered in `PipelineServiceProvider`, not `ClaudrielServiceProvider`
+- Pipeline POST controllers require `CLAUDRIEL_API_KEY` bearer token; GET routes (preview, tex) are public
+- `PipelineConfig::company_profile` is a JSON string with keys: name, title, company, address, postal_code, phone, email
+- `PipelineConfig::sectors` is a JSON array of canonical sector strings; `SectorNormalizer::CANONICAL_SECTORS` is the authoritative list
+- `ProspectIngestHandler` deduplicates by `external_id` + `workspace_uuid`, not content hash; existing prospects are skipped entirely (no update)
+- `ProspectWorkflowPreset` has 7 states (lead > qualified > contacted > proposal > negotiation > won/lost); use `ProspectStageManager` for validated transitions
+- `PipelineQualifyController` and `PipelineNormalizeDraftController` take `object $aiClient` in constructor; these controllers must be registered as DI singletons when wired (#560)
