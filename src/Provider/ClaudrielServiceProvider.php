@@ -15,6 +15,7 @@ use Claudriel\CLI\WorkspaceVerifyCommand;
 use Claudriel\Command\BriefCommand;
 use Claudriel\Command\CommitmentsCommand;
 use Claudriel\Command\CommitmentUpdateCommand;
+use Claudriel\Command\ConsolidateCommand;
 use Claudriel\Command\DecayCommand;
 use Claudriel\Command\GitHubSyncCommand;
 use Claudriel\Command\IssueListCommand;
@@ -611,7 +612,7 @@ final class ClaudrielServiceProvider extends ServiceProvider
         EventDispatcherInterface $dispatcher,
     ): array {
         // Trigger getStorage() for each entity type so SqlSchemaHandler::ensureTable() runs.
-        foreach (['mc_event', 'commitment', 'commitment_extraction_log', 'person', 'account', 'account_verification_token', 'account_password_reset_token', 'tenant', 'integration', 'skill', 'chat_session', 'chat_message', 'workspace', 'schedule_entry', 'artifact', 'operation', 'issue_run', 'project', 'waitlist_entry', 'prospect', 'prospect_attachment', 'prospect_audit', 'filtered_prospect', 'pipeline_config', 'memory_access_event'] as $typeId) {
+        foreach (['mc_event', 'commitment', 'commitment_extraction_log', 'person', 'account', 'account_verification_token', 'account_password_reset_token', 'tenant', 'integration', 'skill', 'chat_session', 'chat_message', 'workspace', 'schedule_entry', 'artifact', 'operation', 'issue_run', 'project', 'waitlist_entry', 'prospect', 'prospect_attachment', 'prospect_audit', 'filtered_prospect', 'pipeline_config', 'memory_access_event', 'merge_candidate', 'merge_audit_log'] as $typeId) {
             try {
                 $entityTypeManager->getStorage($typeId);
             } catch (\Throwable) {
@@ -658,6 +659,7 @@ final class ClaudrielServiceProvider extends ServiceProvider
             keys: ['id' => 'aid', 'uuid' => 'uuid', 'label' => 'name'],
         );
         $accountRepo = new StorageRepositoryAdapter(new SqlEntityStorage($accountType, $database, $dispatcher));
+        $mergeCandidateRepo = new StorageRepositoryAdapter($entityTypeManager->getStorage('merge_candidate'));
 
         $workspaceType = new EntityType(
             id: 'workspace',
@@ -710,6 +712,7 @@ final class ClaudrielServiceProvider extends ServiceProvider
             new BriefCommand($assembler, $sessionStore),
             new CommitmentsCommand($commitmentRepo),
             new CommitmentUpdateCommand($commitmentRepo),
+            new ConsolidateCommand($personRepo, $mergeCandidateRepo),
             new DecayCommand($personRepo, $commitmentRepo, $eventRepo, $accountRepo),
             new SkillsCommand($skillRepo),
             new WorkspacesCommand($workspaceRepo),
