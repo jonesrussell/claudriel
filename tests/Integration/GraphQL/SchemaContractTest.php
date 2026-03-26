@@ -150,7 +150,7 @@ final class SchemaContractTest extends TestCase
                 'occurred_at' => ['type' => 'datetime'],
                 'external_id' => ['type' => 'string'],
                 'content_hash' => ['type' => 'string'],
-                'raw_payload' => ['type' => 'string'],
+                'raw_payload' => ['type' => 'text_long'],
                 'created_at' => ['type' => 'timestamp', 'readOnly' => true],
                 'updated_at' => ['type' => 'timestamp', 'readOnly' => true],
             ],
@@ -550,6 +550,8 @@ final class SchemaContractTest extends TestCase
         foreach ($expectedFields as $fieldName) {
             self::assertTrue($type->hasField($fieldName), "TriageEntry missing field: {$fieldName}");
         }
+
+        self::assertSame('TextValue', $this->unwrapTypeName($type->getField('raw_payload')->getType()));
     }
 
     #[Test]

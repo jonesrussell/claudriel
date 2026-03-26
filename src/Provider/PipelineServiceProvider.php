@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Claudriel\Provider;
 
 use Claudriel\Controller\Pipeline\PipelineFetchController;
+use Claudriel\Controller\Pipeline\PipelineNormalizeDraftController;
 use Claudriel\Controller\Pipeline\PipelinePdfController;
 use Claudriel\Controller\Pipeline\PipelineQualifyController;
 use Claudriel\Entity\FilteredProspect;
@@ -14,6 +15,7 @@ use Claudriel\Entity\ProspectAttachment;
 use Claudriel\Entity\ProspectAudit;
 use Waaseyaa\Entity\EntityType;
 use Waaseyaa\Entity\EntityTypeManager;
+use Waaseyaa\Entity\EntityTypeManagerInterface;
 use Waaseyaa\Foundation\ServiceProvider\ServiceProvider;
 use Waaseyaa\Routing\RouteBuilder;
 use Waaseyaa\Routing\WaaseyaaRouter;
@@ -22,6 +24,27 @@ final class PipelineServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
+        $this->singleton(PipelineFetchController::class, function () {
+            return new PipelineFetchController(
+                $this->resolve(EntityTypeManagerInterface::class),
+                $this->createPipelineAiClient(),
+            );
+        });
+
+        $this->singleton(PipelineQualifyController::class, function () {
+            return new PipelineQualifyController(
+                $this->resolve(EntityTypeManagerInterface::class),
+                $this->createPipelineAiClient(),
+            );
+        });
+
+        $this->singleton(PipelineNormalizeDraftController::class, function () {
+            return new PipelineNormalizeDraftController(
+                $this->resolve(EntityTypeManagerInterface::class),
+                $this->createPipelineAiClient(),
+            );
+        });
+
         $this->entityType(new EntityType(
             id: 'prospect',
             label: 'Prospect',
@@ -181,5 +204,60 @@ final class PipelineServiceProvider extends ServiceProvider
                 ->methods('GET')
                 ->build(),
         );
+    }
+
+    private function createPipelineAiClient(): object
+    {
+        $apiKey = $_ENV['ANTHROPIC_API_KEY'] ?? getenv('ANTHROPIC_API_KEY') ?: '';
+
+        return new class($apiKey)
+        {
+            public function __construct(private readonly string $apiKey) {}
+
+            public function complete(string $prompt): string
+            {
+                if ($this->apiKey === '') {
+                    throw new \RuntimeException('ANTHROPIC_API_KEY is not configured.');
+                }
+
+                $body = json_encode([
+                    'model' => 'claude-3-5-sonnet-20241022',
+                    'max_tokens' => 1500,
+                    'temperature' => 0.2,
+                    'messages' => [['role' => 'user', 'content' => $prompt]],
+                ], JSON_THROW_ON_ERROR);
+
+                $context = stream_context_create([
+                    'http' => [
+                        'method' => 'POST',
+                        'header' => implode("\r\n", [
+                            'content-type: application/json',
+                            'x-api-key: '.$this->apiKey,
+                            'anthropic-version: 2023-06-01',
+                        ]),
+                        'content' => $body,
+                        'timeout' => 30,
+                        'ignore_errors' => true,
+                    ],
+                ]);
+
+                $response = @file_get_contents('https://api.anthropic.com/v1/messages', false, $context);
+                if (! is_string($response)) {
+                    throw new \RuntimeException('Anthropic request failed.');
+                }
+
+                $decoded = json_decode($response, true);
+                if (! is_array($decoded)) {
+                    throw new \RuntimeException('Anthropic returned invalid JSON.');
+                }
+
+                $content = $decoded['content'][0]['text'] ?? '';
+                if (! is_string($content)) {
+                    throw new \RuntimeException('Anthropic response did not include text.');
+                }
+
+                return $content;
+            }
+        };
     }
 }

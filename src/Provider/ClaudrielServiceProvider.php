@@ -34,6 +34,7 @@ use Claudriel\Controller\Ai\TrainingExportController;
 use Claudriel\Controller\AppShellController;
 use Claudriel\Controller\Audit\CommitmentExtractionAuditController;
 use Claudriel\Controller\BriefStreamController;
+use Claudriel\Controller\BroadcastController;
 use Claudriel\Controller\DashboardController;
 use Claudriel\Controller\DayBriefController;
 use Claudriel\Controller\Governance\CodifiedContextIntegrityController;
@@ -294,6 +295,15 @@ final class ClaudrielServiceProvider extends ServiceProvider
         );
 
         // SSE streams
+        $router->addRoute(
+            'claudriel.broadcast',
+            RouteBuilder::create('/api/broadcast')
+                ->controller(BroadcastController::class.'::stream')
+                ->allowAll()
+                ->methods('GET')
+                ->build(),
+        );
+
         $router->addRoute(
             'claudriel.stream.brief',
             RouteBuilder::create('/stream/brief')

@@ -54,7 +54,7 @@ final class DayBriefServiceProvider extends ServiceProvider
                 'occurred_at' => ['type' => 'datetime'],
                 'external_id' => ['type' => 'string'],
                 'content_hash' => ['type' => 'string'],
-                'raw_payload' => ['type' => 'string'],
+                'raw_payload' => ['type' => 'text_long'],
                 'created_at' => ['type' => 'timestamp', 'readOnly' => true],
                 'updated_at' => ['type' => 'timestamp', 'readOnly' => true],
             ],
