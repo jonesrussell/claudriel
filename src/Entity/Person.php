@@ -32,5 +32,14 @@ final class Person extends ContentEntityBase
         if ($this->get('metadata') === null) {
             $this->set('metadata', '{}');
         }
+        if ($this->get('importance_score') === null) {
+            $this->set('importance_score', 1.0);
+        }
+        if ($this->get('access_count') === null) {
+            $this->set('access_count', 0);
+        }
+        if ($this->get('last_accessed_at') === null) {
+            $this->set('last_accessed_at', null);
+        }
     }
 }

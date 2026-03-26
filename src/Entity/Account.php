@@ -41,6 +41,12 @@ final class Account extends ContentEntityBase
         if ($this->get('metadata') === null) {
             $this->set('metadata', []);
         }
+        if ($this->get('decay_rate_daily') === null) {
+            $this->set('decay_rate_daily', 0.995);
+        }
+        if ($this->get('min_importance_threshold') === null) {
+            $this->set('min_importance_threshold', 0.1);
+        }
     }
 
     public function hasPermission(string $permission): bool

@@ -40,6 +40,8 @@ final class AccountServiceProvider extends ServiceProvider
                 'email_verified_at' => ['type' => 'datetime'],
                 'settings' => ['type' => 'text_long'],
                 'metadata' => ['type' => 'text_long'],
+                'decay_rate_daily' => ['type' => 'float'],
+                'min_importance_threshold' => ['type' => 'float'],
                 'tenant_id' => ['type' => 'string'],
                 'created_at' => ['type' => 'timestamp', 'readOnly' => true],
                 'updated_at' => ['type' => 'timestamp', 'readOnly' => true],

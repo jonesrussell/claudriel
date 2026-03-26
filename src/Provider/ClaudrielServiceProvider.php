@@ -15,6 +15,7 @@ use Claudriel\CLI\WorkspaceVerifyCommand;
 use Claudriel\Command\BriefCommand;
 use Claudriel\Command\CommitmentsCommand;
 use Claudriel\Command\CommitmentUpdateCommand;
+use Claudriel\Command\DecayCommand;
 use Claudriel\Command\GitHubSyncCommand;
 use Claudriel\Command\IssueListCommand;
 use Claudriel\Command\IssueRunCommand;
@@ -53,6 +54,7 @@ use Claudriel\Domain\Git\GitRepositoryManager;
 use Claudriel\Domain\IssueInstructionBuilder;
 use Claudriel\Domain\IssueOrchestrator;
 use Claudriel\Domain\Schedule\ScheduleSeriesResolver;
+use Claudriel\Entity\Account;
 use Claudriel\Entity\Artifact;
 use Claudriel\Entity\Commitment;
 use Claudriel\Entity\McEvent;
@@ -649,6 +651,14 @@ final class ClaudrielServiceProvider extends ServiceProvider
         );
         $personRepo = new StorageRepositoryAdapter(new SqlEntityStorage($personType, $database, $dispatcher));
 
+        $accountType = new EntityType(
+            id: 'account',
+            label: 'Account',
+            class: Account::class,
+            keys: ['id' => 'aid', 'uuid' => 'uuid', 'label' => 'name'],
+        );
+        $accountRepo = new StorageRepositoryAdapter(new SqlEntityStorage($accountType, $database, $dispatcher));
+
         $workspaceType = new EntityType(
             id: 'workspace',
             label: 'Workspace',
@@ -700,6 +710,7 @@ final class ClaudrielServiceProvider extends ServiceProvider
             new BriefCommand($assembler, $sessionStore),
             new CommitmentsCommand($commitmentRepo),
             new CommitmentUpdateCommand($commitmentRepo),
+            new DecayCommand($personRepo, $commitmentRepo, $eventRepo, $accountRepo),
             new SkillsCommand($skillRepo),
             new WorkspacesCommand($workspaceRepo),
             new WorkspaceCreateCommand($workspaceRepo),

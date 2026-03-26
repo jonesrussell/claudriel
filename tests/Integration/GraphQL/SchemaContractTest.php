@@ -64,6 +64,9 @@ final class SchemaContractTest extends TestCase
                 'latest_summary' => ['type' => 'string'],
                 'last_interaction_at' => ['type' => 'datetime'],
                 'last_inbox_category' => ['type' => 'string'],
+                'importance_score' => ['type' => 'float'],
+                'access_count' => ['type' => 'integer'],
+                'last_accessed_at' => ['type' => 'datetime'],
                 'created_at' => ['type' => 'timestamp', 'readOnly' => true],
                 'updated_at' => ['type' => 'timestamp', 'readOnly' => true],
             ],
@@ -84,6 +87,9 @@ final class SchemaContractTest extends TestCase
                 'person_uuid' => ['type' => 'string'],
                 'source' => ['type' => 'string'],
                 'tenant_id' => ['type' => 'string'],
+                'importance_score' => ['type' => 'float'],
+                'access_count' => ['type' => 'integer'],
+                'last_accessed_at' => ['type' => 'datetime'],
                 'created_at' => ['type' => 'timestamp', 'readOnly' => true],
                 'updated_at' => ['type' => 'timestamp', 'readOnly' => true],
             ],
@@ -351,7 +357,7 @@ final class SchemaContractTest extends TestCase
 
         self::assertInstanceOf(ObjectType::class, $commitmentType);
 
-        $expectedFields = ['id', 'uuid', 'title', 'status', 'confidence', 'due_date', 'person_uuid', 'source', 'tenant_id', 'created_at', 'updated_at'];
+        $expectedFields = ['id', 'uuid', 'title', 'status', 'confidence', 'due_date', 'person_uuid', 'source', 'tenant_id', 'importance_score', 'access_count', 'last_accessed_at', 'created_at', 'updated_at'];
         foreach ($expectedFields as $fieldName) {
             self::assertTrue($commitmentType->hasField($fieldName), "Commitment missing field: {$fieldName}");
         }
@@ -371,7 +377,7 @@ final class SchemaContractTest extends TestCase
 
         self::assertInstanceOf(ObjectType::class, $personType);
 
-        $expectedFields = ['id', 'uuid', 'name', 'email', 'tier', 'source', 'tenant_id', 'latest_summary', 'last_interaction_at', 'last_inbox_category', 'created_at', 'updated_at'];
+        $expectedFields = ['id', 'uuid', 'name', 'email', 'tier', 'source', 'tenant_id', 'latest_summary', 'last_interaction_at', 'last_inbox_category', 'importance_score', 'access_count', 'last_accessed_at', 'created_at', 'updated_at'];
         foreach ($expectedFields as $fieldName) {
             self::assertTrue($personType->hasField($fieldName), "Person missing field: {$fieldName}");
         }

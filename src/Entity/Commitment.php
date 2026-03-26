@@ -35,6 +35,15 @@ final class Commitment extends ContentEntityBase
         if (! array_key_exists('direction', $values)) {
             $values['direction'] = 'outbound';
         }
+        if (! array_key_exists('importance_score', $values)) {
+            $values['importance_score'] = 1.0;
+        }
+        if (! array_key_exists('access_count', $values)) {
+            $values['access_count'] = 0;
+        }
+        if (! array_key_exists('last_accessed_at', $values)) {
+            $values['last_accessed_at'] = null;
+        }
         parent::__construct($values, $this->entityTypeId, $this->entityKeys);
     }
 }

@@ -31,6 +31,15 @@ final class McEvent extends ContentEntityBase
         if ($this->get('workspace_id') === null) {
             $this->set('workspace_id', null);
         }
+        if ($this->get('importance_score') === null) {
+            $this->set('importance_score', 1.0);
+        }
+        if ($this->get('access_count') === null) {
+            $this->set('access_count', 0);
+        }
+        if ($this->get('last_accessed_at') === null) {
+            $this->set('last_accessed_at', null);
+        }
     }
 
     /**
