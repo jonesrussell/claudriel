@@ -29,6 +29,7 @@ final class CommitmentExtractionAuditService
 
     public function __construct(
         private readonly EntityTypeManager $entityTypeManager,
+        private readonly ?DateTimeImmutable $referenceDate = null,
     ) {}
 
     /**
@@ -203,7 +204,7 @@ final class CommitmentExtractionAuditService
     public function getQualitySnapshot(int $days, ?DateTimeImmutable $endDate = null, ?string $senderEmail = null): array
     {
         $days = max(1, $days);
-        $endDate = ($endDate ?? new DateTimeImmutable('today'))->setTime(0, 0);
+        $endDate = ($endDate ?? $this->referenceDate ?? new DateTimeImmutable('today'))->setTime(0, 0);
         $startDate = $endDate->sub(new DateInterval(sprintf('P%dD', $days - 1)));
         $sender = $senderEmail !== null ? ($this->normalizeSender($senderEmail) ?? strtolower(trim($senderEmail))) : null;
 

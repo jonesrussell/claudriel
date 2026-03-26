@@ -90,12 +90,13 @@ final class ModelUpdateBatchGeneratorTest extends TestCase
         $this->tmpDir = sys_get_temp_dir().'/claudriel-model-batch-'.bin2hex(random_bytes(6));
         mkdir($this->tmpDir, 0755, true);
 
+        $referenceDate = new \DateTimeImmutable('2026-03-13 12:00:00');
         $entityTypeManager = $this->buildSeededEntityTypeManager();
-        $auditService = new CommitmentExtractionAuditService($entityTypeManager);
-        $driftDetector = new CommitmentExtractionDriftDetector($auditService, new \DateTimeImmutable('2026-03-13'));
+        $auditService = new CommitmentExtractionAuditService($entityTypeManager, $referenceDate);
+        $driftDetector = new CommitmentExtractionDriftDetector($auditService, $referenceDate);
         $failureClassifier = new CommitmentExtractionFailureClassifier;
         $selfAssessment = new ExtractionSelfAssessmentService($auditService, $driftDetector, $failureClassifier);
-        $trainingExport = new TrainingExportService($entityTypeManager);
+        $trainingExport = new TrainingExportService($entityTypeManager, $referenceDate);
 
         return new ModelUpdateBatchGenerator(
             $trainingExport,
@@ -104,7 +105,7 @@ final class ModelUpdateBatchGeneratorTest extends TestCase
             $selfAssessment,
             new ExtractionImprovementSuggestionService($selfAssessment, $driftDetector, $auditService, $trainingExport),
             $this->tmpDir,
-            new \DateTimeImmutable('2026-03-13 12:00:00'),
+            $referenceDate,
         );
     }
 

@@ -20,6 +20,7 @@ final class TrainingExportService
 
     public function __construct(
         private readonly EntityTypeManager $entityTypeManager,
+        private readonly ?DateTimeImmutable $referenceDate = null,
     ) {}
 
     /**
@@ -35,7 +36,7 @@ final class TrainingExportService
     public function exportDailySamples(int $days = 7): array
     {
         $days = max(1, $days);
-        $end = new DateTimeImmutable('today');
+        $end = $this->resolveExportEndDate();
         $start = $end->sub(new DateInterval(sprintf('P%dD', $days - 1)));
 
         $grouped = [];
@@ -84,7 +85,7 @@ final class TrainingExportService
     {
         $sender = $this->normalizeSender($email) ?? strtolower(trim($email));
         $days = max(1, $days);
-        $end = new DateTimeImmutable('today');
+        $end = $this->resolveExportEndDate();
         $start = $end->sub(new DateInterval(sprintf('P%dD', $days - 1)));
         $samples = [];
 
@@ -126,7 +127,7 @@ final class TrainingExportService
     public function exportAllFailures(int $days = 90): array
     {
         $days = max(1, $days);
-        $end = new DateTimeImmutable('today');
+        $end = $this->resolveExportEndDate();
         $start = $end->sub(new DateInterval(sprintf('P%dD', $days - 1)));
         $samples = [];
 
@@ -410,5 +411,16 @@ final class TrainingExportService
         } catch (\Throwable) {
             return null;
         }
+    }
+
+    /**
+     * End of the export window (inclusive), normalized to midnight so windows match
+     * {@see DateTimeImmutable('today')} behavior when a reference date is injected (e.g. tests, batch runs).
+     */
+    private function resolveExportEndDate(): DateTimeImmutable
+    {
+        $base = $this->referenceDate ?? new DateTimeImmutable('today');
+
+        return $base->setTime(0, 0);
     }
 }
