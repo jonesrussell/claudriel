@@ -117,6 +117,7 @@ jobs:
           coverage: none
 
       - name: Install Composer dependencies
+        working-directory: .
         run: composer install --no-interaction --prefer-dist
 
       - name: Set up Node
