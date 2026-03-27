@@ -70,17 +70,16 @@ jobs:
           python -m pip install --upgrade pip
           pip install --requirement requirements-dev.txt
 
-          for matcher in .github/matchers/*.json; do
+          for matcher in ../.github/matchers/*.json; do
             echo "::add-matcher::$matcher"
           done
         shell: bash
-        working-directory: .
 
-      - run: black --check agent/**/*.py
+      - run: black --check **/*.py
 
       - run: isort . --check
 
-      - run: mypy agent/**/*.py
+      - run: mypy **/*.py
 
       - run: ruff check --output-format github
 

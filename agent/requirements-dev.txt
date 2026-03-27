@@ -1,0 +1,6 @@
+--requirement requirements.txt
+
+black
+isort
+mypy
+ruff
