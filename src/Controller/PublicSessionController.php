@@ -57,7 +57,29 @@ final class PublicSessionController
         }
 
         $resolvedAccount = $this->findVerifiedAccountByEmail($email);
-        if (! $resolvedAccount instanceof Account || ! password_verify($password, (string) $resolvedAccount->get('password_hash'))) {
+
+        if (! $resolvedAccount instanceof Account) {
+            return $this->render('public/login.twig', [
+                'csrf_token' => CsrfMiddleware::token(),
+                'email' => $email,
+                'redirect' => $redirect,
+                'error' => 'Invalid credentials.',
+            ], 401);
+        }
+
+        $passwordHash = (string) $resolvedAccount->get('password_hash');
+
+        if ($passwordHash === '') {
+            return $this->render('public/login.twig', [
+                'csrf_token' => CsrfMiddleware::token(),
+                'email' => $email,
+                'redirect' => $redirect,
+                'error' => 'This account uses Google sign-in. Use the "Sign in with Google" button below.',
+                'show_google_signin' => true,
+            ], 401);
+        }
+
+        if (! password_verify($password, $passwordHash)) {
             return $this->render('public/login.twig', [
                 'csrf_token' => CsrfMiddleware::token(),
                 'email' => $email,

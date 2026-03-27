@@ -139,6 +139,34 @@ final class PublicSessionControllerTest extends TestCase
         self::assertStringContainsString('workspace-abc', $response->content);
     }
 
+    public function test_login_rejects_passwordless_account_with_google_signin_message(): void
+    {
+        $entityTypeManager = $this->buildEntityTypeManager();
+        $account = new Account([
+            'name' => 'Ada Lovelace',
+            'email' => 'ada@example.com',
+            'password_hash' => null,
+            'status' => 'active',
+            'email_verified_at' => '2026-03-27T00:00:00+00:00',
+            'roles' => [],
+            'permissions' => [],
+        ]);
+        $entityTypeManager->getStorage('account')->save($account);
+
+        $controller = $this->controller($entityTypeManager);
+
+        $response = $controller->login(
+            httpRequest: Request::create('/login', 'POST', [
+                'email' => 'ada@example.com',
+                'password' => 'anything',
+            ]),
+        );
+
+        self::assertInstanceOf(SsrResponse::class, $response);
+        self::assertSame(401, $response->statusCode);
+        self::assertStringContainsString('Google sign-in', $response->content);
+    }
+
     private function controller(?EntityTypeManager $entityTypeManager = null): PublicSessionController
     {
         return new PublicSessionController(
