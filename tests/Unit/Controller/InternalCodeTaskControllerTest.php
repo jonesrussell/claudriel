@@ -161,7 +161,6 @@ final class InternalCodeTaskControllerTest extends TestCase
     {
         $runner = new CodeTaskRunner(
             $this->codeTaskRepo,
-            new GitRepositoryManager(runner: fn () => ['exit_code' => 0, 'output' => '']),
             fn () => ['exit_code' => 0, 'output' => ''],
         );
 
