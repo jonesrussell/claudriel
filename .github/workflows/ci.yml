@@ -74,6 +74,7 @@ jobs:
             echo "::add-matcher::$matcher"
           done
         shell: bash
+        working-directory: .
 
       - run: black --check agent/**/*.py
 
