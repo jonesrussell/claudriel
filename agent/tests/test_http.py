@@ -1,6 +1,5 @@
 """Tests for util.http.PhpApiClient."""
 
-from unittest.mock import MagicMock, patch
 
 from util.http import PhpApiClient
 

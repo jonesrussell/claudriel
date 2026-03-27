@@ -17,7 +17,6 @@ from tools.pipeline_fetch_leads import execute as pipeline_fetch_run
 from tools.prospect_list import TOOL_DEF as PROSPECT_LIST_DEF
 from tools.prospect_list import execute as prospect_list_run
 from tools.prospect_update import TOOL_DEF as PROSPECT_UPDATE_DEF
-from tools.prospect_update import execute as prospect_update_run
 
 # -----------------------------------------------------------------------
 # Tool definitions have required fields
