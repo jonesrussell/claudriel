@@ -1,7 +1,7 @@
 """Tests for the emit() function and JSON-lines contract."""
 
-import json
 import io
+import json
 import sys
 
 from main import emit

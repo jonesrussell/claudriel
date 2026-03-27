@@ -1,7 +1,9 @@
 """Tests for eval report generation."""
 
 import json
-from eval_report import generate_report, format_markdown, SkillResult, EvalTestResult
+
+from eval_report import (EvalTestResult, SkillResult, format_markdown,
+                         generate_report)
 
 
 def test_generate_report_structure():

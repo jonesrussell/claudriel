@@ -8,16 +8,15 @@ Usage:
     echo '{"messages": [...], "system": "...", ...}' | python agent/main.py
 """
 
-import json
 import importlib
+import json
 import os
-from pathlib import Path
 import sys
 import time
+from pathlib import Path
 from typing import Callable
 
 import anthropic
-
 from util.http import PhpApiClient
 
 # Max characters for tool results stored in conversation history.

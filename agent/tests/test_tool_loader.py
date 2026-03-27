@@ -6,9 +6,8 @@ import importlib
 import textwrap
 from pathlib import Path
 
-import pytest
-
 import main
+import pytest
 
 
 def _write_tool(path: Path, body: str) -> None:

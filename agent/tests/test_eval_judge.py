@@ -1,7 +1,8 @@
 """Tests for LLM judge prompt construction and score parsing."""
 
 import json
-from eval_judge import build_judge_prompt, parse_judge_response, JudgeScore
+
+from eval_judge import JudgeScore, build_judge_prompt, parse_judge_response
 
 
 def test_build_judge_prompt_includes_skill_and_input():

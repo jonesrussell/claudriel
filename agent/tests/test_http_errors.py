@@ -1,9 +1,9 @@
 """Tests for HTTP error handling in PhpApiClient."""
 
+from unittest.mock import MagicMock, patch
+
 import httpx
 import pytest
-from unittest.mock import patch, MagicMock
-
 from util.http import PhpApiClient
 
 

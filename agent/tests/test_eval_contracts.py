@@ -2,13 +2,9 @@
 
 from pathlib import Path
 
-from eval_contracts import (
-    extract_field_definitions,
-    extract_skill_fields,
-    validate_contracts,
-    format_markdown,
-    SKILL_TO_ENTITY,
-)
+from eval_contracts import (SKILL_TO_ENTITY, extract_field_definitions,
+                            extract_skill_fields, format_markdown,
+                            validate_contracts)
 
 
 def test_extract_field_definitions_finds_entities():

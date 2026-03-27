@@ -1,7 +1,7 @@
 """Tests for GitHub agent tools."""
 
-from unittest.mock import MagicMock
 import importlib
+from unittest.mock import MagicMock
 
 GITHUB_TOOLS = [
     "github_notifications",
