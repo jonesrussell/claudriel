@@ -42,6 +42,9 @@ final class CodeTask extends ContentEntityBase
         if (! array_key_exists('completed_at', $values)) {
             $values['completed_at'] = null;
         }
+        if (! array_key_exists('branch_name', $values)) {
+            $values['branch_name'] = null;
+        }
 
         parent::__construct($values, $this->entityTypeId, $this->entityKeys);
     }

@@ -39,6 +39,12 @@ final class CodeTaskTest extends TestCase
         $this->assertSame('claudriel/fix-login', $task->get('branch_name'));
     }
 
+    public function test_branch_name_defaults_to_null(): void
+    {
+        $task = new CodeTask(['workspace_uuid' => 'ws-1', 'repo_uuid' => 'repo-1', 'prompt' => 'Fix bug']);
+        $this->assertNull($task->get('branch_name'));
+    }
+
     public function test_entity_type_id(): void
     {
         $task = new CodeTask;
