@@ -69,7 +69,9 @@ final class ExtractionImprovementSuggestionServiceTest extends TestCase
     private function buildService(): ExtractionImprovementSuggestionService
     {
         $entityTypeManager = $this->buildSeededEntityTypeManager();
-        $auditService = new CommitmentExtractionAuditService($entityTypeManager);
+        // Fixed reference so snapshot windows match seeded dates (March 2026) regardless of machine clock.
+        $referenceEnd = new \DateTimeImmutable('2026-03-26');
+        $auditService = new CommitmentExtractionAuditService($entityTypeManager, $referenceEnd);
         $driftDetector = new CommitmentExtractionDriftDetector($auditService, new \DateTimeImmutable('2026-03-13'));
         $failureClassifier = new CommitmentExtractionFailureClassifier;
 
