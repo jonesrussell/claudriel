@@ -70,6 +70,7 @@ Rule: higher layers import lower layers only. Never import from src/Command insi
 | `src/Controller/Chat*.php` | `claudriel:chat` | `docs/specs/chat.md` |
 | `src/Controller/InternalGoogle*` | `claudriel:chat` | `docs/specs/agent-subprocess.md` |
 | `agent/*` | `claudriel:chat` | `docs/specs/agent-subprocess.md` |
+| `src/Domain/CodeTask/*` | — | `docs/specs/web-cli.md` |
 | `src/Domain/Pipeline/*` | `claudriel` | `docs/specs/pipeline.md` |
 | `src/Controller/Pipeline/*` | `claudriel` | `docs/specs/pipeline.md` |
 | `src/Entity/Prospect*.php`, `src/Entity/FilteredProspect.php`, `src/Entity/PipelineConfig.php` | `claudriel` | `docs/specs/pipeline.md` |
@@ -144,6 +145,8 @@ POST /api/internal/calendar/create         # Create calendar event
 GET  /api/internal/prospects/list          # List prospects (workspace_uuid query)
 POST /api/internal/prospects/{uuid}/update # Update prospect stage / notes
 POST /api/internal/pipeline/fetch-leads    # Import leads from North Cloud for workspace
+POST /api/internal/code-tasks/create       # Create a code task (repo, prompt, branch_name?)
+GET  /api/internal/code-tasks/{uuid}/status # Check code task status
 ```
 
 All require HMAC Bearer token via `InternalApiTokenGenerator`. See `docs/specs/agent-subprocess.md`.

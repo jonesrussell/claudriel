@@ -61,6 +61,8 @@ All tools live in `agent/tools/` and delegate to the PHP backend via `PhpApiClie
 | `prospect_list` | `prospect_list.py` | `GET /api/internal/prospects/list` |
 | `prospect_update` | `prospect_update.py` | `POST /api/internal/prospects/{uuid}/update` |
 | `pipeline_fetch_leads` | `pipeline_fetch_leads.py` | `POST /api/internal/pipeline/fetch-leads` |
+| `code_task_create` | `code_task_create.py` | `POST /api/internal/code-tasks/create` |
+| `code_task_status` | `code_task_status.py` | `GET /api/internal/code-tasks/{uuid}/status` |
 
 ## HMAC Authentication
 

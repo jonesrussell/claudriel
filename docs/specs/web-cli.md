@@ -5,8 +5,10 @@
 | File | Purpose |
 |------|---------|
 | `src/Controller/DayBriefController.php` | `GET /brief` — returns JSON day brief |
+| `src/Controller/InternalCodeTaskController.php` | `POST /api/internal/code-tasks/create`, `GET /api/internal/code-tasks/{uuid}/status` |
 | `src/Command/BriefCommand.php` | `claudriel:brief` — prints day brief to terminal |
 | `src/Command/CommitmentsCommand.php` | `claudriel:commitments` — lists active commitments |
+| `src/Command/CodeTaskRunCommand.php` | `claudriel:code-task:run {uuid}` — executes a queued code task |
 | `src/McClaudiaServiceProvider.php` | Registers routes + entity types |
 | `public/index.php` | HTTP entry point (Waaseyaa HttpKernel) |
 | `bin/waaseyaa` | CLI entry point (Waaseyaa ConsoleKernel) |
@@ -76,6 +78,32 @@ bin/waaseyaa      → new Waaseyaa\Foundation\Kernel\ConsoleKernel(dirname(__DIR
 ```
 
 Both kernels resolve service providers from `src/McClaudiaServiceProvider.php` automatically if registered in config.
+
+## InternalCodeTaskController
+
+HMAC-authenticated internal API for the agent subprocess to create and monitor code tasks.
+
+```php
+// POST /api/internal/code-tasks/create
+// Body: { "repo": "owner/name", "prompt": "...", "branch_name"?: "..." }
+// Returns: { "task_uuid": "...", "status": "queued", "branch_name": "..." }
+public function create(...): SsrResponse
+
+// GET /api/internal/code-tasks/{uuid}/status
+// Returns: { "uuid", "status", "branch_name", "pr_url", "summary", "diff_preview", "error", "started_at", "completed_at" }
+public function status(...): SsrResponse
+```
+
+The `create` endpoint resolves or creates a workspace + repo for the given GitHub repo, saves a `CodeTask` entity, then dispatches `claudriel:code-task:run {uuid}` as a background process.
+
+## CodeTaskRunCommand
+
+```php
+#[AsCommand(name: 'claudriel:code-task:run', description: 'Execute a queued code task via Claude Code CLI')]
+// Argument: uuid (required) — CodeTask UUID
+// Loads CodeTask, resolves repo path via GitRepositoryManager, delegates to CodeTaskRunner::run()
+// Exit: SUCCESS if task completed, FAILURE otherwise
+```
 
 ## Adding New Routes
 

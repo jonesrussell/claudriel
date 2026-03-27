@@ -7,8 +7,10 @@ Covers the service provider (central wiring) and support utilities.
 | File | Purpose |
 |------|---------|
 | `src/Provider/ClaudrielServiceProvider.php` | Registers all entity types, routes, and CLI commands |
+| `src/Provider/CodeTaskServiceProvider.php` | Registers CodeTask entity type and CodeTaskRunner singleton |
 | `src/Support/BriefSignal.php` | File-based timestamp tracking for brief generation signals |
 | `src/Support/DriftDetector.php` | Finds active commitments unchanged for 48+ hours |
+| `src/Support/StorageRepositoryAdapter.php` | Adapts SqlEntityStorage to EntityRepositoryInterface |
 
 ## ClaudrielServiceProvider
 
@@ -88,13 +90,27 @@ final class DriftDetector
 
 Logic: loads all commitments, filters in-memory for `status === 'active'` AND `updated_at < (now - 48h)`. Pending commitments are NOT checked.
 
+## CodeTaskServiceProvider
+
+Dedicated provider for the CodeTask subsystem. Registers:
+
+- `code_task` EntityType with full `fieldDefinitions` (enables GraphQL schema)
+- `CodeTaskRunner` as a singleton (resolves its own `SqlEntityStorage` + `StorageRepositoryAdapter`)
+
+```php
+// CodeTaskRunner wiring
+$storage = new SqlEntityStorage($entityType, $database, $dispatcher);
+$repo = new StorageRepositoryAdapter($storage);
+return new CodeTaskRunner($repo);
+```
+
 ## Storage Strategy
 
-All entity repositories use `SqlStorageDriver` with `SingleConnectionResolver` sharing a single `PdoDatabase` connection. The service provider creates all repositories in `commands()`.
+Domain service providers (e.g., `CodeTaskServiceProvider`, `PipelineServiceProvider`) create entity repositories using `SqlEntityStorage` + `StorageRepositoryAdapter`. `ClaudrielServiceProvider::commands()` creates parallel repository instances for CLI commands using the same pattern. This dual-instance approach is intentional (#377).
 
 ## Adding New Entity Types
 
 1. Create entity class in `src/Entity/` extending `ContentEntityBase`
-2. Add `$this->entityType(new EntityType(...))` in `ClaudrielServiceProvider::register()`
-3. Create repository in `commands()` with `SqlStorageDriver`
+2. Register EntityType with `fieldDefinitions` in the relevant service provider's `register()`
+3. Wire persistence via `SqlEntityStorage` + `StorageRepositoryAdapter` (see `.claude/rules/waaseyaa-entity-wiring.md`)
 4. If needed, register routes in `routes()` and/or commands in `commands()`
