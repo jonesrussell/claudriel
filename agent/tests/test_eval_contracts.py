@@ -1,4 +1,5 @@
 """Tests for schema contract validator."""
+
 from pathlib import Path
 
 from eval_contracts import (
@@ -47,6 +48,7 @@ def test_validate_contracts_on_real_codebase():
 def test_format_markdown_clean():
     """Clean report produces success message."""
     from eval_contracts import ContractReport
+
     report = ContractReport(skills_checked=3, violations=[])
     md = format_markdown(report)
     assert "**Violations:** 0" in md
@@ -56,9 +58,12 @@ def test_format_markdown_clean():
 def test_format_markdown_with_violations():
     """Violations appear in markdown table."""
     from eval_contracts import ContractReport, ContractViolation
+
     report = ContractReport(
         skills_checked=1,
-        violations=[ContractViolation("commitment", "commitment", "bad_field", "not in schema")],
+        violations=[
+            ContractViolation("commitment", "commitment", "bad_field", "not in schema")
+        ],
     )
     md = format_markdown(report)
     assert "bad_field" in md

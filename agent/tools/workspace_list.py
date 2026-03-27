@@ -17,6 +17,9 @@ TOOL_DEF = {
 
 
 def execute(api, args: dict) -> dict:
-    return api.get("/api/internal/workspaces/list", params={
-        "limit": args.get("limit", 50),
-    })
+    return api.get(
+        "/api/internal/workspaces/list",
+        params={
+            "limit": args.get("limit", 50),
+        },
+    )

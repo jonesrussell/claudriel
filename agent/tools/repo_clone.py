@@ -41,7 +41,10 @@ def execute(api, args: dict) -> dict:
         return {"error": f"Invalid branch name: {branch!r}."}
 
     uuid = args["workspace_uuid"]
-    return api.post(f"/api/internal/workspaces/{uuid}/clone-repo", json_data={
-        "repo": repo,
-        "branch": branch,
-    })
+    return api.post(
+        f"/api/internal/workspaces/{uuid}/clone-repo",
+        json_data={
+            "repo": repo,
+            "branch": branch,
+        },
+    )

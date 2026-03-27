@@ -46,7 +46,10 @@ class TestCodeTaskCreateExecute:
 class TestCodeTaskStatusExecute:
     def test_calls_api(self):
         api = MagicMock()
-        api.get.return_value = {"status": "completed", "pr_url": "https://github.com/test/pull/1"}
+        api.get.return_value = {
+            "status": "completed",
+            "pr_url": "https://github.com/test/pull/1",
+        }
 
         result = status_execute(api, {"task_uuid": "abc-123"})
         api.get.assert_called_once_with("/api/internal/code-tasks/abc-123/status")

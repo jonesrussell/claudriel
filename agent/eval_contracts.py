@@ -6,6 +6,7 @@ Usage:
     python agent/eval_contracts.py --skill commitment
     python agent/eval_contracts.py --json
 """
+
 import argparse
 import re
 import sys
@@ -112,22 +113,26 @@ def validate_contracts(
         schema_fields = report.schema_fields.get(entity_type, set())
 
         if not schema_fields:
-            report.violations.append(ContractViolation(
-                skill=skill_name,
-                entity_type=entity_type,
-                field_name="*",
-                message=f"No fieldDefinitions found for entity type '{entity_type}'",
-            ))
+            report.violations.append(
+                ContractViolation(
+                    skill=skill_name,
+                    entity_type=entity_type,
+                    field_name="*",
+                    message=f"No fieldDefinitions found for entity type '{entity_type}'",
+                )
+            )
             continue
 
         # Fields in skill but not in schema
         for field_name in sorted(skill_fields - schema_fields):
-            report.violations.append(ContractViolation(
-                skill=skill_name,
-                entity_type=entity_type,
-                field_name=field_name,
-                message=f"Field '{field_name}' referenced in skill but not in schema",
-            ))
+            report.violations.append(
+                ContractViolation(
+                    skill=skill_name,
+                    entity_type=entity_type,
+                    field_name=field_name,
+                    message=f"Field '{field_name}' referenced in skill but not in schema",
+                )
+            )
 
         # Fields in schema but not in skill (warning, not error)
         # Omitted: skills don't need to reference every field
@@ -148,12 +153,16 @@ def format_markdown(report: ContractReport) -> str:
     if not report.violations:
         lines.append("All skill field references match the schema.")
     else:
-        lines.extend([
-            "| Skill | Entity | Field | Issue |",
-            "|-------|--------|-------|-------|",
-        ])
+        lines.extend(
+            [
+                "| Skill | Entity | Field | Issue |",
+                "|-------|--------|-------|-------|",
+            ]
+        )
         for v in report.violations:
-            lines.append(f"| {v.skill} | {v.entity_type} | {v.field_name} | {v.message} |")
+            lines.append(
+                f"| {v.skill} | {v.entity_type} | {v.field_name} | {v.message} |"
+            )
 
     return "\n".join(lines)
 
@@ -177,10 +186,16 @@ def format_json(report: ContractReport) -> dict:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Validate skill GraphQL field contracts")
+    parser = argparse.ArgumentParser(
+        description="Validate skill GraphQL field contracts"
+    )
     parser.add_argument("--skill", type=str, help="Check specific skill only")
-    parser.add_argument("--src-dir", type=str, default="src", help="PHP source directory")
-    parser.add_argument("--skills-dir", type=str, default=".claude/skills", help="Skills directory")
+    parser.add_argument(
+        "--src-dir", type=str, default="src", help="PHP source directory"
+    )
+    parser.add_argument(
+        "--skills-dir", type=str, default=".claude/skills", help="Skills directory"
+    )
     parser.add_argument("--json", action="store_true", help="Output as JSON")
     args = parser.parse_args()
 
@@ -192,6 +207,7 @@ def main() -> None:
 
     if args.json:
         import json
+
         print(json.dumps(format_json(report), indent=2))
     else:
         print(format_markdown(report))

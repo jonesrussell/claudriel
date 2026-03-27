@@ -20,4 +20,7 @@ def execute(api, args: dict) -> dict:
     owner = args["owner"]
     repo = args["repo"]
     number = args["number"]
-    return api.post(f"/api/internal/github/comment/{owner}/{repo}/{number}", json_data={"body": args["body"]})
+    return api.post(
+        f"/api/internal/github/comment/{owner}/{repo}/{number}",
+        json_data={"body": args["body"]},
+    )

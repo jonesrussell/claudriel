@@ -9,15 +9,22 @@ from unittest.mock import MagicMock
 _stubs = {}
 for mod_name in [
     "anthropic",
-    "tools.gmail_list", "tools.gmail_read", "tools.gmail_send",
-    "tools.calendar_list", "tools.calendar_create",
-    "tools.commitment_list", "tools.commitment_update",
+    "tools.gmail_list",
+    "tools.gmail_read",
+    "tools.gmail_send",
+    "tools.calendar_list",
+    "tools.calendar_create",
+    "tools.commitment_list",
+    "tools.commitment_update",
     "util.http",
 ]:
     if mod_name not in sys.modules:
         stub = types.ModuleType(mod_name)
         # Each tool module needs TOOL_DEF and execute
-        stub.TOOL_DEF = {"name": mod_name.split(".")[-1], "input_schema": {"type": "object", "properties": {}}}
+        stub.TOOL_DEF = {
+            "name": mod_name.split(".")[-1],
+            "input_schema": {"type": "object", "properties": {}},
+        }
         stub.execute = lambda api, args: {}
         # util.http needs PhpApiClient
         stub.PhpApiClient = MagicMock
@@ -53,5 +60,12 @@ def test_classify_general():
 
 
 def test_default_turn_limits_has_all_types():
-    expected_keys = {"quick_lookup", "email_compose", "brief_generation", "research", "general", "onboarding"}
+    expected_keys = {
+        "quick_lookup",
+        "email_compose",
+        "brief_generation",
+        "research",
+        "general",
+        "onboarding",
+    }
     assert set(DEFAULT_TURN_LIMITS.keys()) == expected_keys

@@ -6,9 +6,20 @@ TOOL_DEF = {
     "input_schema": {
         "type": "object",
         "properties": {
-            "repo": {"type": "string", "description": "Repository in owner/repo format"},
-            "state": {"type": "string", "description": "Filter by state: open, closed, all", "default": "open"},
-            "labels": {"type": "string", "description": "Comma-separated label names", "default": ""},
+            "repo": {
+                "type": "string",
+                "description": "Repository in owner/repo format",
+            },
+            "state": {
+                "type": "string",
+                "description": "Filter by state: open, closed, all",
+                "default": "open",
+            },
+            "labels": {
+                "type": "string",
+                "description": "Comma-separated label names",
+                "default": "",
+            },
         },
         "required": ["repo"],
     },

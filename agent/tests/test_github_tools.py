@@ -1,4 +1,5 @@
 """Tests for GitHub agent tools."""
+
 from unittest.mock import MagicMock
 import importlib
 
@@ -16,6 +17,7 @@ GITHUB_TOOLS = [
 # -----------------------------------------------------------------------
 # Tool definitions have required fields
 # -----------------------------------------------------------------------
+
 
 def test_all_github_tools_have_valid_tool_def():
     for tool_name in GITHUB_TOOLS:
@@ -47,15 +49,19 @@ def test_write_tools_mention_confirmation():
     for tool_name in ["github_create_issue", "github_add_comment"]:
         mod = importlib.import_module(f"tools.{tool_name}")
         desc = mod.TOOL_DEF["description"].lower()
-        assert "confirm" in desc, f"{tool_name} should mention confirmation in description"
+        assert (
+            "confirm" in desc
+        ), f"{tool_name} should mention confirmation in description"
 
 
 # -----------------------------------------------------------------------
 # github_notifications
 # -----------------------------------------------------------------------
 
+
 def test_github_notifications_calls_correct_endpoint():
     from tools.github_notifications import execute
+
     api = MagicMock()
     api.get.return_value = []
     execute(api, {})
@@ -66,8 +72,10 @@ def test_github_notifications_calls_correct_endpoint():
 # github_list_issues
 # -----------------------------------------------------------------------
 
+
 def test_github_list_issues_passes_repo_and_state():
     from tools.github_list_issues import execute
+
     api = MagicMock()
     api.get.return_value = []
     execute(api, {"repo": "octocat/hello", "state": "closed"})
@@ -79,6 +87,7 @@ def test_github_list_issues_passes_repo_and_state():
 
 def test_github_list_issues_defaults_to_open():
     from tools.github_list_issues import execute
+
     api = MagicMock()
     api.get.return_value = []
     execute(api, {"repo": "octocat/hello"})
@@ -87,6 +96,7 @@ def test_github_list_issues_defaults_to_open():
 
 def test_github_list_issues_passes_labels():
     from tools.github_list_issues import execute
+
     api = MagicMock()
     api.get.return_value = []
     execute(api, {"repo": "octocat/hello", "labels": "bug,urgent"})
@@ -97,8 +107,10 @@ def test_github_list_issues_passes_labels():
 # github_read_issue
 # -----------------------------------------------------------------------
 
+
 def test_github_read_issue_calls_correct_endpoint():
     from tools.github_read_issue import execute
+
     api = MagicMock()
     api.get.return_value = {"number": 42}
     execute(api, {"owner": "octocat", "repo": "hello", "number": 42})
@@ -109,8 +121,10 @@ def test_github_read_issue_calls_correct_endpoint():
 # github_list_pulls
 # -----------------------------------------------------------------------
 
+
 def test_github_list_pulls_passes_repo():
     from tools.github_list_pulls import execute
+
     api = MagicMock()
     api.get.return_value = []
     execute(api, {"repo": "octocat/hello"})
@@ -121,8 +135,10 @@ def test_github_list_pulls_passes_repo():
 # github_read_pull
 # -----------------------------------------------------------------------
 
+
 def test_github_read_pull_calls_correct_endpoint():
     from tools.github_read_pull import execute
+
     api = MagicMock()
     api.get.return_value = {"number": 7}
     execute(api, {"owner": "octocat", "repo": "hello", "number": 7})
@@ -133,8 +149,10 @@ def test_github_read_pull_calls_correct_endpoint():
 # github_create_issue
 # -----------------------------------------------------------------------
 
+
 def test_github_create_issue_posts_to_correct_endpoint():
     from tools.github_create_issue import execute
+
     api = MagicMock()
     api.post.return_value = {"number": 99}
     execute(api, {"owner": "octocat", "repo": "hello", "title": "Bug report"})
@@ -146,9 +164,12 @@ def test_github_create_issue_posts_to_correct_endpoint():
 
 def test_github_create_issue_includes_body_and_labels():
     from tools.github_create_issue import execute
+
     api = MagicMock()
     api.post.return_value = {"number": 100}
-    execute(api, {"owner": "o", "repo": "r", "title": "T", "body": "B", "labels": ["bug"]})
+    execute(
+        api, {"owner": "o", "repo": "r", "title": "T", "body": "B", "labels": ["bug"]}
+    )
     payload = api.post.call_args[1]["json_data"]
     assert payload["body"] == "B"
     assert payload["labels"] == ["bug"]
@@ -158,8 +179,10 @@ def test_github_create_issue_includes_body_and_labels():
 # github_add_comment
 # -----------------------------------------------------------------------
 
+
 def test_github_add_comment_posts_to_correct_endpoint():
     from tools.github_add_comment import execute
+
     api = MagicMock()
     api.post.return_value = {"id": 1}
     execute(api, {"owner": "octocat", "repo": "hello", "number": 42, "body": "LGTM"})

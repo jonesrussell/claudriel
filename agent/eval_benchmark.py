@@ -9,6 +9,7 @@ Usage:
     python agent/eval_benchmark.py --all --runs 3
     python agent/eval_benchmark.py --all --output docs/reports/model-benchmarks.json
 """
+
 import argparse
 import json
 import sys
@@ -102,14 +103,16 @@ def run_benchmark(
                     )
                     elapsed = (time.monotonic() - start) * 1000
 
-                    benchmark.runs.append(RunResult(
-                        model=model_id,
-                        tier=tier_name,
-                        input_tokens=response.usage.input_tokens,
-                        output_tokens=response.usage.output_tokens,
-                        latency_ms=elapsed,
-                        response_text=response.content[0].text[:500],
-                    ))
+                    benchmark.runs.append(
+                        RunResult(
+                            model=model_id,
+                            tier=tier_name,
+                            input_tokens=response.usage.input_tokens,
+                            output_tokens=response.usage.output_tokens,
+                            latency_ms=elapsed,
+                            response_text=response.content[0].text[:500],
+                        )
+                    )
                 except Exception as e:
                     print(f"  Error on {tier_name}/{test_name}: {e}", file=sys.stderr)
 
@@ -143,8 +146,12 @@ def generate_report(all_results: list[BenchmarkResult]) -> dict:
             latencies = stats["latencies"]
             test_summary[tier] = {
                 "median_latency_ms": round(sorted(latencies)[len(latencies) // 2], 1),
-                "avg_input_tokens": round(sum(stats["input_tokens"]) / len(stats["input_tokens"])),
-                "avg_output_tokens": round(sum(stats["output_tokens"]) / len(stats["output_tokens"])),
+                "avg_input_tokens": round(
+                    sum(stats["input_tokens"]) / len(stats["input_tokens"])
+                ),
+                "avg_output_tokens": round(
+                    sum(stats["output_tokens"]) / len(stats["output_tokens"])
+                ),
             }
 
         skills[benchmark.skill]["tests"][benchmark.test_name] = test_summary
@@ -185,7 +192,9 @@ def main() -> None:
     args = parser.parse_args()
 
     skills_dir = Path(args.skills_dir)
-    skill_list = [args.skill] if args.skill else list(SKILL_TO_ENTITY.keys()) if args.all else []
+    skill_list = (
+        [args.skill] if args.skill else list(SKILL_TO_ENTITY.keys()) if args.all else []
+    )
 
     if not skill_list:
         parser.error("Specify --skill NAME or --all")

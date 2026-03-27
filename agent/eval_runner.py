@@ -5,6 +5,7 @@ Usage:
     python agent/eval_runner.py --deterministic
     python agent/eval_runner.py --llm-judge [--skill NAME] [--type TYPE]
 """
+
 import argparse
 import json
 import sys
@@ -22,13 +23,26 @@ PASS_THRESHOLD = 3.0
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Claudriel skill eval runner")
     mode = parser.add_mutually_exclusive_group(required=True)
-    mode.add_argument("--deterministic", action="store_true", help="Schema validation only")
-    mode.add_argument("--llm-judge", action="store_true", help="Full LLM-judge evaluation")
+    mode.add_argument(
+        "--deterministic", action="store_true", help="Schema validation only"
+    )
+    mode.add_argument(
+        "--llm-judge", action="store_true", help="Full LLM-judge evaluation"
+    )
     parser.add_argument("--skill", type=str, help="Run evals for specific skill only")
-    parser.add_argument("--type", type=str, choices=["basic", "trajectory", "multi-turn"], help="Run specific eval type")
-    parser.add_argument("--skills-dir", type=str, default=".claude/skills", help="Skills directory")
+    parser.add_argument(
+        "--type",
+        type=str,
+        choices=["basic", "trajectory", "multi-turn"],
+        help="Run specific eval type",
+    )
+    parser.add_argument(
+        "--skills-dir", type=str, default=".claude/skills", help="Skills directory"
+    )
     parser.add_argument("--output", type=str, help="Write JSON report to file")
-    parser.add_argument("--markdown", action="store_true", help="Print markdown summary to stdout")
+    parser.add_argument(
+        "--markdown", action="store_true", help="Print markdown summary to stdout"
+    )
     return parser.parse_args(argv)
 
 
@@ -42,23 +56,29 @@ def run_deterministic(skills_dir: Path) -> dict:
         errors = load_and_validate(eval_file)
 
         if skill_name not in results:
-            results[skill_name] = SkillResult(tests_run=0, tests_passed=0, average_score=5.0, failures=[])
+            results[skill_name] = SkillResult(
+                tests_run=0, tests_passed=0, average_score=5.0, failures=[]
+            )
 
         results[skill_name].tests_run += 1
         if errors:
             for error in errors:
-                results[skill_name].failures.append(EvalTestResult(
-                    name=f"{eval_file.name}:{error.message}",
-                    score=0.0,
-                    reason=error.message,
-                ))
+                results[skill_name].failures.append(
+                    EvalTestResult(
+                        name=f"{eval_file.name}:{error.message}",
+                        score=0.0,
+                        reason=error.message,
+                    )
+                )
         else:
             results[skill_name].tests_passed += 1
 
     return generate_report(results, mode="deterministic")
 
 
-def run_llm_judge(skills_dir: Path, skill_filter: str | None = None, type_filter: str | None = None) -> dict:
+def run_llm_judge(
+    skills_dir: Path, skill_filter: str | None = None, type_filter: str | None = None
+) -> dict:
     """Run LLM-judge evaluation on eval files."""
     import anthropic
 
@@ -80,11 +100,15 @@ def run_llm_judge(skills_dir: Path, skill_filter: str | None = None, type_filter
             continue
 
         skill_md = eval_file.parent.parent / "SKILL.md"
-        skill_context = skill_md.read_text() if skill_md.exists() else f"Skill: {skill_name}"
+        skill_context = (
+            skill_md.read_text() if skill_md.exists() else f"Skill: {skill_name}"
+        )
         subject_model = data.get("subject_model", "claude-sonnet-4-6")
 
         if skill_name not in results:
-            results[skill_name] = SkillResult(tests_run=0, tests_passed=0, average_score=0.0, failures=[])
+            results[skill_name] = SkillResult(
+                tests_run=0, tests_passed=0, average_score=0.0, failures=[]
+            )
 
         scores_sum = 0.0
         for test in data.get("tests", []):
@@ -107,14 +131,20 @@ def run_llm_judge(skills_dir: Path, skill_filter: str | None = None, type_filter
             if score.overall >= PASS_THRESHOLD:
                 results[skill_name].tests_passed += 1
             else:
-                results[skill_name].failures.append(EvalTestResult(
-                    name=test_name,
-                    score=score.overall,
-                    reason="; ".join(s.reason for s in score.scores if s.score < PASS_THRESHOLD),
-                ))
+                results[skill_name].failures.append(
+                    EvalTestResult(
+                        name=test_name,
+                        score=score.overall,
+                        reason="; ".join(
+                            s.reason for s in score.scores if s.score < PASS_THRESHOLD
+                        ),
+                    )
+                )
 
         if results[skill_name].tests_run > 0:
-            results[skill_name].average_score = scores_sum / results[skill_name].tests_run
+            results[skill_name].average_score = (
+                scores_sum / results[skill_name].tests_run
+            )
 
     return generate_report(results, mode="llm-judge")
 

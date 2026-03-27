@@ -13,7 +13,11 @@ def _make_client():
 
 def test_get_raises_on_4xx():
     client = _make_client()
-    mock_response = httpx.Response(401, json={"error": "Unauthorized"}, request=httpx.Request("GET", "http://localhost:8000/test"))
+    mock_response = httpx.Response(
+        401,
+        json={"error": "Unauthorized"},
+        request=httpx.Request("GET", "http://localhost:8000/test"),
+    )
     with patch.object(client._client, "get", return_value=mock_response):
         with pytest.raises(httpx.HTTPStatusError):
             client.get("/test")
@@ -22,7 +26,11 @@ def test_get_raises_on_4xx():
 
 def test_get_raises_on_5xx():
     client = _make_client()
-    mock_response = httpx.Response(503, json={"error": "Service unavailable"}, request=httpx.Request("GET", "http://localhost:8000/test"))
+    mock_response = httpx.Response(
+        503,
+        json={"error": "Service unavailable"},
+        request=httpx.Request("GET", "http://localhost:8000/test"),
+    )
     with patch.object(client._client, "get", return_value=mock_response):
         with pytest.raises(httpx.HTTPStatusError):
             client.get("/test")
@@ -31,7 +39,11 @@ def test_get_raises_on_5xx():
 
 def test_post_raises_on_4xx():
     client = _make_client()
-    mock_response = httpx.Response(400, json={"error": "Bad request"}, request=httpx.Request("POST", "http://localhost:8000/test"))
+    mock_response = httpx.Response(
+        400,
+        json={"error": "Bad request"},
+        request=httpx.Request("POST", "http://localhost:8000/test"),
+    )
     with patch.object(client._client, "post", return_value=mock_response):
         with pytest.raises(httpx.HTTPStatusError):
             client.post("/test", json_data={"key": "val"})
@@ -40,7 +52,11 @@ def test_post_raises_on_4xx():
 
 def test_post_raises_on_5xx():
     client = _make_client()
-    mock_response = httpx.Response(500, json={"error": "Internal error"}, request=httpx.Request("POST", "http://localhost:8000/test"))
+    mock_response = httpx.Response(
+        500,
+        json={"error": "Internal error"},
+        request=httpx.Request("POST", "http://localhost:8000/test"),
+    )
     with patch.object(client._client, "post", return_value=mock_response):
         with pytest.raises(httpx.HTTPStatusError):
             client.post("/test", json_data={})
@@ -49,7 +65,9 @@ def test_post_raises_on_5xx():
 
 def test_get_raises_on_timeout():
     client = _make_client()
-    with patch.object(client._client, "get", side_effect=httpx.ReadTimeout("read timed out")):
+    with patch.object(
+        client._client, "get", side_effect=httpx.ReadTimeout("read timed out")
+    ):
         with pytest.raises(httpx.ReadTimeout):
             client.get("/test")
     client.close()
@@ -57,7 +75,9 @@ def test_get_raises_on_timeout():
 
 def test_post_raises_on_timeout():
     client = _make_client()
-    with patch.object(client._client, "post", side_effect=httpx.ReadTimeout("read timed out")):
+    with patch.object(
+        client._client, "post", side_effect=httpx.ReadTimeout("read timed out")
+    ):
         with pytest.raises(httpx.ReadTimeout):
             client.post("/test", json_data={})
     client.close()
@@ -65,7 +85,9 @@ def test_post_raises_on_timeout():
 
 def test_get_raises_on_connect_error():
     client = _make_client()
-    with patch.object(client._client, "get", side_effect=httpx.ConnectError("connection refused")):
+    with patch.object(
+        client._client, "get", side_effect=httpx.ConnectError("connection refused")
+    ):
         with pytest.raises(httpx.ConnectError):
             client.get("/test")
     client.close()

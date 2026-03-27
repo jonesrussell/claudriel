@@ -1,4 +1,5 @@
 """Tests for eval YAML schema validation."""
+
 from eval_schema import validate_eval_file, ValidationError, discover_eval_files
 
 
@@ -13,9 +14,7 @@ def test_valid_basic_eval():
                 "name": "create-simple",
                 "operation": "create",
                 "input": "I owe Sarah a proposal",
-                "assertions": [
-                    {"type": "confirmation_shown"}
-                ],
+                "assertions": [{"type": "confirmation_shown"}],
             }
         ],
     }

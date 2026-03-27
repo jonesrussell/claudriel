@@ -1,4 +1,5 @@
 """LLM judge for scoring skill eval outputs."""
+
 import json
 import re
 from dataclasses import dataclass, field
@@ -85,11 +86,13 @@ def parse_judge_response(raw: str) -> JudgeScore:
 def _build_score(data: dict) -> JudgeScore:
     scores = []
     for s in data.get("scores", []):
-        scores.append(AssertionScore(
-            assertion=s.get("assertion", ""),
-            score=float(s.get("score", 0)),
-            reason=s.get("reason", ""),
-        ))
+        scores.append(
+            AssertionScore(
+                assertion=s.get("assertion", ""),
+                score=float(s.get("score", 0)),
+                reason=s.get("reason", ""),
+            )
+        )
     return JudgeScore(scores=scores, overall=float(data.get("overall", 0.0)))
 
 
@@ -102,6 +105,7 @@ def judge_response(
 ) -> JudgeScore:
     """Send a skill response to the LLM judge for scoring."""
     import anthropic
+
     client = anthropic.Anthropic()
     prompt = build_judge_prompt(skill_name, user_input, response_text, assertions)
 

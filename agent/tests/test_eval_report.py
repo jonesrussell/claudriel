@@ -1,4 +1,5 @@
 """Tests for eval report generation."""
+
 import json
 from eval_report import generate_report, format_markdown, SkillResult, EvalTestResult
 
@@ -27,7 +28,9 @@ def test_generate_report_empty():
 
 def test_format_markdown_includes_summary():
     results = {
-        "commitment": SkillResult(tests_run=5, tests_passed=5, average_score=4.5, failures=[]),
+        "commitment": SkillResult(
+            tests_run=5, tests_passed=5, average_score=4.5, failures=[]
+        ),
     }
     report = generate_report(results)
     md = format_markdown(report)

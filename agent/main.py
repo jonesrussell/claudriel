@@ -135,7 +135,9 @@ def classify_task_type(messages: list) -> str:
         return "email_compose"
     if any(w in first_msg for w in ["brief", "summary", "morning", "digest"]):
         return "brief_generation"
-    if any(w in first_msg for w in ["check", "what time", "calendar", "schedule", "who is"]):
+    if any(
+        w in first_msg for w in ["check", "what time", "calendar", "schedule", "who is"]
+    ):
         return "quick_lookup"
     if any(w in first_msg for w in ["research", "find out", "look into", "analyze"]):
         return "research"
@@ -156,7 +158,9 @@ def truncate_tool_result(tool_name: str, result: dict) -> str:
         # Gmail bodies are the biggest offender; truncate the body field
         truncated = dict(result)
         if "body" in truncated and len(truncated["body"]) > GMAIL_BODY_MAX_CHARS:
-            truncated["body"] = truncated["body"][:GMAIL_BODY_MAX_CHARS] + " [truncated]"
+            truncated["body"] = (
+                truncated["body"][:GMAIL_BODY_MAX_CHARS] + " [truncated]"
+            )
         return json.dumps(truncated, ensure_ascii=False)
 
     if len(result_json) > TOOL_RESULT_MAX_CHARS:
@@ -211,7 +215,9 @@ def main() -> None:
 
     turns_consumed = 0
     cached_tools = build_cached_tools(TOOLS)
-    cached_system = [{"type": "text", "text": system_prompt, "cache_control": {"type": "ephemeral"}}]
+    cached_system = [
+        {"type": "text", "text": system_prompt, "cache_control": {"type": "ephemeral"}}
+    ]
 
     try:
         for _ in range(turn_limit):
@@ -234,30 +240,55 @@ def main() -> None:
                         # Retries exhausted: try degrading to a lower-tier model
                         fallback = MODEL_DEGRADATION.get(current_model)
                         if fallback:
-                            emit("progress", phase="fallback", summary=f"Rate limit exhausted on {current_model}, falling back to {fallback}", level="warning")
+                            emit(
+                                "progress",
+                                phase="fallback",
+                                summary=f"Rate limit exhausted on {current_model}, falling back to {fallback}",
+                                level="warning",
+                            )
                             current_model = fallback
                             continue
                         raise
                     retry_after = getattr(e.response, "headers", {}).get("retry-after")
                     try:
-                        wait = min(float(retry_after), RATE_LIMIT_MAX_BACKOFF) if retry_after is not None else None
+                        wait = (
+                            min(float(retry_after), RATE_LIMIT_MAX_BACKOFF)
+                            if retry_after is not None
+                            else None
+                        )
                     except (ValueError, TypeError):
                         wait = None
                     if wait is None:
-                        wait = min(RATE_LIMIT_INITIAL_BACKOFF * (2 ** attempt), RATE_LIMIT_MAX_BACKOFF)
-                    emit("progress", phase="rate_limit", summary=f"Rate limited on {current_model}, retrying in {int(wait)}s...", level="warning")
+                        wait = min(
+                            RATE_LIMIT_INITIAL_BACKOFF * (2**attempt),
+                            RATE_LIMIT_MAX_BACKOFF,
+                        )
+                    emit(
+                        "progress",
+                        phase="rate_limit",
+                        summary=f"Rate limited on {current_model}, retrying in {int(wait)}s...",
+                        level="warning",
+                    )
                     time.sleep(wait)
                 except anthropic.APIError as api_err:
                     # API error (not rate limit): try escalating to a higher-tier model
                     fallback = MODEL_ESCALATION.get(current_model)
                     if fallback:
-                        emit("progress", phase="fallback", summary=f"API error on {current_model}, escalating to {fallback}: {api_err}", level="warning")
+                        emit(
+                            "progress",
+                            phase="fallback",
+                            summary=f"API error on {current_model}, escalating to {fallback}: {api_err}",
+                            level="warning",
+                        )
                         current_model = fallback
                         continue
                     raise
 
             if response is None:
-                emit("error", message="Failed to get API response after retries and fallbacks")
+                emit(
+                    "error",
+                    message="Failed to get API response after retries and fallbacks",
+                )
                 break
 
             # Collect text and tool_use blocks from the response
@@ -297,18 +328,22 @@ def main() -> None:
                         result = {"error": str(e)}
 
                 emit("tool_result", tool=tool_call.name, result=result)
-                tool_results.append({
-                    "type": "tool_result",
-                    "tool_use_id": tool_call.id,
-                    "content": truncate_tool_result(tool_call.name, result),
-                })
+                tool_results.append(
+                    {
+                        "type": "tool_result",
+                        "tool_use_id": tool_call.id,
+                        "content": truncate_tool_result(tool_call.name, result),
+                    }
+                )
 
             # Check if approaching limit and still have tool calls
             if turns_consumed >= turn_limit - 1 and tool_calls:
-                emit("needs_continuation",
-                     turns_consumed=turns_consumed,
-                     task_type=task_type,
-                     message="I need more turns to complete this task. Continue?")
+                emit(
+                    "needs_continuation",
+                    turns_consumed=turns_consumed,
+                    task_type=task_type,
+                    message="I need more turns to complete this task. Continue?",
+                )
                 break
 
             # Append tool results and loop

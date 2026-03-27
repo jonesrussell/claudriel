@@ -1,4 +1,5 @@
 """Tests for dynamic agent tool discovery."""
+
 from __future__ import annotations
 
 import importlib
@@ -38,7 +39,9 @@ def test_discover_tools_loads_valid_modules_in_sorted_order(tmp_path, monkeypatc
 
     monkeypatch.syspath_prepend(str(tmp_path))
 
-    tools, executors = main.discover_tools(package_name="dynamic_tools", package_path=package_dir)
+    tools, executors = main.discover_tools(
+        package_name="dynamic_tools", package_path=package_dir
+    )
 
     assert [tool["name"] for tool in tools] == ["a_first", "z_last"]
     assert sorted(executors.keys()) == ["a_first", "z_last"]

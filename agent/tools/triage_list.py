@@ -17,6 +17,9 @@ TOOL_DEF = {
 
 
 def execute(api, args: dict) -> dict:
-    return api.get("/api/internal/triage/list", params={
-        "limit": args.get("limit", 20),
-    })
+    return api.get(
+        "/api/internal/triage/list",
+        params={
+            "limit": args.get("limit", 20),
+        },
+    )

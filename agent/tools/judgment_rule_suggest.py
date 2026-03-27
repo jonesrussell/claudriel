@@ -28,8 +28,11 @@ TOOL_DEF = {
 
 
 def execute(api, args: dict) -> dict:
-    return api.post("/api/internal/rules/suggest", json_data={
-        "rule_text": args["rule_text"],
-        "context": args.get("context", ""),
-        "confidence": args.get("confidence", 0.8),
-    })
+    return api.post(
+        "/api/internal/rules/suggest",
+        json_data={
+            "rule_text": args["rule_text"],
+            "context": args.get("context", ""),
+            "confidence": args.get("confidence", 0.8),
+        },
+    )

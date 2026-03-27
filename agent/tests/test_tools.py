@@ -19,15 +19,21 @@ from tools.prospect_update import execute as prospect_update_run
 from tools.pipeline_fetch_leads import TOOL_DEF as PIPELINE_FETCH_DEF
 from tools.pipeline_fetch_leads import execute as pipeline_fetch_run
 
-
 # -----------------------------------------------------------------------
 # Tool definitions have required fields
 # -----------------------------------------------------------------------
 
+
 def test_all_tool_defs_have_name_and_schema():
     for tool in [
-        GMAIL_LIST_DEF, GMAIL_READ_DEF, GMAIL_SEND_DEF, CALENDAR_LIST_DEF, CALENDAR_CREATE_DEF,
-        PROSPECT_LIST_DEF, PROSPECT_UPDATE_DEF, PIPELINE_FETCH_DEF,
+        GMAIL_LIST_DEF,
+        GMAIL_READ_DEF,
+        GMAIL_SEND_DEF,
+        CALENDAR_LIST_DEF,
+        CALENDAR_CREATE_DEF,
+        PROSPECT_LIST_DEF,
+        PROSPECT_UPDATE_DEF,
+        PIPELINE_FETCH_DEF,
     ]:
         assert "name" in tool
         assert "input_schema" in tool
@@ -35,10 +41,19 @@ def test_all_tool_defs_have_name_and_schema():
 
 
 def test_tool_names_are_unique():
-    names = [t["name"] for t in [
-        GMAIL_LIST_DEF, GMAIL_READ_DEF, GMAIL_SEND_DEF, CALENDAR_LIST_DEF, CALENDAR_CREATE_DEF,
-        PROSPECT_LIST_DEF, PROSPECT_UPDATE_DEF, PIPELINE_FETCH_DEF,
-    ]]
+    names = [
+        t["name"]
+        for t in [
+            GMAIL_LIST_DEF,
+            GMAIL_READ_DEF,
+            GMAIL_SEND_DEF,
+            CALENDAR_LIST_DEF,
+            CALENDAR_CREATE_DEF,
+            PROSPECT_LIST_DEF,
+            PROSPECT_UPDATE_DEF,
+            PIPELINE_FETCH_DEF,
+        ]
+    ]
     assert len(names) == len(set(names))
 
 
@@ -46,16 +61,20 @@ def test_tool_names_are_unique():
 # gmail_list
 # -----------------------------------------------------------------------
 
+
 def test_gmail_list_calls_correct_endpoint():
     api = MagicMock()
     api.get.return_value = {"messages": []}
 
     result = gmail_list_run(api, {"query": "from:alice", "max_results": 5})
 
-    api.get.assert_called_once_with("/api/internal/gmail/list", params={
-        "q": "from:alice",
-        "max_results": 5,
-    })
+    api.get.assert_called_once_with(
+        "/api/internal/gmail/list",
+        params={
+            "q": "from:alice",
+            "max_results": 5,
+        },
+    )
     assert result == {"messages": []}
 
 
@@ -65,15 +84,19 @@ def test_gmail_list_uses_defaults():
 
     gmail_list_run(api, {})
 
-    api.get.assert_called_once_with("/api/internal/gmail/list", params={
-        "q": "is:unread",
-        "max_results": 10,
-    })
+    api.get.assert_called_once_with(
+        "/api/internal/gmail/list",
+        params={
+            "q": "is:unread",
+            "max_results": 10,
+        },
+    )
 
 
 # -----------------------------------------------------------------------
 # gmail_read
 # -----------------------------------------------------------------------
+
 
 def test_gmail_read_calls_correct_endpoint():
     api = MagicMock()
@@ -90,15 +113,19 @@ def test_gmail_read_calls_correct_endpoint():
 # gmail_send
 # -----------------------------------------------------------------------
 
+
 def test_gmail_send_calls_post():
     api = MagicMock()
     api.post.return_value = {"id": "sent-1"}
 
-    gmail_send_run(api, {
-        "to": "bob@example.com",
-        "subject": "Hi",
-        "body": "Hello Bob",
-    })
+    gmail_send_run(
+        api,
+        {
+            "to": "bob@example.com",
+            "subject": "Hi",
+            "body": "Hello Bob",
+        },
+    )
 
     api.post.assert_called_once()
     call_args = api.post.call_args
@@ -108,6 +135,7 @@ def test_gmail_send_calls_post():
 # -----------------------------------------------------------------------
 # calendar_list
 # -----------------------------------------------------------------------
+
 
 def test_calendar_list_calls_correct_endpoint():
     api = MagicMock()
@@ -124,20 +152,26 @@ def test_calendar_list_calls_correct_endpoint():
 # calendar_create
 # -----------------------------------------------------------------------
 
+
 def test_calendar_create_sends_required_fields():
     api = MagicMock()
     api.post.return_value = {"id": "evt-1"}
 
-    calendar_create_run(api, {
-        "title": "Standup",
-        "start_time": "2026-03-18T09:00:00-04:00",
-        "end_time": "2026-03-18T09:30:00-04:00",
-    })
+    calendar_create_run(
+        api,
+        {
+            "title": "Standup",
+            "start_time": "2026-03-18T09:00:00-04:00",
+            "end_time": "2026-03-18T09:30:00-04:00",
+        },
+    )
 
     api.post.assert_called_once()
     call_args = api.post.call_args
     assert call_args[0][0] == "/api/internal/calendar/create"
-    payload = call_args[1]["json_data"] if "json_data" in call_args[1] else call_args[0][1]
+    payload = (
+        call_args[1]["json_data"] if "json_data" in call_args[1] else call_args[0][1]
+    )
     assert payload["title"] == "Standup"
 
 
@@ -147,10 +181,13 @@ def test_prospect_list_calls_endpoint():
 
     prospect_list_run(api, {"workspace_uuid": "ws-1", "limit": 10})
 
-    api.get.assert_called_once_with("/api/internal/prospects/list", params={
-        "workspace_uuid": "ws-1",
-        "limit": 10,
-    })
+    api.get.assert_called_once_with(
+        "/api/internal/prospects/list",
+        params={
+            "workspace_uuid": "ws-1",
+            "limit": 10,
+        },
+    )
 
 
 def test_pipeline_fetch_leads_posts():
@@ -169,12 +206,19 @@ def test_calendar_create_parses_attendees():
     api = MagicMock()
     api.post.return_value = {"id": "evt-2"}
 
-    calendar_create_run(api, {
-        "title": "Meeting",
-        "start_time": "2026-03-18T10:00:00-04:00",
-        "end_time": "2026-03-18T11:00:00-04:00",
-        "attendees": "alice@ex.com, bob@ex.com",
-    })
+    calendar_create_run(
+        api,
+        {
+            "title": "Meeting",
+            "start_time": "2026-03-18T10:00:00-04:00",
+            "end_time": "2026-03-18T11:00:00-04:00",
+            "attendees": "alice@ex.com, bob@ex.com",
+        },
+    )
 
-    payload = api.post.call_args[1]["json_data"] if "json_data" in api.post.call_args[1] else api.post.call_args[0][1]
+    payload = (
+        api.post.call_args[1]["json_data"]
+        if "json_data" in api.post.call_args[1]
+        else api.post.call_args[0][1]
+    )
     assert payload["attendees"] == ["alice@ex.com", "bob@ex.com"]

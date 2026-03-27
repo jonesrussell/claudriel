@@ -22,7 +22,10 @@ TOOL_DEF = {
 
 
 def execute(api, args: dict) -> dict:
-    return api.get("/api/internal/gmail/list", params={
-        "q": args.get("query", "is:unread"),
-        "max_results": args.get("max_results", 10),
-    })
+    return api.get(
+        "/api/internal/gmail/list",
+        params={
+            "q": args.get("query", "is:unread"),
+            "max_results": args.get("max_results", 10),
+        },
+    )

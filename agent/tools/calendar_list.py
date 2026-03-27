@@ -22,7 +22,10 @@ TOOL_DEF = {
 
 
 def execute(api, args: dict) -> dict:
-    return api.get("/api/internal/calendar/list", params={
-        "days_ahead": args.get("days_ahead", 7),
-        "max_results": args.get("max_results", 20),
-    })
+    return api.get(
+        "/api/internal/calendar/list",
+        params={
+            "days_ahead": args.get("days_ahead", 7),
+            "max_results": args.get("max_results", 20),
+        },
+    )
