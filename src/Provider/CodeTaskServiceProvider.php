@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Claudriel\Provider;
 
+use Claudriel\Controller\InternalCodeTaskController;
+use Claudriel\Domain\Chat\InternalApiTokenGenerator;
 use Claudriel\Domain\CodeTask\CodeTaskRunner;
 use Claudriel\Entity\CodeTask;
 use Claudriel\Support\StorageRepositoryAdapter;
@@ -31,6 +33,28 @@ final class CodeTaskServiceProvider extends ServiceProvider
             return new CodeTaskRunner($repo);
         });
 
+        $this->singleton(InternalCodeTaskController::class, function () {
+            $entityTypeManager = $this->resolve(EntityTypeManagerInterface::class);
+            $database = $this->resolve(DatabaseInterface::class);
+            $dispatcher = $this->resolve(EventDispatcherInterface::class);
+
+            $makeRepo = function (string $typeId) use ($entityTypeManager, $database, $dispatcher) {
+                $entityType = $entityTypeManager->getDefinition($typeId);
+                $storage = new SqlEntityStorage($entityType, $database, $dispatcher);
+
+                return new StorageRepositoryAdapter($storage);
+            };
+
+            return new InternalCodeTaskController(
+                codeTaskRepo: $makeRepo('code_task'),
+                workspaceRepo: $makeRepo('workspace'),
+                repoRepo: $makeRepo('repo'),
+                workspaceRepoRepo: $makeRepo('workspace_repo'),
+                apiTokenGenerator: $this->resolve(InternalApiTokenGenerator::class),
+                runner: $this->resolve(CodeTaskRunner::class),
+            );
+        });
+
         $this->entityType(new EntityType(
             id: 'code_task',
             label: 'Code Task',
@@ -49,8 +73,8 @@ final class CodeTaskServiceProvider extends ServiceProvider
                 'diff_preview' => ['type' => 'text_long'],
                 'error' => ['type' => 'text_long'],
                 'claude_output' => ['type' => 'text_long'],
-                'started_at' => ['type' => 'string'],
-                'completed_at' => ['type' => 'string'],
+                'started_at' => ['type' => 'timestamp'],
+                'completed_at' => ['type' => 'timestamp'],
                 'tenant_id' => ['type' => 'string'],
                 'created_at' => ['type' => 'timestamp', 'readOnly' => true],
                 'updated_at' => ['type' => 'timestamp', 'readOnly' => true],

@@ -11,7 +11,7 @@ use Waaseyaa\Entity\Repository\EntityRepositoryInterface;
 
 final class CodeTaskRunnerTest extends TestCase
 {
-    public function test_run_sets_status_to_running(): void
+    public function test_run_completes_successfully(): void
     {
         $task = new CodeTask([
             'uuid' => 'task-1',
@@ -24,12 +24,14 @@ final class CodeTaskRunnerTest extends TestCase
         $repo = $this->createMock(EntityRepositoryInterface::class);
         $repo->expects($this->atLeastOnce())->method('save');
 
+        $shellStub = fn (string $command) => ['exit_code' => 0, 'output' => ''];
+
         $runner = new CodeTaskRunner($repo, fn () => [
             'exit_code' => 0,
             'output' => json_encode([
                 'result' => 'I fixed the login bug by updating the session handler.',
             ]),
-        ]);
+        ], $shellStub);
 
         $runner->run($task, '/tmp/test-repo');
 
@@ -50,15 +52,18 @@ final class CodeTaskRunnerTest extends TestCase
         $repo = $this->createMock(EntityRepositoryInterface::class);
         $repo->expects($this->atLeastOnce())->method('save');
 
+        $shellStub = fn (string $command) => ['exit_code' => 0, 'output' => ''];
+
         $runner = new CodeTaskRunner($repo, fn () => [
             'exit_code' => 1,
             'output' => 'Error: something went wrong',
-        ]);
+        ], $shellStub);
 
         $runner->run($task, '/tmp/test-repo');
 
         $this->assertSame('failed', $task->get('status'));
         $this->assertStringContainsString('something went wrong', (string) $task->get('error'));
+        $this->assertNotNull($task->get('completed_at'));
     }
 
     public function test_generate_branch_name(): void
