@@ -20,11 +20,14 @@ describe('useAuth', () => {
 
   it('fetchSession populates the current session on success', async () => {
     const mockFetch = vi.fn().mockResolvedValue({
-      account: { uuid: 'account-1', email: 'alice@example.com', tenant_id: 'tenant-1', roles: ['admin'] },
-      tenant: { uuid: 'tenant-1', name: 'Tenant One', default_workspace_uuid: 'workspace-1' },
-      entity_types: [{ id: 'workspace', label: 'Workspace', keys: { uuid: 'uuid' }, group: 'structure', disabled: false }],
+      ok: true,
+      json: () => Promise.resolve({
+        account: { uuid: 'account-1', email: 'alice@example.com', tenant_id: 'tenant-1', roles: ['admin'] },
+        tenant: { uuid: 'tenant-1', name: 'Tenant One', default_workspace_uuid: 'workspace-1' },
+        entity_types: [{ id: 'workspace', label: 'Workspace', keys: { uuid: 'uuid' }, group: 'structure', disabled: false }],
+      }),
     })
-    vi.stubGlobal('$fetch', mockFetch)
+    vi.stubGlobal('fetch', mockFetch)
 
     const { fetchSession, isAuthenticated, currentUser, tenant, entityTypes } = useAuth()
     await fetchSession()
@@ -38,12 +41,12 @@ describe('useAuth', () => {
     })
     expect(tenant.value).toEqual({ uuid: 'tenant-1', name: 'Tenant One', default_workspace_uuid: 'workspace-1' })
     expect(entityTypes.value).toEqual([{ id: 'workspace', label: 'Workspace', keys: { uuid: 'uuid' }, group: 'structure', disabled: false }])
-    expect(mockFetch).toHaveBeenCalledWith('/admin/session')
+    expect(mockFetch).toHaveBeenCalledWith('/admin/session', { credentials: 'include' })
   })
 
   it('fetchSession clears session state when bootstrap fails', async () => {
-    const mockFetch = vi.fn().mockRejectedValue(Object.assign(new Error('Unauthorized'), { status: 401 }))
-    vi.stubGlobal('$fetch', mockFetch)
+    const mockFetch = vi.fn().mockResolvedValue({ ok: false, status: 401 })
+    vi.stubGlobal('fetch', mockFetch)
 
     const { fetchSession, isAuthenticated, currentUser, entityTypes } = useAuth()
     await fetchSession()
@@ -59,50 +62,57 @@ describe('useAuth', () => {
   })
 
   it('logout calls /admin/logout and clears client-side session state', async () => {
+    const sessionPayload = {
+      account: { uuid: 'account-1', email: 'alice@example.com', tenant_id: 'tenant-1', roles: ['admin'] },
+      tenant: { uuid: 'tenant-1', name: 'Tenant One' },
+      entity_types: [],
+    }
     const mockFetch = vi.fn()
       .mockResolvedValueOnce({
-        account: { uuid: 'account-1', email: 'alice@example.com', tenant_id: 'tenant-1', roles: ['admin'] },
-        tenant: { uuid: 'tenant-1', name: 'Tenant One' },
-        entity_types: [],
+        ok: true,
+        json: () => Promise.resolve(sessionPayload),
       })
-      .mockResolvedValueOnce({ logged_out: true })
-    vi.stubGlobal('$fetch', mockFetch)
+      .mockResolvedValueOnce({ ok: true })
+    vi.stubGlobal('fetch', mockFetch)
 
     const { fetchSession, logout, isAuthenticated, currentUser } = useAuth()
     await fetchSession()
     expect(isAuthenticated.value).toBe(true)
 
     await logout()
-    expect(mockFetch).toHaveBeenLastCalledWith('/admin/logout', { method: 'POST' })
+    expect(mockFetch).toHaveBeenLastCalledWith('/admin/logout', { method: 'POST', credentials: 'include' })
     expect(isAuthenticated.value).toBe(false)
     expect(currentUser.value).toBeNull()
   })
 
   it('checkAuth calls /admin/session only once until logout resets the checked flag', async () => {
-    const mockFetch = vi.fn().mockResolvedValue({
+    const sessionBody = {
       account: { uuid: 'account-3', email: 'dave@example.com', tenant_id: 'tenant-1', roles: [] },
       tenant: null,
       entity_types: [],
+    }
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve(sessionBody),
     })
-    vi.stubGlobal('$fetch', mockFetch)
+    vi.stubGlobal('fetch', mockFetch)
 
     const { checkAuth, logout } = useAuth()
     await checkAuth()
     await checkAuth()
     expect(mockFetch).toHaveBeenCalledTimes(1)
 
-    mockFetch.mockResolvedValueOnce({ logged_out: true })
+    mockFetch.mockResolvedValueOnce({ ok: true })
     mockFetch.mockResolvedValueOnce({
-      account: { uuid: 'account-3', email: 'dave@example.com', tenant_id: 'tenant-1', roles: [] },
-      tenant: null,
-      entity_types: [],
+      ok: true,
+      json: () => Promise.resolve(sessionBody),
     })
 
     await logout()
     await checkAuth()
 
     expect(mockFetch).toHaveBeenCalledTimes(3)
-    expect(mockFetch).toHaveBeenNthCalledWith(2, '/admin/logout', { method: 'POST' })
-    expect(mockFetch).toHaveBeenNthCalledWith(3, '/admin/session')
+    expect(mockFetch).toHaveBeenNthCalledWith(2, '/admin/logout', { method: 'POST', credentials: 'include' })
+    expect(mockFetch).toHaveBeenNthCalledWith(3, '/admin/session', { credentials: 'include' })
   })
 })

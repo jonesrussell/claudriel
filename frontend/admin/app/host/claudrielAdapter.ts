@@ -150,8 +150,13 @@ function mapSessionPayload(response: AdminSessionPayload): SessionBootstrap {
 export const claudrielHostAdapter: HostAdapter = {
   async fetchSession(): Promise<SessionBootstrap | null> {
     try {
-      const response = await $fetch<AdminSessionPayload>('/admin/session')
-      return mapSessionPayload(response)
+      // Native fetch — Nuxt $fetch can resolve paths against app.baseURL (/admin/) and break session URLs.
+      const response = await fetch('/admin/session', { credentials: 'include' })
+      if (!response.ok) {
+        return null
+      }
+      const payload = (await response.json()) as AdminSessionPayload
+      return mapSessionPayload(payload)
     } catch {
       return null
     }
@@ -168,7 +173,7 @@ export const claudrielHostAdapter: HostAdapter = {
   },
 
   async logout(): Promise<void> {
-    await $fetch('/admin/logout', { method: 'POST' })
+    await fetch('/admin/logout', { method: 'POST', credentials: 'include' })
   },
 
   loadEntityCatalog(session: SessionBootstrap | null, payload?: AdminSessionPayload | null): EntityTypeInfo[] {
