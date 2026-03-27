@@ -33,6 +33,9 @@ final class CodeTask extends ContentEntityBase
         if (! array_key_exists('error', $values)) {
             $values['error'] = null;
         }
+        if (! array_key_exists('branch_name', $values)) {
+            $values['branch_name'] = null;
+        }
         if (! array_key_exists('claude_output', $values)) {
             $values['claude_output'] = null;
         }

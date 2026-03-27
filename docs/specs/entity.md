@@ -10,6 +10,7 @@
 | `src/Entity/McEvent.php` | Immutable ingested fact (source event) |
 | `src/Entity/Person.php` | Contact/sender extracted from ingestion |
 | `src/Entity/Workspace.php` | Named grouping context for events and commitments |
+| `src/Entity/CodeTask.php` | Delegated Claude Code task with status tracking |
 | `src/McClaudiaServiceProvider.php` | Registers all entity types + routes |
 
 ## Internal-Only Entities
@@ -20,6 +21,7 @@ The following entities are used internally and do not require CRUD surfaces
 | Entity | Purpose |
 |--------|---------|
 | `Artifact` | Repo reference used by workspace system internally |
+| `CodeTask` | Background Claude Code execution, managed via agent tools not user-facing |
 | `Integration` | Service integration config, managed via OAuth flows not user-facing |
 | `Operation` | Work unit tracking for AI code-gen, internal orchestration |
 | `TriageEntry` | Unprocessed message buffer, consumed by ingestion pipeline |
@@ -55,6 +57,7 @@ $repo->count(array $criteria = []): int
 | Person | `pid` | `uuid` | `name` |
 | Skill | `sid` | `uuid` | `name` |
 | Workspace | `wid` | `uuid` | `name` |
+| CodeTask | `ctid` | `uuid` | `prompt` |
 
 ## EntityType Registration
 
@@ -117,6 +120,26 @@ $this->entityType(new EntityType(
 | `description` | string | Optional description; defaults to `''` |
 | `account_id` | string | Optional; links to an Account entity |
 | `metadata` | string | JSON-encoded extra data; defaults to `'{}'` |
+
+## CodeTask Fields
+
+| Field | Type | Default | Notes |
+|-------|------|---------|-------|
+| `ctid` | int | — | Primary key |
+| `uuid` | string | — | |
+| `workspace_uuid` | string | required | Links to Workspace |
+| `repo_uuid` | string | required | Links to Repo entity |
+| `prompt` | text_long | required | Instructions for Claude Code |
+| `status` | string | `'queued'` | `queued`, `running`, `completed`, `failed` |
+| `branch_name` | string | — | Git branch (auto-generated from prompt if not provided) |
+| `pr_url` | string | `null` | GitHub PR URL on completion |
+| `summary` | text_long | `null` | Summary of changes (last 20 lines of output) |
+| `diff_preview` | text_long | `null` | Truncated diff (max 200 lines) |
+| `error` | text_long | `null` | Error message on failure |
+| `claude_output` | text_long | `null` | Full Claude Code output (max 50K chars) |
+| `started_at` | string | `null` | ISO 8601; set when status becomes `running` |
+| `completed_at` | string | `null` | ISO 8601; set on `completed` or `failed` |
+| `tenant_id` | string | — | Multi-tenancy key |
 
 ## Testing Pattern
 

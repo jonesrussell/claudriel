@@ -18,7 +18,9 @@ declare -A FILE_TO_SPEC=(
   ["src/DayBrief"]="docs/specs/day-brief.md"
   ["src/Support"]="docs/specs/infrastructure.md"
   ["src/Provider"]="docs/specs/infrastructure.md"
+  ["agent/tools"]="docs/specs/agent-subprocess.md"
   ["src/Domain/Chat"]="docs/specs/chat.md"
+  ["src/Domain/CodeTask"]="docs/specs/web-cli.md"
   ["src/Controller"]="docs/specs/web-cli.md"
   ["src/Command"]="docs/specs/web-cli.md"
 )

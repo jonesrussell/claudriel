@@ -18,11 +18,16 @@ final class CodeTaskRunner
     /** @var null|callable(string,string): array{exit_code:int,output:string} */
     private readonly mixed $processRunner;
 
+    /** @var null|callable(string): array{exit_code:int,output:string} */
+    private readonly mixed $shellRunner;
+
     public function __construct(
         private readonly EntityRepositoryInterface $codeTaskRepo,
         ?callable $processRunner = null,
+        ?callable $shellRunner = null,
     ) {
         $this->processRunner = $processRunner;
+        $this->shellRunner = $shellRunner;
     }
 
     public function run(CodeTask $task, string $repoPath): void
@@ -116,29 +121,23 @@ final class CodeTaskRunner
             escapeshellarg($prompt),
         );
 
-        $marker = '__CLAUDRIEL_EXIT__';
-        $raw = shell_exec($command.'; printf "\n'.$marker.'%s" "$?"');
-
-        if ($raw === null) {
-            return ['exit_code' => 1, 'output' => 'shell_exec returned null'];
-        }
-
-        $pos = strrpos($raw, $marker);
-        if ($pos === false) {
-            return ['exit_code' => 1, 'output' => trim($raw)];
-        }
-
-        return [
-            'exit_code' => (int) trim(substr($raw, $pos + strlen($marker))),
-            'output' => trim(substr($raw, 0, $pos)),
-        ];
+        return $this->execWithProcOpen($command, $repoPath);
     }
 
     private function captureDiff(string $repoPath): string
     {
-        $result = $this->shellExecSafe(sprintf(
-            'git -C %s diff HEAD~1 2>/dev/null || git -C %s diff --cached 2>/dev/null || echo ""',
+        $mainBranch = trim($this->shellExecSafe(sprintf(
+            'git -C %s symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed "s@^refs/remotes/origin/@@"',
             escapeshellarg($repoPath),
+        )));
+        if ($mainBranch === '') {
+            $mainBranch = 'main';
+        }
+
+        $result = $this->shellExecSafe(sprintf(
+            'git -C %s diff %s...HEAD 2>/dev/null || git -C %s diff HEAD 2>/dev/null || echo ""',
+            escapeshellarg($repoPath),
+            escapeshellarg($mainBranch),
             escapeshellarg($repoPath),
         ));
 
@@ -198,14 +197,50 @@ final class CodeTaskRunner
 
     private function shellExec(string $command): void
     {
-        $output = shell_exec($command.' 2>&1');
-        // Fire and forget for git operations — errors caught by caller
+        $result = $this->execWithProcOpen($command);
+        if ($result['exit_code'] !== 0) {
+            throw new \RuntimeException(
+                'Command failed (exit '.$result['exit_code'].'): '.mb_substr($result['output'], 0, 500),
+            );
+        }
     }
 
     private function shellExecSafe(string $command): string
     {
-        $output = shell_exec($command);
+        $result = $this->execWithProcOpen($command);
 
-        return is_string($output) ? trim($output) : '';
+        return trim($result['output']);
+    }
+
+    /**
+     * @return array{exit_code: int, output: string}
+     */
+    private function execWithProcOpen(string $command, ?string $cwd = null): array
+    {
+        if ($this->shellRunner !== null) {
+            return ($this->shellRunner)($command);
+        }
+
+        $descriptors = [
+            0 => ['pipe', 'r'],
+            1 => ['pipe', 'w'],
+            2 => ['pipe', 'w'],
+        ];
+
+        $process = proc_open($command, $descriptors, $pipes, $cwd, null, ['bypass_shell' => false]);
+        if (! is_resource($process)) {
+            return ['exit_code' => 1, 'output' => 'Failed to start process'];
+        }
+
+        fclose($pipes[0]);
+        $stdout = stream_get_contents($pipes[1]) ?: '';
+        $stderr = stream_get_contents($pipes[2]) ?: '';
+        fclose($pipes[1]);
+        fclose($pipes[2]);
+
+        $exitCode = proc_close($process);
+        $output = $stdout !== '' ? $stdout : $stderr;
+
+        return ['exit_code' => $exitCode, 'output' => $output];
     }
 }

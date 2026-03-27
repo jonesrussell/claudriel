@@ -25,7 +25,6 @@ final class InternalCodeTaskController
         private readonly EntityRepositoryInterface $workspaceRepoRepo,
         private readonly InternalApiTokenGenerator $apiTokenGenerator,
         private readonly CodeTaskRunner $runner,
-        private readonly GitRepositoryManager $gitManager,
     ) {}
 
     public function create(array $params = [], array $query = [], ?AccountInterface $account = null, ?Request $httpRequest = null): SsrResponse
@@ -48,8 +47,9 @@ final class InternalCodeTaskController
         $tenantId = $this->resolveTenantId($httpRequest);
 
         // Find or create workspace + repo
+        $accountId = $this->resolveAccountId($httpRequest);
         try {
-            $workspaceUuid = $this->resolveOrCreateWorkspace($repoFullName, $tenantId);
+            $workspaceUuid = $this->resolveOrCreateWorkspace($repoFullName, $tenantId, $accountId);
         } catch (\RuntimeException) {
             return $this->jsonError('Failed to set up workspace for repo', 500);
         }
@@ -77,7 +77,8 @@ final class InternalCodeTaskController
         $taskUuid = (string) $task->get('uuid');
 
         // Dispatch background command
-        $consolePath = dirname(__DIR__, 2).'/bin/console';
+        $appRoot = getenv('APP_ROOT') ?: dirname(__DIR__, 2);
+        $consolePath = $appRoot.'/bin/console';
         $cmd = sprintf(
             'php %s claudriel:code-task:run %s > /dev/null 2>&1 &',
             escapeshellarg($consolePath),
@@ -103,6 +104,7 @@ final class InternalCodeTaskController
             return $this->jsonError('Task UUID required', 400);
         }
 
+        $tenantId = $this->resolveTenantId($httpRequest);
         $tasks = $this->codeTaskRepo->findBy(['uuid' => $uuid]);
         if ($tasks === []) {
             return $this->jsonError('Code task not found', 404);
@@ -110,6 +112,10 @@ final class InternalCodeTaskController
 
         $task = $tasks[0];
         if (! $task instanceof CodeTask) {
+            return $this->jsonError('Code task not found', 404);
+        }
+
+        if ((string) $task->get('tenant_id') !== $tenantId) {
             return $this->jsonError('Code task not found', 404);
         }
 
@@ -126,7 +132,7 @@ final class InternalCodeTaskController
         ]);
     }
 
-    private function resolveOrCreateWorkspace(string $repoFullName, string $tenantId): string
+    private function resolveOrCreateWorkspace(string $repoFullName, string $tenantId, ?string $accountId = null): string
     {
         // Check if we have a repo entity for this full name
         $repos = $this->repoRepo->findBy(['full_name' => $repoFullName, 'tenant_id' => $tenantId]);
@@ -147,6 +153,7 @@ final class InternalCodeTaskController
         $workspace = new Workspace([
             'name' => $repoFullName,
             'description' => 'Auto-created for code tasks on '.$repoFullName,
+            'account_id' => $accountId,
             'tenant_id' => $tenantId,
             'status' => 'active',
         ]);
@@ -154,9 +161,10 @@ final class InternalCodeTaskController
         $wsUuid = (string) $workspace->get('uuid');
 
         // Clone the repo
+        $gitManager = new GitRepositoryManager;
         $repoUrl = 'https://github.com/'.$repoFullName.'.git';
-        $localPath = $this->gitManager->buildWorkspaceRepoPath($wsUuid);
-        $this->gitManager->clone($repoUrl, $localPath);
+        $localPath = $gitManager->buildWorkspaceRepoPath($wsUuid);
+        $gitManager->clone($repoUrl, $localPath);
 
         // Create repo entity
         $parts = explode('/', $repoFullName, 2);
@@ -191,6 +199,18 @@ final class InternalCodeTaskController
         $repo = $repos[0];
 
         return $repo instanceof Repo ? (string) $repo->get('uuid') : null;
+    }
+
+    private function resolveAccountId(mixed $httpRequest): ?string
+    {
+        if ($httpRequest instanceof Request) {
+            $accountId = $httpRequest->headers->get('X-Account-Id', '');
+            if ($accountId !== '') {
+                return $accountId;
+            }
+        }
+
+        return null;
     }
 
     private function resolveTenantId(mixed $httpRequest): string

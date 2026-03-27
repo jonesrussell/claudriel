@@ -27,6 +27,12 @@ parameters:
 		-
 			message: '#^Call to an undefined method Waaseyaa\\Access\\AccountInterface\:\:getTenantId\(\)\.$#'
 			identifier: method.notFound
+			count: 2
+			path: src/Access/MilestoneAccessPolicy.php
+
+		-
+			message: '#^Call to an undefined method Waaseyaa\\Access\\AccountInterface\:\:getTenantId\(\)\.$#'
+			identifier: method.notFound
 			count: 1
 			path: src/Access/PersonAccessPolicy.php
 

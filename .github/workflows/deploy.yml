@@ -48,7 +48,7 @@ jobs:
         run: composer test
 
       - name: Set up Python 3.11
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.11'
 
@@ -84,7 +84,7 @@ jobs:
             --prefer-dist
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '25'
           cache: 'npm'
@@ -113,7 +113,7 @@ jobs:
             claudriel/ claudriel/build/
 
       - name: Upload build artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: deploy-artifact
           path: claudriel/build/
@@ -132,7 +132,7 @@ jobs:
           path: claudriel
 
       - name: Download build artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: deploy-artifact
           path: claudriel/build/
@@ -175,7 +175,7 @@ jobs:
           path: claudriel
 
       - name: Download build artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: deploy-artifact
           path: claudriel/build/
