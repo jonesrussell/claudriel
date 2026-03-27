@@ -64,6 +64,7 @@
   "ingest_status_approved": "Approved",
   "ingest_status_rejected": "Rejected",
   "ingest_status_failed": "Failed",
+  "logout": "Logout",
   "nav_group_other": "Other",
 
   "entity_type_user": "User",

@@ -64,6 +64,7 @@
   "ingest_status_approved": "Approuvé",
   "ingest_status_rejected": "Rejeté",
   "ingest_status_failed": "Échoué",
+  "logout": "Déconnexion",
   "nav_group_other": "Autre",
 
   "entity_type_user": "Utilisateur",

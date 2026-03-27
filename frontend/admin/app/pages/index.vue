@@ -5,6 +5,20 @@ const { t, entityLabel } = useLanguage()
 const config = useRuntimeConfig()
 useHead({ title: computed(() => `${t('dashboard')} | ${config.public.appName}`) })
 const { entityTypes } = useAuth()
+
+const ENTITY_DESCRIPTIONS: Record<string, string> = {
+  workspace: 'Isolated contexts for clients or domains',
+  project: 'Track ongoing work and link to repos',
+  person: 'Contacts, clients, and collaborators',
+  commitment: 'Promises made and received',
+  schedule_entry: 'Meetings and time-blocked events',
+  triage_entry: 'Inbox items awaiting a decision',
+  pipeline_config: 'Lead pipeline settings per workspace',
+  prospect: 'Leads moving through the pipeline',
+  filtered_prospect: 'Leads rejected by the filter step',
+  prospect_attachment: 'Files attached to prospects',
+  prospect_audit: 'Audit trail for prospect changes',
+}
 </script>
 
 <template>
@@ -23,6 +37,7 @@ const { entityTypes } = useAuth()
         class="card"
       >
         <h2 class="card-title">{{ entityLabel(et.id, et.label) }}</h2>
+        <p v-if="ENTITY_DESCRIPTIONS[et.id]" class="card-sub">{{ ENTITY_DESCRIPTIONS[et.id] }}</p>
       </NuxtLink>
     </div>
   </div>
