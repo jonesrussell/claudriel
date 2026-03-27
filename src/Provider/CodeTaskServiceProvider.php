@@ -16,6 +16,7 @@ use Waaseyaa\Entity\EntityTypeManager;
 use Waaseyaa\Entity\EntityTypeManagerInterface;
 use Waaseyaa\EntityStorage\SqlEntityStorage;
 use Waaseyaa\Foundation\ServiceProvider\ServiceProvider;
+use Waaseyaa\Routing\RouteBuilder;
 use Waaseyaa\Routing\WaaseyaaRouter;
 
 final class CodeTaskServiceProvider extends ServiceProvider
@@ -93,6 +94,21 @@ final class CodeTaskServiceProvider extends ServiceProvider
 
     public function routes(WaaseyaaRouter $router, ?EntityTypeManager $entityTypeManager = null): void
     {
-        // InternalCodeTaskController routes will be added in a later task (#575)
+        $router->addRoute(
+            'claudriel.internal.code_task.create',
+            RouteBuilder::create('/api/internal/code-tasks/create')
+                ->controller(InternalCodeTaskController::class.'::create')
+                ->allowAll()
+                ->methods('POST')
+                ->build(),
+        );
+        $router->addRoute(
+            'claudriel.internal.code_task.status',
+            RouteBuilder::create('/api/internal/code-tasks/{uuid}/status')
+                ->controller(InternalCodeTaskController::class.'::status')
+                ->allowAll()
+                ->methods('GET')
+                ->build(),
+        );
     }
 }
