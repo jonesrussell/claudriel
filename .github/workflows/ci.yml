@@ -78,7 +78,7 @@ jobs:
 
       - run: black --check **/*.py
 
-      - run: isort . --check
+      - run: isort . --check --profile black
 
       - run: mypy **/*.py
 
