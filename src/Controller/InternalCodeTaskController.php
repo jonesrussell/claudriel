@@ -29,7 +29,8 @@ final class InternalCodeTaskController
 
     public function create(array $params = [], array $query = [], ?AccountInterface $account = null, ?Request $httpRequest = null): SsrResponse
     {
-        if ($this->authenticate($httpRequest) === null) {
+        $accountId = $this->authenticate($httpRequest);
+        if ($accountId === null) {
             return $this->jsonError('Unauthorized', 401);
         }
 
@@ -77,8 +78,8 @@ final class InternalCodeTaskController
         $taskUuid = (string) $task->get('uuid');
 
         // Dispatch background command
-        $appRoot = getenv('APP_ROOT') ?: dirname(__DIR__, 2);
-        $consolePath = $appRoot.'/bin/console';
+        $projectRoot = $_ENV['CLAUDRIEL_ROOT'] ?? getenv('CLAUDRIEL_ROOT') ?: dirname(__DIR__, 2);
+        $consolePath = $projectRoot.'/bin/console';
         $cmd = sprintf(
             'php %s claudriel:code-task:run %s > /dev/null 2>&1 &',
             escapeshellarg($consolePath),
@@ -115,7 +116,8 @@ final class InternalCodeTaskController
             return $this->jsonError('Code task not found', 404);
         }
 
-        if ((string) $task->get('tenant_id') !== $tenantId) {
+        $taskTenant = (string) ($task->get('tenant_id') ?? '');
+        if ($taskTenant !== '' && $taskTenant !== $tenantId) {
             return $this->jsonError('Code task not found', 404);
         }
 

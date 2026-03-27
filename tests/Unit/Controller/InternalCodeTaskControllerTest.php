@@ -16,6 +16,7 @@ use PHPUnit\Framework\TestCase;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\HttpFoundation\Request;
 use Waaseyaa\Entity\EntityType;
+use Waaseyaa\Entity\Repository\EntityRepositoryInterface;
 use Waaseyaa\EntityStorage\Driver\InMemoryStorageDriver;
 use Waaseyaa\EntityStorage\EntityRepository;
 
@@ -25,13 +26,13 @@ final class InternalCodeTaskControllerTest extends TestCase
 
     private InternalApiTokenGenerator $tokenGenerator;
 
-    private EntityRepository $codeTaskRepo;
+    private EntityRepositoryInterface $codeTaskRepo;
 
-    private EntityRepository $workspaceRepo;
+    private EntityRepositoryInterface $workspaceRepo;
 
-    private EntityRepository $repoRepo;
+    private EntityRepositoryInterface $repoRepo;
 
-    private EntityRepository $workspaceRepoRepo;
+    private EntityRepositoryInterface $workspaceRepoRepo;
 
     protected function setUp(): void
     {
@@ -155,6 +156,28 @@ final class InternalCodeTaskControllerTest extends TestCase
         self::assertSame('completed', $data['status']);
         self::assertSame('Fixed the bug', $data['summary']);
         self::assertSame('https://github.com/test/repo/pull/1', $data['pr_url']);
+    }
+
+    public function test_status_filters_by_tenant(): void
+    {
+        $task = new CodeTask([
+            'ctid' => 1,
+            'uuid' => 'task-1',
+            'workspace_uuid' => 'ws-1',
+            'repo_uuid' => 'repo-1',
+            'prompt' => 'Fix bug',
+            'status' => 'completed',
+            'tenant_id' => 'other-tenant',
+        ]);
+        $this->codeTaskRepo->save($task);
+
+        $controller = $this->makeController();
+        $token = $this->tokenGenerator->generate('acct-1');
+        $request = Request::create('/api/internal/code-tasks/task-1/status', 'GET');
+        $request->headers->set('Authorization', 'Bearer '.$token);
+
+        $response = $controller->status(['uuid' => 'task-1'], [], null, $request);
+        self::assertSame(404, $response->statusCode);
     }
 
     private function makeController(): InternalCodeTaskController
