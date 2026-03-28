@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace Claudriel\Provider;
 
+use Claudriel\Domain\Memory\RehearsalService;
 use Claudriel\Entity\MemoryAccessEvent;
 use Claudriel\Entity\MergeAuditLog;
 use Claudriel\Entity\MergeCandidate;
+use Claudriel\Support\StorageRepositoryAdapter;
 use Waaseyaa\Entity\EntityType;
+use Waaseyaa\Entity\EntityTypeManager;
 use Waaseyaa\Foundation\ServiceProvider\ServiceProvider;
 
 final class MemoryServiceProvider extends ServiceProvider
@@ -72,5 +75,15 @@ final class MemoryServiceProvider extends ServiceProvider
                 'updated_at' => ['type' => 'timestamp', 'readOnly' => true],
             ],
         ));
+
+        $this->singleton(RehearsalService::class, function () {
+            $etm = $this->resolve(EntityTypeManager::class);
+
+            return new RehearsalService([
+                'person' => new StorageRepositoryAdapter($etm->getStorage('person')),
+                'commitment' => new StorageRepositoryAdapter($etm->getStorage('commitment')),
+                'mc_event' => new StorageRepositoryAdapter($etm->getStorage('mc_event')),
+            ]);
+        });
     }
 }

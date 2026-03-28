@@ -26,6 +26,7 @@ use Claudriel\Domain\Chat\Tool\WorkspaceDeleteTool;
 use Claudriel\Domain\Chat\Tool\WorkspaceListTool;
 use Claudriel\Domain\DayBrief\Assembler\DayBriefAssembler;
 use Claudriel\Domain\IssueOrchestrator;
+use Claudriel\Domain\Memory\RehearsalService;
 use Claudriel\Entity\ChatMessage;
 use Claudriel\Entity\MemoryAccessEvent;
 use Claudriel\Entity\Workspace;
@@ -60,6 +61,7 @@ final class ChatStreamController
         private readonly EntityTypeManager $entityTypeManager,
         private readonly mixed $agentClientFactory = null,
         private readonly ?IssueOrchestrator $orchestrator = null,
+        private readonly ?RehearsalService $rehearsalService = null,
     ) {}
 
     /**
@@ -395,6 +397,10 @@ final class ChatStreamController
                 ], JSON_THROW_ON_ERROR),
             ]);
             $storage->save($event);
+
+            if ($this->rehearsalService !== null && is_string($ref['entity_type']) && is_string($ref['entity_uuid'])) {
+                $this->rehearsalService->recordAccess($ref['entity_type'], $ref['entity_uuid']);
+            }
         }
     }
 
