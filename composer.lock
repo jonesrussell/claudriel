@@ -4880,12 +4880,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/waaseyaa/graphql.git",
-                "reference": "43496c8cec770b651e435ae17ad79f709d63a314"
+                "reference": "0eedf4d8a2c156d85b3fdb4b31f9815f1cd67fc1"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/waaseyaa/graphql/zipball/43496c8cec770b651e435ae17ad79f709d63a314",
-                "reference": "43496c8cec770b651e435ae17ad79f709d63a314",
+                "url": "https://api.github.com/repos/waaseyaa/graphql/zipball/0eedf4d8a2c156d85b3fdb4b31f9815f1cd67fc1",
+                "reference": "0eedf4d8a2c156d85b3fdb4b31f9815f1cd67fc1",
                 "shasum": ""
             },
             "require": {
@@ -4920,9 +4920,9 @@
             "description": "GraphQL endpoint for Waaseyaa — auto-generated schema from entity types",
             "support": {
                 "issues": "https://github.com/waaseyaa/graphql/issues",
-                "source": "https://github.com/waaseyaa/graphql/tree/v0.1.0-alpha.61"
+                "source": "https://github.com/waaseyaa/graphql/tree/v0.1.0-alpha.62"
             },
-            "time": "2026-03-28T00:05:51+00:00"
+            "time": "2026-03-28T00:45:49+00:00"
         },
         {
             "name": "waaseyaa/i18n",
