@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { useLanguage } from '~/composables/useLanguage'
+import { useClock } from '~/composables/useClock'
 
 const { t, locale, locales, setLocale } = useLanguage()
+const { formatted: clockTime } = useClock()
 const config = useRuntimeConfig()
 const appName = config.public.appName as string
 const isDesktop = ref(false)
@@ -48,6 +50,7 @@ async function handleLogout() {
         <span class="topbar-toggle-icon">&#9776;</span>
       </button>
       <NuxtLink to="/" class="topbar-brand">{{ appName }}</NuxtLink>
+      <span class="topbar-clock">{{ clockTime }}</span>
       <button class="topbar-logout" type="button" @click="handleLogout">
         {{ t('logout') }}
       </button>
@@ -163,6 +166,13 @@ body {
   font-weight: 700;
   font-size: 16px;
   letter-spacing: -0.02em;
+}
+
+.topbar-clock {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  letter-spacing: 0.01em;
+  white-space: nowrap;
   margin-right: auto;
 }
 
@@ -347,6 +357,10 @@ body {
 
 /* Responsive layout */
 @media (max-width: 768px) {
+  .topbar-clock {
+    display: none;
+  }
+
   .topbar-toggle {
     display: inline-flex;
     align-items: center;
