@@ -11,6 +11,8 @@ use Claudriel\Controller\InternalGithubController;
 use Claudriel\Controller\InternalGoogleController;
 use Claudriel\Controller\InternalSessionController;
 use Claudriel\Domain\Chat\InternalApiTokenGenerator;
+use Claudriel\Domain\IssueOrchestrator;
+use Claudriel\Domain\Memory\RehearsalService;
 use Claudriel\Entity\ChatMessage;
 use Claudriel\Entity\ChatSession;
 use Claudriel\Entity\ChatTokenUsage;
@@ -148,6 +150,27 @@ final class ChatServiceProvider extends ServiceProvider
             return new InternalGithubController(
                 $this->resolve(GitHubTokenManagerInterface::class),
                 $this->resolve(InternalApiTokenGenerator::class),
+            );
+        });
+
+        $this->singleton(ChatStreamController::class, function () {
+            $orchestrator = null;
+            try {
+                $orchestrator = $this->resolve(IssueOrchestrator::class);
+            } catch (\Throwable) {
+            }
+
+            $rehearsal = null;
+            try {
+                $rehearsal = $this->resolve(RehearsalService::class);
+            } catch (\Throwable) {
+            }
+
+            return new ChatStreamController(
+                $this->resolve(EntityTypeManager::class),
+                null,
+                $orchestrator,
+                $rehearsal,
             );
         });
     }
