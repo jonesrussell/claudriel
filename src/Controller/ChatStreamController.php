@@ -34,8 +34,8 @@ use Claudriel\Routing\RequestScopeViolation;
 use Claudriel\Routing\TenantWorkspaceResolver;
 use Claudriel\Support\AuthenticatedAccountSessionResolver;
 use Claudriel\Support\DriftDetector;
-use Claudriel\Support\GoogleTokenManager;
-use Claudriel\Support\GoogleTokenManagerInterface;
+use Claudriel\Support\OAuthTokenManager;
+use Claudriel\Support\OAuthTokenManagerInterface;
 use Claudriel\Support\StorageRepositoryAdapter;
 use Claudriel\Temporal\TemporalContextFactory;
 use Claudriel\Temporal\TimeSnapshot;
@@ -44,6 +44,9 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 use Waaseyaa\Access\AccountInterface;
 use Waaseyaa\Entity\ContentEntityInterface;
 use Waaseyaa\Entity\EntityTypeManager;
+use Waaseyaa\HttpClient\StreamHttpClient;
+use Waaseyaa\OAuthProvider\Provider\GoogleOAuthProvider;
+use Waaseyaa\OAuthProvider\ProviderRegistry;
 use Waaseyaa\SSR\SsrResponse;
 
 final class ChatStreamController
@@ -565,7 +568,7 @@ final class ChatStreamController
         return $tools;
     }
 
-    private function resolveGoogleTokenManager(): ?GoogleTokenManagerInterface
+    private function resolveGoogleTokenManager(): ?OAuthTokenManagerInterface
     {
         $clientId = $_ENV['GOOGLE_CLIENT_ID'] ?? getenv('GOOGLE_CLIENT_ID') ?: '';
         $clientSecret = $_ENV['GOOGLE_CLIENT_SECRET'] ?? getenv('GOOGLE_CLIENT_SECRET') ?: '';
@@ -574,11 +577,18 @@ final class ChatStreamController
             return null;
         }
 
-        return new GoogleTokenManager(
-            $this->entityTypeManager,
-            $clientId,
-            $clientSecret,
-        );
+        $integrationStorage = $this->entityTypeManager->getStorage('integration');
+        $integrationRepo = new StorageRepositoryAdapter($integrationStorage);
+
+        // Minimal ProviderRegistry for token refresh only (Google)
+        $registry = new ProviderRegistry;
+        $httpClient = new StreamHttpClient;
+        $googleRedirectUri = $_ENV['GOOGLE_REDIRECT_URI'] ?? getenv('GOOGLE_REDIRECT_URI') ?: '';
+        $registry->register('google', new GoogleOAuthProvider(
+            $clientId, $clientSecret, $googleRedirectUri, $httpClient,
+        ));
+
+        return new OAuthTokenManager($integrationRepo, $registry);
     }
 
     private function generateUuid(): string
