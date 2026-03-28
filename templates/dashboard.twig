@@ -1228,7 +1228,7 @@
             </div>
 
             {# ── Editorial Greeting ── #}
-            {% set hour = "now"|date("G") %}
+            {% set hour = local_hour|default("now"|date("G")) %}
             {% set greeting = hour < 12 ? 'Good morning.' : (hour < 17 ? 'Good afternoon.' : 'Good evening.') %}
             {% set attention_count = (pending_commitments|default([]))|length + (drifting_commitments|default([]))|length %}
 

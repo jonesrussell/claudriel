@@ -163,6 +163,7 @@ final class DashboardController
                 'proactive_guidance' => $proactiveGuidance,
                 'brief_fallback_payload' => json_encode($fallbackPayload, JSON_THROW_ON_ERROR),
                 'brief_fallback_url' => '/stream/brief?transport=fallback&request_id='.$requestId,
+                'local_hour' => (int) $snapshot->local()->format('G'),
             ]));
 
             return new SsrResponse(
