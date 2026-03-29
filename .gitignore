@@ -10,7 +10,11 @@ storage/framework/packages.php
 storage/brief-session.txt
 config/active/
 storage/waaseyaa.sqlite
+storage/waaseyaa.sqlite-shm
+storage/waaseyaa.sqlite-wal
 storage/claudriel.sqlite
+storage/claudriel.sqlite-shm
+storage/claudriel.sqlite-wal
 .worktrees/
 node_modules/
 frontend/admin/.env
