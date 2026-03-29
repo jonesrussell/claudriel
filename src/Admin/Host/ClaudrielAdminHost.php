@@ -68,7 +68,7 @@ final class ClaudrielAdminHost
             $host = strtolower($parsed['host']);
 
             if (in_array($host, ['127.0.0.1', 'localhost'], true)) {
-                return $candidate;
+                return $this->normalizeRedirectPathInUrl($candidate, $parsed);
             }
 
             return null;
@@ -82,7 +82,45 @@ final class ClaudrielAdminHost
             return null;
         }
 
-        return $candidate;
+        return $this->stripTrailingSlashFromPathOnly($candidate);
+    }
+
+    /**
+     * Routes are registered without a trailing slash (e.g. /admin); /admin/ was 404ing after OAuth.
+     *
+     * @param  array{scheme?: string, host?: string, port?: int, path?: string, query?: string, fragment?: string}  $parsed
+     */
+    private function normalizeRedirectPathInUrl(string $candidate, array $parsed): string
+    {
+        $path = $parsed['path'] ?? '/';
+        $normalizedPath = $this->stripTrailingSlashFromPathOnly($path);
+
+        if ($path === $normalizedPath) {
+            return $candidate;
+        }
+
+        $url = $parsed['scheme'].'://'.$parsed['host'];
+        if (isset($parsed['port'])) {
+            $url .= ':'.$parsed['port'];
+        }
+        $url .= $normalizedPath;
+        if (isset($parsed['query'])) {
+            $url .= '?'.$parsed['query'];
+        }
+        if (isset($parsed['fragment'])) {
+            $url .= '#'.$parsed['fragment'];
+        }
+
+        return $url;
+    }
+
+    private function stripTrailingSlashFromPathOnly(string $path): string
+    {
+        if ($path !== '/' && str_ends_with($path, '/')) {
+            return rtrim($path, '/');
+        }
+
+        return $path;
     }
 
     public function loginFormRedirect(Account|AuthenticatedAccount $account, ?string $redirect = null): string

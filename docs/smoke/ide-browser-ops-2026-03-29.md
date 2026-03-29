@@ -1,5 +1,7 @@
 # IDE browser smoke — ops admin (2026-03-29)
 
+**Port update:** Canonical local dev is PHP **37840** + Nuxt admin **37841** (`frontend/admin/devPorts.ts`, `composer serve:php`). Notes below that mention 8081 / 3333 are historical unless updated inline.
+
 See also [FULL_SMOKE_CHECKLIST.md](FULL_SMOKE_CHECKLIST.md) for the full layered smoke runbook (CI, Playwright, `bin/smoke-http.sh`, matrices, release).
 
 ## Follow-up: smoke completed (same day)

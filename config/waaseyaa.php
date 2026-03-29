@@ -41,13 +41,11 @@ return [
         'application/octet-stream',
     ],
 
-    // Allowed CORS origins for the admin SPA.
+    // Allowed CORS origins for the admin SPA (locked dev ports — see frontend/admin/devPorts.ts).
     'cors_origins' => array_merge(
         [
-            'http://localhost:3333',
-            'http://127.0.0.1:3333',
-            'http://localhost:3000',
-            'http://127.0.0.1:3000',
+            'http://localhost:37841',
+            'http://127.0.0.1:37841',
         ],
         array_filter(
             array_map('trim', explode(',', getenv('WAASEYAA_CORS_ORIGINS') ?: '')),

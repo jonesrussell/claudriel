@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Claudriel\Controller;
 
 use Claudriel\Access\AuthenticatedAccount;
+use Claudriel\Admin\Host\ClaudrielAdminHost;
 use Claudriel\Entity\Integration;
 use Claudriel\Service\PublicAccountSignupService;
 use Claudriel\Support\AuthenticatedAccountSessionResolver;
@@ -146,6 +147,10 @@ final class OAuthController
         ?AccountInterface $account = null,
         ?Request $httpRequest = null,
     ): RedirectResponse {
+        if (session_status() !== PHP_SESSION_ACTIVE) {
+            session_start();
+        }
+
         $provider = $params['provider'] ?? '';
 
         if (! $this->providerRegistry->has($provider) || ! isset(self::FLOW_SCOPES[$provider])) {
@@ -153,6 +158,9 @@ final class OAuthController
 
             return new RedirectResponse('/login', 302);
         }
+
+        $postLoginRedirect = $this->host()->sanitizeRedirectTarget($query['redirect'] ?? null);
+        $this->session->set('oauth_post_login_redirect', $postLoginRedirect);
 
         $state = $this->stateManager->generate($this->session);
         $this->session->set('oauth_flow', 'signin');
@@ -177,12 +185,14 @@ final class OAuthController
         $provider = $params['provider'] ?? '';
 
         if (isset($query['error'])) {
+            $this->session->remove('oauth_post_login_redirect');
             $_SESSION['flash_error'] = ucfirst($provider).' sign-in denied: '.$query['error'];
 
             return new RedirectResponse('/login', 302);
         }
 
         if (! $this->stateManager->validate($this->session, $query['state'] ?? '')) {
+            $this->session->remove('oauth_post_login_redirect');
             $_SESSION['flash_error'] = 'Invalid OAuth state. Please try again.';
 
             return new RedirectResponse('/login', 302);
@@ -192,12 +202,14 @@ final class OAuthController
         $this->session->remove('oauth_flow');
 
         if ($flow !== 'signin') {
+            $this->session->remove('oauth_post_login_redirect');
             $_SESSION['flash_error'] = 'Invalid OAuth flow. Please try again.';
 
             return new RedirectResponse('/login', 302);
         }
 
         if (! $this->providerRegistry->has($provider)) {
+            $this->session->remove('oauth_post_login_redirect');
             $_SESSION['flash_error'] = "Unknown OAuth provider: {$provider}";
 
             return new RedirectResponse('/login', 302);
@@ -211,6 +223,7 @@ final class OAuthController
         try {
             $token = $oauthProvider->exchangeCode($query['code'] ?? '');
         } catch (\Throwable $e) {
+            $this->session->remove('oauth_post_login_redirect');
             $_SESSION['flash_error'] = 'Failed to exchange authorization code.';
 
             return new RedirectResponse('/login', 302);
@@ -219,6 +232,7 @@ final class OAuthController
         $profile = $oauthProvider->getUserProfile($token->accessToken);
 
         if ($profile->email === '') {
+            $this->session->remove('oauth_post_login_redirect');
             $_SESSION['flash_error'] = ucfirst($provider).' account email is not available or not verified.';
 
             return new RedirectResponse('/login', 302);
@@ -241,7 +255,11 @@ final class OAuthController
             $profile->email,
         );
 
-        return new RedirectResponse('/app', 302);
+        $postLogin = $this->session->get('oauth_post_login_redirect');
+        $this->session->remove('oauth_post_login_redirect');
+        $target = is_string($postLogin) && $postLogin !== '' ? $postLogin : '/app';
+
+        return new RedirectResponse($target, 302);
     }
 
     private function upsertIntegration(
@@ -301,6 +319,11 @@ final class OAuthController
         }
 
         $storage->save($integration);
+    }
+
+    private function host(): ClaudrielAdminHost
+    {
+        return new ClaudrielAdminHost($this->entityTypeManager);
     }
 
     private function resolveAccount(mixed $account): ?AuthenticatedAccount

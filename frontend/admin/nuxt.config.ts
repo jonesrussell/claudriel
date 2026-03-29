@@ -1,4 +1,6 @@
-const phpDevBase = (process.env.NUXT_PUBLIC_PHP_ORIGIN ?? 'http://localhost:8081').replace(/\/$/, '')
+import { CLAUDRIEL_DEV_ADMIN_PORT, defaultClaudrielPhpOrigin } from './devPorts'
+
+const phpDevBase = (process.env.NUXT_PUBLIC_PHP_ORIGIN ?? defaultClaudrielPhpOrigin()).replace(/\/$/, '')
 
 /**
  * Value exposed as `useRuntimeConfig().public.phpOrigin` (login redirects, etc.).
@@ -20,8 +22,8 @@ export default defineNuxtConfig({
   compatibilityDate: '2025-01-01',
   devtools: { enabled: true },
   devServer: {
-    // Default 3000 often collides with Mercure / other local services.
-    port: 3333,
+    // Locked dev port — see `devPorts.ts` (avoids 3000 Mercure, 8081 other PHP stacks).
+    port: Number(process.env.NUXT_DEV_SERVER_PORT ?? CLAUDRIEL_DEV_ADMIN_PORT),
   },
   ssr: false,
   spaLoadingTemplate: 'spa-loading-template.html',
@@ -88,7 +90,7 @@ export default defineNuxtConfig({
       // Set NUXT_PUBLIC_ENABLE_REALTIME=1 to force-enable.
       enableRealtime: process.env.NUXT_PUBLIC_ENABLE_REALTIME ?? (process.env.NODE_ENV === 'production' ? '1' : '0'),
       appName: process.env.NUXT_PUBLIC_APP_NAME ?? 'Claudriel Admin',
-      /** Dev default matches `phpDevBase` (http://localhost:8081); prod default '' for same-host PHP. */
+      /** Dev default matches `phpDevBase` (`defaultClaudrielPhpOrigin()`); prod '' for same-host PHP. */
       phpOrigin: publicPhpOrigin(),
     },
   },

@@ -1,12 +1,14 @@
 import { defineConfig, devices } from '@playwright/test'
+import { CLAUDRIEL_DEV_ADMIN_PORT, CLAUDRIEL_DEV_PHP_PORT } from './devPorts'
 
 // Nuxt app uses app.baseURL `/admin/` — tests use paths relative to this origin.
-const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:3333/admin'
+const baseURL =
+  process.env.PLAYWRIGHT_BASE_URL ?? `http://localhost:${CLAUDRIEL_DEV_ADMIN_PORT}/admin`
 
-/** Dedicated PHP port for e2e so local dev servers on :8081 do not block Playwright's php -S. */
-const phpPort = process.env.PLAYWRIGHT_PHP_PORT ?? '18081'
+/** Same PHP port as local dev (`devPorts.ts`); override only for parallel runs. */
+const phpPort = process.env.PLAYWRIGHT_PHP_PORT ?? String(CLAUDRIEL_DEV_PHP_PORT)
 const phpOrigin =
-  process.env.NUXT_PUBLIC_PHP_ORIGIN ?? `http://127.0.0.1:${phpPort}`
+  process.env.NUXT_PUBLIC_PHP_ORIGIN ?? `http://localhost:${phpPort}`
 
 export default defineConfig({
   testDir: './e2e',
@@ -31,9 +33,9 @@ export default defineConfig({
     // Build argv for sh -c with JSON.stringify so ${phpPort}/${phpOrigin} are never mistaken for shell vars
     // (values are fixed in Node here; the shell must not re-parse unquoted ${...}).
     command: `sh -c ${JSON.stringify(
-      `export NUXT_PUBLIC_PHP_ORIGIN=${phpOrigin} && PHP_CLI_SERVER_WORKERS=4 php -S 127.0.0.1:${phpPort} -t ../../public ../../public/router.php & npm run dev`,
+      `export NUXT_PUBLIC_PHP_ORIGIN=${phpOrigin} && PHP_CLI_SERVER_WORKERS=4 php -S localhost:${phpPort} -t ../../public ../../public/router.php & npm run dev`,
     )}`,
-    url: 'http://localhost:3333/admin',
+    url: `http://localhost:${CLAUDRIEL_DEV_ADMIN_PORT}/admin`,
     reuseExistingServer: !process.env.CI,
     timeout: 120 * 1000,
     env: {

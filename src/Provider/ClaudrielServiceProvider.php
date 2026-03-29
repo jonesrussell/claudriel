@@ -235,6 +235,16 @@ final class ClaudrielServiceProvider extends ServiceProvider
                 ->build(),
         );
 
+        $router->addRoute(
+            'claudriel.admin.trailing_slash',
+            RouteBuilder::create('/admin/')
+                ->controller(AdminUiController::class.'::show')
+                ->allowAll()
+                ->methods('GET')
+                ->render()
+                ->build(),
+        );
+
         // Admin surface routes (session, catalog, entity CRUD)
         $surfaceHost = new ClaudrielSurfaceHost(fn () => $entityTypeManager);
         AdminSurfaceServiceProvider::registerRoutes($router, $surfaceHost);

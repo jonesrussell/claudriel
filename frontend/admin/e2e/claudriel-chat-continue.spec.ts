@@ -1,6 +1,7 @@
 import { test, expect, type Page, type Response } from '@playwright/test'
+import { defaultClaudrielPhpOrigin } from '../devPorts'
 
-const PHP_BASE = 'http://localhost:8081'
+const PHP_BASE = defaultClaudrielPhpOrigin()
 
 function sseEvent(event: string, data: unknown): string {
   return `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`

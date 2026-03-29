@@ -4,6 +4,7 @@
 
 | File / Directory | Purpose |
 |-----------------|---------|
+| `frontend/admin/devPorts.ts` | Locked local PHP (:37840) + Nuxt (:37841) defaults |
 | `frontend/admin/nuxt.config.ts` | Core config: SPA mode, base URL `/admin/`, dev proxy |
 | `frontend/admin/package.json` | Dependencies (Nuxt 4.4.2, Vue 3.5.31, TypeScript 6.0.2) |
 | `frontend/admin/app/host/claudrielAdapter.ts` | GraphQL transport adapter (CRUD ops, field mappings, TextValue wrapping) |
@@ -29,7 +30,7 @@
 
 ### GraphQL (primary)
 
-Single `/graphql` endpoint. Dev: Nitro proxy to `http://localhost:8081/graphql`.
+Single `/graphql` endpoint. Dev: Nitro proxy to `http://localhost:37840/graphql` (see `devPorts.ts`).
 
 **Day brief & chat streams**: `GET /brief` and `/stream/**` are proxied in dev (`nuxt.config.ts` `devProxy` + `routeRules`) so the browser stays same-origin with the SPA; use native `fetch` / `EventSource` with `credentials: include`.
 
@@ -103,13 +104,14 @@ Entity types in catalog: workspace, project, person, commitment, schedule_entry,
 |----------|---------|---------|
 | `NUXT_PUBLIC_ENABLE_REALTIME` | false (dev), true (prod) | Enable SSE broadcast |
 | `NUXT_PUBLIC_APP_NAME` | "Claudriel Admin" | Page title |
-| `NUXT_PUBLIC_PHP_ORIGIN` | `http://localhost:8081` (dev; unset in prod builds) | PHP backend for Nitro `devProxy` / `routeRules` and `runtimeConfig.public.phpOrigin` (`publicPhpOrigin()` in `nuxt.config.ts`: dev matches this default, prod `''` for same-origin) |
-| `PLAYWRIGHT_BASE_URL` | `http://localhost:3333/admin` | E2E test base URL |
+| `NUXT_PUBLIC_PHP_ORIGIN` | `http://localhost:37840` (dev; unset in prod builds) | PHP backend for Nitro `devProxy` / `routeRules` and `runtimeConfig.public.phpOrigin` |
+| `NUXT_DEV_SERVER_PORT` | `37841` | Override Nuxt dev bind port |
+| `PLAYWRIGHT_BASE_URL` | `http://localhost:37841/admin` | E2E test base URL |
 
 ## Build / Deploy
 
-- `npm run dev` — Nuxt dev server on **:3333** by default (`nuxt.config.ts` `devServer.port`), avoiding collisions with Mercure on :3000; override with `nuxt dev --port …` if needed
-- `composer serve:php` — `php -S 0.0.0.0:8081 -t public public/router.php` (**must** pass `public/router.php` so `/login`, `/graphql`, etc. are routed to `index.php`; `-t public` alone serves static files and breaks the API)
+- `npm run dev` — Nuxt dev server on **:37841** by default (`devPorts.ts` / `nuxt.config.ts`); override with `NUXT_DEV_SERVER_PORT` if needed
+- `composer serve:php` — `php -S 0.0.0.0:37840 -t public public/router.php` (**must** pass `public/router.php`; `-t public` alone breaks `/graphql` and `/login`)
 - Local smoke without OAuth: set `CLAUDRIEL_DEV_CLI_SESSION=1` in the environment for the PHP process (php -S only); uses the first **verified** account in the DB for `/admin/session`. Never enable in production.
 - `npm run build` — Production static build
 - Production: static build served by Caddy (not a running Nuxt server)
@@ -117,7 +119,7 @@ Entity types in catalog: workspace, project, person, commitment, schedule_entry,
 
 ## Local dev pitfalls
 
-- **Port 3000**: Mercure or other tools often bind :3000; hitting that URL expecting Nuxt yields empty 200s and a blank page. Default admin dev is **:3333**; `config/waaseyaa.php` allows both 3333 and 3000 origins for CORS.
+- **Wrong URL**: Admin SPA dev URL is **`http://localhost:37841/admin/`** (not :3000 Mercure, not :8081 other PHP apps). `config/waaseyaa.php` `cors_origins` includes **37841**; add more via `WAASEYAA_CORS_ORIGINS` if needed.
 - **PHP `/login` 500**: With **php-fpm/Caddy** and `CLAUDRIEL_ENV=production`, missing required env vars still fail hard at boot. Under **php -S** (`cli-server`), boot logs missing vars but continues so local `/login` works. Prefer `CLAUDRIEL_ENV=development` in copied `.env` (see `.env.example`).
 - **php -S without `router.php`**: Requests hit static files or 404; use `composer serve:php` or `php -S … -t public public/router.php`.
 
@@ -129,4 +131,4 @@ Entity types in catalog: workspace, project, person, commitment, schedule_entry,
 - 15s fixed GraphQL timeout in `graphqlFetch`
 - TextValue wrapping is hardcoded per entity type for `text_long` fields
 - Schema caching is in-memory Map per entityType (no persistence)
-- Playwright E2E spins up both PHP (:8081) and Nuxt (:3333); skips chat tests in CI
+- Playwright E2E spins up both PHP (:37840) and Nuxt (:37841); skips chat tests in CI

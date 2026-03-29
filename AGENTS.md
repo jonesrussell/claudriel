@@ -10,6 +10,9 @@ Use Composer scripts for the PHP app:
 - `composer format` rewrites PHP formatting.
 - `composer analyse` runs PHPStan.
 - `composer test` runs PHPUnit unit tests.
+- Local admin (split stack): `composer serve:php` binds PHP on **37840**; `cd frontend/admin && npm run dev` serves the SPA on **37841**. Use **`http://localhost:37841/admin/`** (same hostname as `http://localhost:37840` in `.env` / Google OAuth — not `127.0.0.1` for one and `localhost` for the other). Ports: `frontend/admin/devPorts.ts`.
+
+- Playwright: default is **`npm run test:e2e`** in `frontend/admin` (one mocked smoke spec). Full browser suite: **`npm run test:e2e:all`** (run when the split-stack app + auth are stable).
 
 For the Python agent subprocess:
 

@@ -36,7 +36,7 @@ Ordered layers (fast → slow). Check boxes as you complete each step. **Owner**
 
 **Playwright details**
 
-- [playwright.config.ts](../../frontend/admin/playwright.config.ts) starts PHP on **`127.0.0.1:18081`** by default (`PLAYWRIGHT_PHP_PORT`) with **`public/router.php`**, and sets `NUXT_PUBLIC_PHP_ORIGIN` so Nuxt proxies match that PHP instance (avoids colliding with a dev server on `:8081`).
+- [playwright.config.ts](../../frontend/admin/playwright.config.ts) starts PHP on **`127.0.0.1:37840`** by default (`PLAYWRIGHT_PHP_PORT`, matches `devPorts.ts`) with **`public/router.php`**, and sets `NUXT_PUBLIC_PHP_ORIGIN` so Nuxt proxies match that PHP instance.
 - In CI, `claudriel-chat-continue.spec.ts` is ignored (`testIgnore` when `CI=true`).
 
 ---
@@ -154,7 +154,7 @@ Follow [ide-browser-ops-2026-03-29.md](ide-browser-ops-2026-03-29.md).
 **Environment**
 
 - [ ] PHP: `php -S 127.0.0.1:<port> -t public public/router.php` (use `router.php`; optional `CLAUDRIEL_DEV_CLI_SESSION=1` for cli-server session).
-- [ ] Nuxt: `NUXT_PUBLIC_PHP_ORIGIN=http://127.0.0.1:<php-port> npm run dev` (default dev port **3333**).
+- [ ] Nuxt: `npm run dev` from `frontend/admin` (default **37841**; PHP **37840** per `devPorts.ts`; override with `NUXT_PUBLIC_PHP_ORIGIN` / `NUXT_DEV_SERVER_PORT` if needed).
 
 **Minimum**
 

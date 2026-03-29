@@ -550,7 +550,7 @@ final class ChatStreamController
         $internalSecret = $_ENV['AGENT_INTERNAL_SECRET'] ?? getenv('AGENT_INTERNAL_SECRET') ?: '';
         if ($internalSecret !== '') {
             $tokenGen = new InternalApiTokenGenerator($internalSecret);
-            $apiBase = $_ENV['CLAUDRIEL_API_URL'] ?? getenv('CLAUDRIEL_API_URL') ?: 'http://localhost:8081';
+            $apiBase = $_ENV['CLAUDRIEL_API_URL'] ?? getenv('CLAUDRIEL_API_URL') ?: 'http://localhost:37840';
 
             $tools[] = new CodeTaskCreateTool($apiBase, $accountId, $tenantId, $tokenGen);
             $tools[] = new RepoCloneTool($apiBase, $accountId, $tenantId, $tokenGen);

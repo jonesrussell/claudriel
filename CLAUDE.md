@@ -195,7 +195,7 @@ All require HMAC Bearer token via `InternalApiTokenGenerator`. See `docs/specs/a
 - Production deploys to `claudriel.ai` via `/home/deployer/claudriel-prod/`; staging deploys to `claudriel.northcloud.one` via `/home/deployer/claudriel/`; pipeline: verify -> build -> staging -> production
 - `NotFoundController` Twig is null in production (DI doesn't inject it); the inline HTML fallback is what users see for 404s, not the Twig template
 - GraphQL endpoint (`/graphql`) is publicly accessible via `->allowAll()`; entity access guards filter items post-fetch, so unauthenticated requests get `total > 0` but empty `items`
-- Admin SPA Nuxt proxy routes `/api/**` to `localhost:8081`; in production the admin runs as a static build, not a Nuxt server, so API calls must be handled by the PHP backend directly via Caddy reverse-proxy rules
+- Admin SPA (dev) Nuxt on **:37841** proxies `/api/**` to PHP on **:37840** (`frontend/admin/devPorts.ts`, `composer serve:php`); in production the admin is a static build, so API calls hit PHP via Caddy
 - Admin adapter must use native `fetch()` not Nuxt `$fetch()` for backend API calls; `$fetch` resolves paths against `app.baseURL` (`/admin/`), turning `/api/schema/commitment` into `/admin/api/schema/commitment`
 - Do not commit `public/admin/` to git; it is built by CI and listed in `.gitignore`
 - Chat agent runs via Docker per-request (`docker run --rm -i`); requires `AGENT_DOCKER_IMAGE=claudriel-agent` and `CLAUDRIEL_API_URL=https://<domain>` in shared .env; the agent calls internal API routes through Caddy (PHP-FPM uses Unix socket, no TCP port)
@@ -217,7 +217,7 @@ All require HMAC Bearer token via `InternalApiTokenGenerator`. See `docs/specs/a
 - GraphQL mutations from the admin SPA require the Waaseyaa framework fix in `ControllerDispatcher` (waaseyaa/framework#602) to resolve session accounts on `allowAll()` routes; without it, mutations get `AnonymousUser` and fail with "Access denied"
 - Deploy validation uses `--insecure` TLS fallback (curl exit codes 35/60) when staging cert is broken; this masks the real issue (#474) but keeps deploys flowing
 - Workspace creation/deletion is handled by agent subprocess tools (`workspace_create`, `workspace_delete`, `repo_clone`), NOT by ChatStreamController regex (removed in #477); the agent handles intent parsing naturally
-- PHP built-in dev server (`php -S`) is single-threaded; agent callbacks hang while SSE streams hold the thread. Use `PHP_CLI_SERVER_WORKERS=4 php -S 0.0.0.0:8081 -t public public/router.php` (or `composer serve:php`) so `/graphql` and `/login` route through `index.php` — `-t public` alone does not (#490)
+- PHP built-in dev server (`php -S`) is single-threaded; agent callbacks hang while SSE streams hold the thread. Use `PHP_CLI_SERVER_WORKERS=4` with `composer serve:php` (PHP **:37840**, see `devPorts.ts`) so `/graphql` and `/login` route through `router.php` — `-t public` alone does not (#490)
 - `GitRepositoryManager` is NOT registered in the DI container; instantiate inline with `new GitRepositoryManager` (same pattern as `ClaudrielServiceProvider`)
 - Pipeline entity types (prospect, prospect_attachment, prospect_audit, filtered_prospect, pipeline_config) are registered in `PipelineServiceProvider`, not `ClaudrielServiceProvider`
 - Pipeline POST controllers require `CLAUDRIEL_API_KEY` bearer token; GET routes (preview, tex) are public

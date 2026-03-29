@@ -13,6 +13,8 @@ storage/waaseyaa.sqlite
 storage/claudriel.sqlite
 .worktrees/
 node_modules/
+frontend/admin/.env
+frontend/admin/.env.local
 frontend/admin/.nuxt/
 frontend/admin/.output/
 frontend/admin/dist

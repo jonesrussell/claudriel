@@ -35,11 +35,14 @@ final class PublicSessionControllerTest extends TestCase
 
     public function test_login_form_renders_public_auth_surface(): void
     {
-        $response = $this->controller()->loginForm();
+        $response = $this->controller()->loginForm(
+            httpRequest: Request::create('http://localhost:37840/login', 'GET'),
+        );
 
         self::assertInstanceOf(SsrResponse::class, $response);
         self::assertSame(200, $response->statusCode);
         self::assertStringContainsString('Your day is waiting.', $response->content);
+        self::assertStringContainsString('http://localhost:37840/oauth/google/signin', $response->content);
     }
 
     public function test_login_form_redirects_authenticated_session_into_app_shell(): void
@@ -53,7 +56,9 @@ final class PublicSessionControllerTest extends TestCase
         ]));
         $_SESSION['claudriel_account_uuid'] = $account->get('uuid');
 
-        $response = $this->controller($entityTypeManager)->loginForm();
+        $response = $this->controller($entityTypeManager)->loginForm(
+            httpRequest: Request::create('http://localhost/login', 'GET'),
+        );
 
         self::assertInstanceOf(RedirectResponse::class, $response);
         self::assertSame('/app?tenant_id=tenant-123&workspace_uuid=workspace-abc', $response->getTargetUrl());
@@ -65,7 +70,10 @@ final class PublicSessionControllerTest extends TestCase
         $account = $this->seedVerifiedAccount($entityTypeManager);
         $_SESSION['claudriel_account_uuid'] = $account->get('uuid');
 
-        $response = $this->controller($entityTypeManager)->loginForm(query: ['redirect' => '/admin']);
+        $response = $this->controller($entityTypeManager)->loginForm(
+            query: ['redirect' => '/admin'],
+            httpRequest: Request::create('http://localhost/login', 'GET'),
+        );
 
         self::assertInstanceOf(RedirectResponse::class, $response);
         self::assertSame('/admin', $response->getTargetUrl());

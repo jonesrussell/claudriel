@@ -40,12 +40,11 @@ final class PublicAccountController
             return new RedirectResponse($this->appUrl((string) $resolvedAccount->getTenantId()), 302);
         }
 
-        return $this->render('public/signup.twig', [
-            'csrf_token' => CsrfMiddleware::token(),
+        return $this->render('public/signup.twig', $this->signupTwigContext([
             'email' => (string) ($query['email'] ?? ''),
             'name' => (string) ($query['name'] ?? ''),
             'error' => null,
-        ]);
+        ], $httpRequest));
     }
 
     public function signup(array $params = [], array $query = [], ?AccountInterface $account = null, ?Request $httpRequest = null): RedirectResponse|SsrResponse
@@ -56,21 +55,19 @@ final class PublicAccountController
         $password = (string) $request->request->get('password', '');
 
         if ($name === '' || $email === '' || $password === '') {
-            return $this->render('public/signup.twig', [
-                'csrf_token' => CsrfMiddleware::token(),
+            return $this->render('public/signup.twig', $this->signupTwigContext([
                 'email' => $email,
                 'name' => $name,
                 'error' => 'Name, email, and password are required.',
-            ], 422);
+            ], $httpRequest), 422);
         }
 
         if (! filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            return $this->render('public/signup.twig', [
-                'csrf_token' => CsrfMiddleware::token(),
+            return $this->render('public/signup.twig', $this->signupTwigContext([
                 'email' => $email,
                 'name' => $name,
                 'error' => 'Enter a valid email address.',
-            ], 422);
+            ], $httpRequest), 422);
         }
 
         try {
@@ -80,12 +77,11 @@ final class PublicAccountController
                 'password' => $password,
             ]);
         } catch (\RuntimeException $exception) {
-            return $this->render('public/signup.twig', [
-                'csrf_token' => CsrfMiddleware::token(),
+            return $this->render('public/signup.twig', $this->signupTwigContext([
                 'email' => $email,
                 'name' => $name,
                 'error' => $exception->getMessage(),
-            ], 422);
+            ], $httpRequest), 422);
         }
 
         return new RedirectResponse('/signup/check-email?email='.rawurlencode($email), 302);
@@ -198,6 +194,21 @@ final class PublicAccountController
         $account = $this->entityTypeManager->getStorage('account')->load(reset($ids));
 
         return $account instanceof Account ? $account : null;
+    }
+
+    /**
+     * @param  array<string, mixed>  $fields
+     * @return array<string, mixed>
+     */
+    private function signupTwigContext(array $fields, ?Request $request): array
+    {
+        return array_merge(
+            [
+                'csrf_token' => CsrfMiddleware::token(),
+                'public_origin' => $request !== null ? $request->getSchemeAndHttpHost() : '',
+            ],
+            $fields,
+        );
     }
 
     /**

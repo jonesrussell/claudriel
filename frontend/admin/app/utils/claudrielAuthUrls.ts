@@ -1,5 +1,7 @@
+import { defaultClaudrielPhpOrigin } from '../../devPorts'
+
 /**
- * Split dev: Nuxt on :3333 (see nuxt.config devServer), PHP on :8081. Session + GraphQL live on PHP; Nitro proxies those paths.
+ * Split dev: Nuxt + PHP ports are locked in `devPorts.ts`. Session + GraphQL live on PHP; Nitro proxies those paths.
  * Production: same host — login stays a relative `/login?redirect=…` path-only redirect.
  */
 
@@ -9,7 +11,7 @@ export function claudrielPhpOrigin(): string {
     return env.replace(/\/$/, '')
   }
   if (import.meta.dev) {
-    return 'http://localhost:8081'
+    return defaultClaudrielPhpOrigin()
   }
 
   return ''
@@ -28,8 +30,16 @@ export function claudrielAdminReturnUrl(internalPath: string): string {
   return path
 }
 
-export function claudrielPhpLoginUrl(redirectAfterLogin: string): string {
-  const php = claudrielPhpOrigin()
+/**
+ * Build PHP login URL using an explicit origin (e.g. from useRuntimeConfig().public.phpOrigin).
+ * Prefer this for redirects so dev matches nuxt.config/runtimeConfig even when import.meta.env is stale.
+ */
+export function claudrielPhpLoginUrlWithOrigin(phpBase: string, redirectAfterLogin: string): string {
+  const php = phpBase.replace(/\/$/, '')
   const qs = `/login?redirect=${encodeURIComponent(redirectAfterLogin)}`
   return php !== '' ? `${php}${qs}` : qs
+}
+
+export function claudrielPhpLoginUrl(redirectAfterLogin: string): string {
+  return claudrielPhpLoginUrlWithOrigin(claudrielPhpOrigin(), redirectAfterLogin)
 }

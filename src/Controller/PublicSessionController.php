@@ -23,18 +23,26 @@ final class PublicSessionController
         private readonly ?Environment $twig = null,
     ) {}
 
-    public function loginForm(array $params = [], array $query = []): RedirectResponse|SsrResponse
-    {
+    public function loginForm(
+        array $params = [],
+        array $query = [],
+        ?AccountInterface $account = null,
+        ?Request $httpRequest = null,
+    ): RedirectResponse|SsrResponse {
         $redirect = $this->host()->sanitizeRedirectTarget($query['redirect'] ?? null);
 
-        if ($account = $this->authenticatedAccountFromSession()) {
-            return new RedirectResponse($this->host()->loginFormRedirect($account, $redirect), 302);
+        $sessionAccount = $this->authenticatedAccountFromSession();
+        if ($sessionAccount instanceof AuthenticatedAccount) {
+            return new RedirectResponse($this->host()->loginFormRedirect($sessionAccount, $redirect), 302);
         }
+
+        $publicOrigin = $httpRequest !== null ? $httpRequest->getSchemeAndHttpHost() : '';
 
         return $this->render('public/login.twig', [
             'csrf_token' => CsrfMiddleware::token(),
             'email' => (string) ($query['email'] ?? ''),
             'redirect' => $redirect,
+            'public_origin' => $publicOrigin,
             'error' => null,
             'verified' => ((string) ($query['verified'] ?? '')) === '1',
         ]);
