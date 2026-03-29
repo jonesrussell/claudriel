@@ -13,6 +13,7 @@ use Waaseyaa\AdminSurface\Catalog\CatalogBuilder;
 use Waaseyaa\AdminSurface\Host\AbstractAdminSurfaceHost;
 use Waaseyaa\AdminSurface\Host\AdminSurfaceResultData;
 use Waaseyaa\AdminSurface\Host\AdminSurfaceSessionData;
+use Waaseyaa\AdminSurface\Query\SurfaceQuery;
 use Waaseyaa\Entity\EntityType;
 use Waaseyaa\Entity\EntityTypeManager;
 use Waaseyaa\SSR\SsrResponse;
@@ -94,7 +95,7 @@ final class ClaudrielSurfaceHost extends AbstractAdminSurfaceHost
         return $catalog;
     }
 
-    public function list(string $type, array $query = []): AdminSurfaceResultData
+    public function list(string $type, SurfaceQuery|array $query = []): AdminSurfaceResultData
     {
         return AdminSurfaceResultData::error(501, 'Not Implemented', 'Entity listing is handled by GraphQL');
     }
