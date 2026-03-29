@@ -3,6 +3,8 @@
 Claudriel is an **AI personal operations system** built on the Waaseyaa PHP framework.
 It ingests events (e.g. Gmail messages), extracts commitments via AI, and presents a daily brief.
 
+**Agent session handoff:** At session start, skim repo-root `AGENT_LEARNINGS.md` (dated operational gotchas). Append concise bullets there when you hit non-obvious fixes—see that file for how it relates to specs and `CLAUDE.md`.
+
 ## Architecture
 
 ```
