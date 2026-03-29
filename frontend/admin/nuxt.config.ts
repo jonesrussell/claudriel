@@ -1,5 +1,21 @@
 const phpDevBase = (process.env.NUXT_PUBLIC_PHP_ORIGIN ?? 'http://localhost:8081').replace(/\/$/, '')
 
+/**
+ * Value exposed as `useRuntimeConfig().public.phpOrigin` (login redirects, etc.).
+ * When unset: dev matches `phpDevBase` / Nitro proxy; production stays '' for same-origin PHP.
+ */
+function publicPhpOrigin(): string {
+  const raw = process.env.NUXT_PUBLIC_PHP_ORIGIN
+  if (typeof raw === 'string' && raw.trim() !== '') {
+    return raw.replace(/\/$/, '')
+  }
+  if (process.env.NODE_ENV === 'production') {
+    return ''
+  }
+
+  return phpDevBase
+}
+
 export default defineNuxtConfig({
   compatibilityDate: '2025-01-01',
   devtools: { enabled: true },
@@ -72,8 +88,8 @@ export default defineNuxtConfig({
       // Set NUXT_PUBLIC_ENABLE_REALTIME=1 to force-enable.
       enableRealtime: process.env.NUXT_PUBLIC_ENABLE_REALTIME ?? (process.env.NODE_ENV === 'production' ? '1' : '0'),
       appName: process.env.NUXT_PUBLIC_APP_NAME ?? 'Claudriel Admin',
-      /** Same origin as Nitro devProxy PHP backend (defaults to http://localhost:8081). */
-      phpOrigin: process.env.NUXT_PUBLIC_PHP_ORIGIN ?? '',
+      /** Dev default matches `phpDevBase` (http://localhost:8081); prod default '' for same-host PHP. */
+      phpOrigin: publicPhpOrigin(),
     },
   },
 })
