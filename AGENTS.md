@@ -23,6 +23,8 @@ Follow PSR-4 autoloading: PHP classes use the `Claudriel\\` namespace and live u
 ## Testing Guidelines
 Add PHP tests under `tests/Unit/` with names ending in `Test.php`; integration tests go under `tests/Integration/`. Add agent subprocess tests as `test_*.py` files under `agent/tests/`. Run the smallest relevant test set locally before opening a PR, then run the full repo checks if your change crosses PHP and agent boundaries.
 
+Full layered smoke (CI parity, Playwright, HTTP script, matrix checklists): [docs/smoke/FULL_SMOKE_CHECKLIST.md](docs/smoke/FULL_SMOKE_CHECKLIST.md).
+
 ## Commit & Pull Request Guidelines
 Recent history uses short imperative subjects, for example `Make recurring schedule edits safe by default` and `Format schedule times in dashboard`. Keep commits focused and avoid bundling unrelated files. Open PRs against `main` with a clear description, linked issue when applicable, and screenshots for UI changes. Standard flow is branch -> PR -> merge -> GitHub Actions deploy; do not treat direct production edits as normal workflow.
 

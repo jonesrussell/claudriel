@@ -3,4 +3,5 @@
 black
 isort
 mypy
+pytest
 ruff

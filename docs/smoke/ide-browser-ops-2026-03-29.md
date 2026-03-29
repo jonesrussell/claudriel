@@ -1,5 +1,7 @@
 # IDE browser smoke — ops admin (2026-03-29)
 
+See also [FULL_SMOKE_CHECKLIST.md](FULL_SMOKE_CHECKLIST.md) for the full layered smoke runbook (CI, Playwright, `bin/smoke-http.sh`, matrices, release).
+
 ## Follow-up: smoke completed (same day)
 
 After fixes below, a full pass was run in the Cursor IDE browser against:

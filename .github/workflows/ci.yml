@@ -85,6 +85,10 @@ jobs:
 
       - run: ruff check --output-format github
 
+      - name: Pytest
+        working-directory: agent
+        run: python -m pytest tests/
+
       - name: Verify syntax
         run: |
           import ast

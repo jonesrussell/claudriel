@@ -196,10 +196,39 @@ export async function mockIngestLogEmpty(page: Page): Promise<void> {
   )
 }
 
+/** Minimal GET /brief JSON so Today page `useDayBrief().refresh()` succeeds (Nitro proxies /brief to PHP). */
+export async function mockBriefJson(page: Page): Promise<void> {
+  await page.route('**/brief**', (route) => {
+    if (route.request().method() !== 'GET') {
+      return route.fallback()
+    }
+    return route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        schedule: [],
+        temporal_suggestions: [],
+        people: [],
+        triage: [],
+        commitments: { pending: [], drifting: [], waiting_on: [] },
+        follow_ups: [],
+        counts: {
+          due_today: 0,
+          drifting: 0,
+          waiting_on: 0,
+          follow_ups: 0,
+          triage: 0,
+        },
+      }),
+    })
+  })
+}
+
 /** Apply all Claudriel API mocks needed for dashboard + entity list smoke tests. */
 export async function setupClaudrielAdminMocks(page: Page): Promise<void> {
   await mockClaudrielSession(page)
   await mockClaudrielGraphql(page)
   await mockClaudrielSchemaRoutes(page)
   await mockIngestLogEmpty(page)
+  await mockBriefJson(page)
 }
