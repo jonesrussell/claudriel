@@ -7,6 +7,15 @@ on:
     branches: [main]
 
 jobs:
+  deploy-rsync:
+    name: Deploy rsync rules
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout claudriel
+        uses: actions/checkout@v6
+      - name: Verify deploy rsync rules
+        run: ./bin/verify-deploy-rsync
+
   lint:
     name: Lint & Analyse
     runs-on: ubuntu-latest
@@ -23,6 +32,16 @@ jobs:
 
       - name: Install dependencies
         run: composer install --no-interaction --prefer-dist
+
+      - name: Waaseyaa framework provenance
+        env:
+          WAASEYAA_GOLDEN_SHA: ${{ vars.WAASEYAA_GOLDEN_SHA }}
+        run: |
+          if [ -n "${WAASEYAA_GOLDEN_SHA:-}" ]; then
+            ./bin/waaseyaa-version
+          else
+            ./bin/waaseyaa-version --report-only
+          fi
 
       - name: Check formatting (Pint)
         run: composer lint
@@ -46,6 +65,16 @@ jobs:
 
       - name: Install dependencies
         run: composer install --no-interaction --prefer-dist
+
+      - name: Waaseyaa framework provenance
+        env:
+          WAASEYAA_GOLDEN_SHA: ${{ vars.WAASEYAA_GOLDEN_SHA }}
+        run: |
+          if [ -n "${WAASEYAA_GOLDEN_SHA:-}" ]; then
+            ./bin/waaseyaa-version
+          else
+            ./bin/waaseyaa-version --report-only
+          fi
 
       - name: Run tests
         run: composer test
