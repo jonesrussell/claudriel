@@ -76,17 +76,24 @@ jobs:
         shell: bash
         working-directory: .
 
-      - run: black --check claudriel_agent tests main.py eval_runner.py eval_contracts.py eval_benchmark.py
+      - name: Black
+        working-directory: agent
+        run: black --check claudriel_agent tests main.py eval_runner.py eval_contracts.py eval_benchmark.py
 
-      - run: ruff check claudriel_agent tests main.py eval_runner.py eval_contracts.py eval_benchmark.py --output-format github
+      - name: Ruff
+        working-directory: agent
+        run: ruff check claudriel_agent tests main.py eval_runner.py eval_contracts.py eval_benchmark.py --output-format github
 
-      - run: mypy
+      - name: Mypy
+        working-directory: agent
+        run: mypy
 
       - name: Pytest
         working-directory: agent
         run: python -m pytest tests/
 
       - name: Verify syntax
+        working-directory: agent
         run: |
           import ast
           from pathlib import Path

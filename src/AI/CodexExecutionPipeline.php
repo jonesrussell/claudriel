@@ -111,8 +111,15 @@ final class CodexExecutionPipeline
 
         $projectRoot = getcwd() ?: '/srv';
         $venv = $_ENV['AGENT_VENV'] ?? getenv('AGENT_VENV') ?: $projectRoot.'/agent/.venv';
-        $agentPath = $_ENV['AGENT_PATH'] ?? getenv('AGENT_PATH') ?: $projectRoot.'/agent/main.py';
+        $python = $venv.'/bin/python';
+        $agentPath = $_ENV['AGENT_PATH'] ?? getenv('AGENT_PATH') ?: '';
 
-        return new SubprocessChatClient([$venv.'/bin/python', $agentPath]);
+        // Prefer ``python -m claudriel_agent`` (matches Docker) so the package is loaded as a module.
+        // Optional AGENT_PATH overrides with a script path for custom entrypoints.
+        if ($agentPath !== '') {
+            return new SubprocessChatClient([$python, $agentPath]);
+        }
+
+        return new SubprocessChatClient([$python, '-m', 'claudriel_agent']);
     }
 }

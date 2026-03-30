@@ -9,7 +9,7 @@ use Closure;
 final class SubprocessChatClient
 {
     /**
-     * @param  list<string>  $command  Command to execute (e.g., ['python', 'agent/main.py'] or ['docker', 'run', '--rm', '-i', 'image', 'python', '-m', 'claudriel_agent'])
+     * @param  list<string>  $command  Command to execute (e.g., ['{venv}/bin/python', '-m', 'claudriel_agent'] or ['docker', 'run', '--rm', '-i', 'image', 'python', '-m', 'claudriel_agent'])
      */
     public function __construct(
         private readonly array $command,
