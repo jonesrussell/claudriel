@@ -8,6 +8,7 @@ use Claudriel\Entity\Commitment;
 use Claudriel\Entity\CommitmentExtractionLog;
 use Claudriel\Entity\McEvent;
 use Claudriel\Service\Audit\CommitmentExtractionAuditService;
+use DateTimeImmutable;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Waaseyaa\Database\DBALDatabase;
@@ -18,9 +19,13 @@ use Waaseyaa\EntityStorage\SqlSchemaHandler;
 
 final class CommitmentExtractionAuditTrendsTest extends TestCase
 {
+    /** Mid-month anchor so -55d / -29d / -2d land in three different months (stable assertions). */
+    private const REFERENCE_DATE = '2026-06-15';
+
     public function test_daily_trends_aggregate_attempts_successes_and_average_confidence(): void
     {
-        $service = new CommitmentExtractionAuditService($this->buildSeededEntityTypeManager());
+        $ref = new DateTimeImmutable(self::REFERENCE_DATE);
+        $service = new CommitmentExtractionAuditService($this->buildSeededEntityTypeManager($ref), $ref);
 
         $trends = $service->getDailyTrends(7);
         $series = [];
@@ -28,8 +33,8 @@ final class CommitmentExtractionAuditTrendsTest extends TestCase
             $series[$point['date']] = $point;
         }
 
-        $day2 = date('Y-m-d', strtotime('-2 days'));
-        $day1 = date('Y-m-d', strtotime('-1 day'));
+        $day2 = $ref->modify('-2 days')->format('Y-m-d');
+        $day1 = $ref->modify('-1 day')->format('Y-m-d');
 
         self::assertSame(3, $trends['summary']['total_attempts']);
         self::assertSame(2, $trends['summary']['successful_extractions']);
@@ -49,7 +54,8 @@ final class CommitmentExtractionAuditTrendsTest extends TestCase
 
     public function test_monthly_trends_roll_up_by_month(): void
     {
-        $service = new CommitmentExtractionAuditService($this->buildSeededEntityTypeManager());
+        $ref = new DateTimeImmutable(self::REFERENCE_DATE);
+        $service = new CommitmentExtractionAuditService($this->buildSeededEntityTypeManager($ref), $ref);
 
         $trends = $service->getMonthlyTrends(3);
         $series = [];
@@ -57,9 +63,9 @@ final class CommitmentExtractionAuditTrendsTest extends TestCase
             $series[$point['month']] = $point;
         }
 
-        $monthOld = date('Y-m', strtotime('-55 days'));
-        $monthMid = date('Y-m', strtotime('-29 days'));
-        $monthNow = date('Y-m');
+        $monthOld = $ref->modify('-55 days')->format('Y-m');
+        $monthMid = $ref->modify('-29 days')->format('Y-m');
+        $monthNow = $ref->format('Y-m');
 
         // When monthOld and monthMid fall in the same calendar month,
         // their totals merge. Verify per-month totals accordingly.
@@ -87,7 +93,8 @@ final class CommitmentExtractionAuditTrendsTest extends TestCase
 
     public function test_sender_trends_calculate_distribution_and_low_confidence_rate(): void
     {
-        $service = new CommitmentExtractionAuditService($this->buildSeededEntityTypeManager());
+        $ref = new DateTimeImmutable(self::REFERENCE_DATE);
+        $service = new CommitmentExtractionAuditService($this->buildSeededEntityTypeManager($ref), $ref);
 
         $trends = $service->getSenderTrends('alpha@example.com', 30);
         $distribution = [];
@@ -112,8 +119,8 @@ final class CommitmentExtractionAuditTrendsTest extends TestCase
         self::assertSame(1, $distribution['0.7-0.9']);
         self::assertSame(0, $distribution['0.9-1.0']);
 
-        $day2 = date('Y-m-d', strtotime('-2 days'));
-        $dayMid = date('Y-m-d', strtotime('-29 days'));
+        $day2 = $ref->modify('-2 days')->format('Y-m-d');
+        $dayMid = $ref->modify('-29 days')->format('Y-m-d');
 
         self::assertSame(2, $series[$day2]['total_attempts']);
         self::assertSame(1, $series[$day2]['low_confidence_logs']);
@@ -125,7 +132,7 @@ final class CommitmentExtractionAuditTrendsTest extends TestCase
         self::assertSame(1.0, $series[$dayMid]['low_confidence_rate']);
     }
 
-    private function buildSeededEntityTypeManager(): EntityTypeManager
+    private function buildSeededEntityTypeManager(DateTimeImmutable $ref): EntityTypeManager
     {
         $db = DBALDatabase::createSqlite(':memory:');
         $dispatcher = new EventDispatcher;
@@ -144,9 +151,9 @@ final class CommitmentExtractionAuditTrendsTest extends TestCase
         }
 
         $eventStorage = $entityTypeManager->getStorage('mc_event');
-        $day2 = date('Y-m-d', strtotime('-2 days'));
-        $day1 = date('Y-m-d', strtotime('-1 day'));
-        $dayOld = date('Y-m-d', strtotime('-55 days'));
+        $day2 = $ref->modify('-2 days')->format('Y-m-d');
+        $day1 = $ref->modify('-1 day')->format('Y-m-d');
+        $dayOld = $ref->modify('-55 days')->format('Y-m-d');
 
         $alphaEvent = new McEvent([
             'source' => 'gmail',
@@ -209,7 +216,7 @@ final class CommitmentExtractionAuditTrendsTest extends TestCase
             'raw_event_payload' => '{"from_email":"alpha@example.com","subject":"Alpha second"}',
             'extracted_commitment_payload' => '{"title":"Alpha second maybe","confidence":0.48}',
             'confidence' => 0.48,
-            'created_at' => date('Y-m-d', strtotime('-29 days')).' 15:17:00',
+            'created_at' => $ref->modify('-29 days')->format('Y-m-d').' 15:17:00',
         ]));
 
         return $entityTypeManager;

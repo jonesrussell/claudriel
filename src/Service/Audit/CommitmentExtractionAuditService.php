@@ -276,7 +276,7 @@ final class CommitmentExtractionAuditService
     public function getDailyTrends(int $days = 7): array
     {
         $days = max(1, $days);
-        $end = new DateTimeImmutable('today');
+        $end = $this->today();
         $start = $end->sub(new DateInterval(sprintf('P%dD', $days - 1)));
 
         $series = [];
@@ -342,7 +342,7 @@ final class CommitmentExtractionAuditService
     public function getMonthlyTrends(int $months = 1): array
     {
         $months = max(1, $months);
-        $end = new DateTimeImmutable('first day of this month');
+        $end = $this->today()->modify('first day of this month');
         $start = $end->sub(new DateInterval(sprintf('P%dM', $months - 1)));
 
         $series = [];
@@ -414,7 +414,7 @@ final class CommitmentExtractionAuditService
     {
         $sender = $this->normalizeSender($senderEmail) ?? strtolower(trim($senderEmail));
         $days = max(1, $days);
-        $end = new DateTimeImmutable('today');
+        $end = $this->today();
         $start = $end->sub(new DateInterval(sprintf('P%dD', $days - 1)));
         $failureCategoryCounts = $this->initializeFailureCategoryCounts();
 
@@ -892,6 +892,11 @@ final class CommitmentExtractionAuditService
         }
 
         return $distribution;
+    }
+
+    private function today(): DateTimeImmutable
+    {
+        return ($this->referenceDate ?? new DateTimeImmutable('today'))->setTime(0, 0);
     }
 
     /**
