@@ -1,7 +1,7 @@
 # Repository Guidelines
 
 ## Project Structure & Module Organization
-`src/` contains the main PHP application, organized by domain-oriented namespaces such as `Command/`, `Controller/`, `Domain/`, `Entity/`, and `Service/`. Twig templates live in `templates/`, public assets in `public/`, runtime data in `storage/`, and longer-form design or ops notes in `docs/`. Tests for the PHP app are in `tests/Unit/` and `tests/Integration/`. The Python agent subprocess lives in `agent/`, with tools in `agent/tools/` and tests in `agent/tests/`.
+`src/` contains the main PHP application, organized by domain-oriented namespaces such as `Command/`, `Controller/`, `Domain/`, `Entity/`, and `Service/`. Twig templates live in `templates/`, public assets in `public/`, runtime data in `storage/`, and longer-form design or ops notes in `docs/`. Tests for the PHP app are in `tests/Unit/` and `tests/Integration/`. The Python agent subprocess lives in `agent/` as the installable package `claudriel_agent` (`agent/claudriel_agent/`), with tools in `agent/claudriel_agent/tools/` and tests in `agent/tests/`.
 
 ## Build, Test, and Development Commands
 Use Composer scripts for the PHP app:
@@ -16,7 +16,9 @@ Use Composer scripts for the PHP app:
 
 For the Python agent subprocess:
 
-- `cd agent && python -m pytest tests/` runs agent tests.
+- `cd agent && python -m pytest tests/` runs agent tests (imports `claudriel_agent` from `agent/` on `sys.path`).
+- CI installs `pip install -e './agent[dev]'` from the repo root for Ruff, Black, and mypy.
+- Entrypoints: `python agent/main.py` (shim), `python -m claudriel_agent` (after `pip install -e ./agent`), Docker `python -m claudriel_agent`; eval CLIs: `python agent/eval_runner.py`, etc.
 
 CI mirrors these commands in [`.github/workflows/ci.yml`](/home/fsd42/dev/claudriel/.github/workflows/ci.yml).
 

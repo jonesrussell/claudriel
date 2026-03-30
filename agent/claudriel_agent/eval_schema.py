@@ -53,9 +53,7 @@ def validate_eval_file(data: dict[str, Any], filename: str) -> list[ValidationEr
         errors.append(ValidationError(filename, "tests/prompts must be a list"))
         return errors
     if "tests" not in data and "prompts" not in data:
-        errors.append(
-            ValidationError(filename, "Missing required field: tests or prompts")
-        )
+        errors.append(ValidationError(filename, "Missing required field: tests or prompts"))
         return errors
 
     is_prompts_format = "prompts" in data and "tests" not in data
@@ -67,9 +65,7 @@ def validate_eval_file(data: dict[str, Any], filename: str) -> list[ValidationEr
     is_turn_based = eval_type in ("trajectory", "multi-turn") or any(
         "turns" in t for t in tests if isinstance(t, dict)
     )
-    required_fields = (
-        REQUIRED_TEST_FIELDS_TURN if is_turn_based else REQUIRED_TEST_FIELDS_BASIC
-    )
+    required_fields = REQUIRED_TEST_FIELDS_TURN if is_turn_based else REQUIRED_TEST_FIELDS_BASIC
 
     seen_names: set[str] = set()
     for i, test in enumerate(tests):
@@ -80,9 +76,7 @@ def validate_eval_file(data: dict[str, Any], filename: str) -> list[ValidationEr
         for field in required_fields:
             if field not in test:
                 errors.append(
-                    ValidationError(
-                        filename, f"Test {i}: missing required field: {field}"
-                    )
+                    ValidationError(filename, f"Test {i}: missing required field: {field}")
                 )
 
         name = test.get("name", "")
@@ -96,9 +90,7 @@ def validate_eval_file(data: dict[str, Any], filename: str) -> list[ValidationEr
             atype = assertion.get("type", "")
             if atype not in VALID_ASSERTION_TYPES:
                 errors.append(
-                    ValidationError(
-                        filename, f"Test '{name}': unknown assertion type: {atype}"
-                    )
+                    ValidationError(filename, f"Test '{name}': unknown assertion type: {atype}")
                 )
 
     return errors

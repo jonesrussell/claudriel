@@ -1,6 +1,11 @@
 """Tests for eval report generation."""
 
-from eval_report import EvalTestResult, SkillResult, format_markdown, generate_report
+from claudriel_agent.eval_report import (
+    EvalTestResult,
+    SkillResult,
+    format_markdown,
+    generate_report,
+)
 
 
 def test_generate_report_structure():
@@ -27,9 +32,7 @@ def test_generate_report_empty():
 
 def test_format_markdown_includes_summary():
     results = {
-        "commitment": SkillResult(
-            tests_run=5, tests_passed=5, average_score=4.5, failures=[]
-        ),
+        "commitment": SkillResult(tests_run=5, tests_passed=5, average_score=4.5, failures=[]),
     }
     report = generate_report(results)
     md = format_markdown(report)

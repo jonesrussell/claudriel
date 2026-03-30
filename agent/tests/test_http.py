@@ -1,6 +1,6 @@
 """Tests for util.http.PhpApiClient."""
 
-from util.http import PhpApiClient
+from claudriel_agent.util.http import PhpApiClient
 
 
 def test_client_sets_bearer_token():

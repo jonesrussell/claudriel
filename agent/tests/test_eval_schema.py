@@ -1,6 +1,6 @@
 """Tests for eval YAML schema validation."""
 
-from eval_schema import discover_eval_files, validate_eval_file
+from claudriel_agent.eval_schema import discover_eval_files, validate_eval_file
 
 
 def test_valid_basic_eval():

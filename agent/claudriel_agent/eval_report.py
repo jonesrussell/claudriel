@@ -1,7 +1,7 @@
 """Eval report generation in JSON and markdown formats."""
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 
@@ -20,9 +20,7 @@ class SkillResult:
     failures: list[EvalTestResult] = field(default_factory=list)
 
 
-def generate_report(
-    results: dict[str, SkillResult], mode: str = "llm-judge"
-) -> dict[str, Any]:
+def generate_report(results: dict[str, SkillResult], mode: str = "llm-judge") -> dict[str, Any]:
     """Generate a structured report from skill results."""
     total_run = sum(r.tests_run for r in results.values())
     total_passed = sum(r.tests_passed for r in results.values())
@@ -34,13 +32,12 @@ def generate_report(
             "tests_passed": result.tests_passed,
             "average_score": round(result.average_score, 2),
             "failures": [
-                {"test": f.name, "score": f.score, "reason": f.reason}
-                for f in result.failures
+                {"test": f.name, "score": f.score, "reason": f.reason} for f in result.failures
             ],
         }
 
     return {
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
         "mode": mode,
         "skills": skills_data,
         "totals": {

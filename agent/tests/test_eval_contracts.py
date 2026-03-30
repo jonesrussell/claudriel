@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from eval_contracts import (
+from claudriel_agent.eval_contracts import (
     SKILL_TO_ENTITY,
     extract_field_definitions,
     extract_skill_fields,
@@ -47,7 +47,7 @@ def test_validate_contracts_on_real_codebase():
 
 def test_format_markdown_clean():
     """Clean report produces success message."""
-    from eval_contracts import ContractReport
+    from claudriel_agent.eval_contracts import ContractReport
 
     report = ContractReport(skills_checked=3, violations=[])
     md = format_markdown(report)
@@ -57,13 +57,11 @@ def test_format_markdown_clean():
 
 def test_format_markdown_with_violations():
     """Violations appear in markdown table."""
-    from eval_contracts import ContractReport, ContractViolation
+    from claudriel_agent.eval_contracts import ContractReport, ContractViolation
 
     report = ContractReport(
         skills_checked=1,
-        violations=[
-            ContractViolation("commitment", "commitment", "bad_field", "not in schema")
-        ],
+        violations=[ContractViolation("commitment", "commitment", "bad_field", "not in schema")],
     )
     md = format_markdown(report)
     assert "bad_field" in md

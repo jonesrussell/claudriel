@@ -2,7 +2,7 @@
 
 import json
 
-from eval_judge import build_judge_prompt, parse_judge_response
+from claudriel_agent.eval_judge import build_judge_prompt, parse_judge_response
 
 
 def test_build_judge_prompt_includes_skill_and_input():

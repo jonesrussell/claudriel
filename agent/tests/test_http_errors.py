@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 import httpx
 import pytest
 
-from util.http import PhpApiClient
+from claudriel_agent.util.http import PhpApiClient
 
 
 def _make_client():
@@ -66,9 +66,7 @@ def test_post_raises_on_5xx():
 
 def test_get_raises_on_timeout():
     client = _make_client()
-    with patch.object(
-        client._client, "get", side_effect=httpx.ReadTimeout("read timed out")
-    ):
+    with patch.object(client._client, "get", side_effect=httpx.ReadTimeout("read timed out")):
         with pytest.raises(httpx.ReadTimeout):
             client.get("/test")
     client.close()
@@ -76,9 +74,7 @@ def test_get_raises_on_timeout():
 
 def test_post_raises_on_timeout():
     client = _make_client()
-    with patch.object(
-        client._client, "post", side_effect=httpx.ReadTimeout("read timed out")
-    ):
+    with patch.object(client._client, "post", side_effect=httpx.ReadTimeout("read timed out")):
         with pytest.raises(httpx.ReadTimeout):
             client.post("/test", json_data={})
     client.close()
@@ -86,9 +82,7 @@ def test_post_raises_on_timeout():
 
 def test_get_raises_on_connect_error():
     client = _make_client()
-    with patch.object(
-        client._client, "get", side_effect=httpx.ConnectError("connection refused")
-    ):
+    with patch.object(client._client, "get", side_effect=httpx.ConnectError("connection refused")):
         with pytest.raises(httpx.ConnectError):
             client.get("/test")
     client.close()
@@ -96,7 +90,7 @@ def test_get_raises_on_connect_error():
 
 def test_tool_execute_catches_http_errors():
     """Verify that tool functions propagate HTTP errors to the caller."""
-    from tools.gmail_list import execute as gmail_list_exec
+    from claudriel_agent.tools.gmail_list import execute as gmail_list_exec
 
     api = MagicMock()
     api.get.side_effect = httpx.HTTPStatusError(

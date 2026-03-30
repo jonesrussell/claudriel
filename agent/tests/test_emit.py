@@ -2,7 +2,7 @@
 
 import json
 
-from main import emit
+from claudriel_agent.emit import emit
 
 
 def test_emit_writes_json_line_to_stdout(capsys):

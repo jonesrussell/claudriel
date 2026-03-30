@@ -1,37 +1,7 @@
 """Tests for turn tracking and task type classification."""
 
-import sys
-import types
-from unittest.mock import MagicMock
-
-from main import DEFAULT_TURN_LIMITS, classify_task_type
-
-# Stub out modules that aren't available in the test environment
-# before importing main, so the import chain doesn't fail.
-_stubs = {}
-for mod_name in [
-    "anthropic",
-    "tools.gmail_list",
-    "tools.gmail_read",
-    "tools.gmail_send",
-    "tools.calendar_list",
-    "tools.calendar_create",
-    "tools.commitment_list",
-    "tools.commitment_update",
-    "util.http",
-]:
-    if mod_name not in sys.modules:
-        stub = types.ModuleType(mod_name)
-        # Each tool module needs TOOL_DEF and execute
-        stub.TOOL_DEF = {
-            "name": mod_name.split(".")[-1],
-            "input_schema": {"type": "object", "properties": {}},
-        }
-        stub.execute = lambda api, args: {}
-        # util.http needs PhpApiClient
-        stub.PhpApiClient = MagicMock
-        sys.modules[mod_name] = stub
-        _stubs[mod_name] = stub
+from claudriel_agent.constants import DEFAULT_TURN_LIMITS
+from claudriel_agent.loop import classify_task_type
 
 
 def test_classify_email():

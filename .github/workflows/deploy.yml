@@ -54,7 +54,19 @@ jobs:
 
       - name: Verify agent syntax
         working-directory: claudriel/agent
-        run: python -c "import ast, pathlib; [ast.parse(f.read_text()) for f in pathlib.Path('.').rglob('*.py')]"
+        run: |
+          python -c "
+          import ast
+          from pathlib import Path
+          roots = [Path('claudriel_agent'), Path('tests')]
+          files = [p for r in roots for p in r.rglob('*.py')]
+          for extra in ('main.py', 'eval_runner.py', 'eval_contracts.py', 'eval_benchmark.py'):
+              p = Path(extra)
+              if p.is_file():
+                  files.append(p)
+          for f in files:
+              ast.parse(f.read_text(encoding='utf-8'))
+          "
 
   build:
     name: Build Artifact

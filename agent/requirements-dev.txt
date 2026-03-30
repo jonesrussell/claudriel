@@ -1,7 +1,1 @@
---requirement requirements.txt
-
-black
-isort
-mypy
-pytest
-ruff
+-e .[dev]

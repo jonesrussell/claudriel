@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-import main
+from claudriel_agent.tools_discovery import discover_tools
 
 
 def _write_tool(path: Path, body: str) -> None:
@@ -38,9 +38,7 @@ def test_discover_tools_loads_valid_modules_in_sorted_order(tmp_path, monkeypatc
 
     monkeypatch.syspath_prepend(str(tmp_path))
 
-    tools, executors = main.discover_tools(
-        package_name="dynamic_tools", package_path=package_dir
-    )
+    tools, executors = discover_tools(package_name="dynamic_tools", package_path=package_dir)
 
     assert [tool["name"] for tool in tools] == ["a_first", "z_last"]
     assert sorted(executors.keys()) == ["a_first", "z_last"]
@@ -69,7 +67,7 @@ def test_discover_tools_respects_allowlist(tmp_path, monkeypatch):
 
     monkeypatch.syspath_prepend(str(tmp_path))
 
-    tools, executors = main.discover_tools(
+    tools, executors = discover_tools(
         package_name="dynamic_tools_filter",
         package_path=package_dir,
         enabled_tool_names={"beta"},
@@ -103,4 +101,4 @@ def test_discover_tools_rejects_duplicate_tool_names(tmp_path, monkeypatch):
     monkeypatch.syspath_prepend(str(tmp_path))
 
     with pytest.raises(ValueError, match="Duplicate tool name: dupe"):
-        main.discover_tools(package_name="dynamic_tools_dupe", package_path=package_dir)
+        discover_tools(package_name="dynamic_tools_dupe", package_path=package_dir)

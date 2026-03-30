@@ -2,10 +2,10 @@
 
 from unittest.mock import MagicMock
 
-from tools.code_task_create import TOOL_DEF as CREATE_DEF
-from tools.code_task_create import execute as create_execute
-from tools.code_task_status import TOOL_DEF as STATUS_DEF
-from tools.code_task_status import execute as status_execute
+from claudriel_agent.tools.code_task_create import TOOL_DEF as CREATE_DEF
+from claudriel_agent.tools.code_task_create import execute as create_execute
+from claudriel_agent.tools.code_task_status import TOOL_DEF as STATUS_DEF
+from claudriel_agent.tools.code_task_status import execute as status_execute
 
 
 class TestCodeTaskCreateDef:
