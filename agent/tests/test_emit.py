@@ -2,7 +2,27 @@
 
 import json
 
-from claudriel_agent.emit import emit
+import pytest
+
+from claudriel_agent.emit import AGENT_PROTOCOL_VERSION, ALLOWED_EMIT_EVENTS, emit
+
+
+def _minimal_kwargs_for_event(event: str) -> dict:
+    if event == "message":
+        return {"content": ""}
+    if event == "done":
+        return {}
+    if event == "error":
+        return {"message": "x"}
+    if event == "tool_call":
+        return {"tool": "t", "args": {}}
+    if event == "tool_result":
+        return {"tool": "t", "result": {}}
+    if event == "progress":
+        return {"phase": "p", "summary": "s", "level": "warning"}
+    if event == "needs_continuation":
+        return {"turns_consumed": 1, "task_type": "general", "message": "m"}
+    raise AssertionError(event)
 
 
 def test_emit_writes_json_line_to_stdout(capsys):
@@ -11,6 +31,7 @@ def test_emit_writes_json_line_to_stdout(capsys):
     line = json.loads(captured.out.strip())
     assert line["event"] == "message"
     assert line["content"] == "Hello"
+    assert line["protocol"] == AGENT_PROTOCOL_VERSION
 
 
 def test_emit_done_event(capsys):
@@ -18,6 +39,7 @@ def test_emit_done_event(capsys):
     captured = capsys.readouterr()
     line = json.loads(captured.out.strip())
     assert line["event"] == "done"
+    assert line["protocol"] == AGENT_PROTOCOL_VERSION
 
 
 def test_emit_error_event(capsys):
@@ -42,3 +64,64 @@ def test_emit_preserves_unicode(capsys):
     captured = capsys.readouterr()
     line = json.loads(captured.out.strip())
     assert line["content"] == "Café résumé"
+
+
+def test_emit_strict_rejects_unknown_event(monkeypatch):
+    monkeypatch.setenv("CLAUDRIEL_EMIT_STRICT", "1")
+    with pytest.raises(ValueError, match="Unknown emit event"):
+        emit("not_a_real_event", foo=1)
+
+
+def test_emit_non_strict_allows_unknown_event(capsys, monkeypatch):
+    monkeypatch.delenv("CLAUDRIEL_EMIT_STRICT", raising=False)
+    emit("experimental_future_event", preview=True)
+    captured = capsys.readouterr()
+    line = json.loads(captured.out.strip())
+    assert line["event"] == "experimental_future_event"
+
+
+def test_emit_protocol_is_normative_not_overridable_by_kwargs(capsys):
+    emit("message", content="x", protocol="9.9")
+    line = json.loads(capsys.readouterr().out.strip())
+    assert line["protocol"] == AGENT_PROTOCOL_VERSION
+
+
+def test_emit_rejects_nan():
+    with pytest.raises(ValueError, match="JSON-serializable"):
+        emit("message", content=float("nan"))
+
+
+def test_each_allowlisted_event_emits_one_json_line(capsys):
+    for event in sorted(ALLOWED_EMIT_EVENTS):
+        kwargs = _minimal_kwargs_for_event(event)
+        emit(event, **kwargs)
+        captured = capsys.readouterr()
+        lines = [ln for ln in captured.out.splitlines() if ln.strip()]
+        assert len(lines) == 1, event
+        obj = json.loads(lines[0])
+        assert obj["event"] == event
+        assert obj["protocol"] == AGENT_PROTOCOL_VERSION
+
+
+def test_multi_emit_sequence_valid_protocol(capsys):
+    from claudriel_agent.protocol import assert_valid_protocol_stream
+
+    emit("message", content="hello")
+    emit("tool_call", tool="gmail_list", args={"query": "in:inbox"})
+    emit("tool_result", tool="gmail_list", result={"messages": []})
+    emit("done")
+    out = capsys.readouterr().out
+    events = assert_valid_protocol_stream(out)
+    assert [e["event"] for e in events] == ["message", "tool_call", "tool_result", "done"]
+
+
+def test_each_stdout_line_is_single_json_object(capsys):
+    emit("progress", phase="p", summary="s", level="info")
+    emit("message", content="line1\nline2")
+    captured = capsys.readouterr()
+    for line in captured.out.splitlines():
+        if not line.strip():
+            continue
+        obj = json.loads(line)
+        assert isinstance(obj, dict)
+        assert "\n" not in line or line.count("{") == 1

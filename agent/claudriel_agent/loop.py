@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import sys
 import time
+from dataclasses import dataclass
 from typing import Any
 
 import anthropic
@@ -22,6 +23,16 @@ from claudriel_agent.constants import (
 from claudriel_agent.emit import emit
 from claudriel_agent.tools_discovery import ToolRegistry
 from claudriel_agent.util.http import PhpApiClient
+
+
+@dataclass(frozen=True)
+class LoopState:
+    """Immutable snapshot of turn budget and continuation (for tests and pure helpers)."""
+
+    turns_consumed: int
+    turn_limit: int
+    task_type: str
+    continuation_emitted: bool
 
 
 def classify_task_type(messages: list[dict[str, Any]]) -> str:
@@ -67,6 +78,27 @@ def truncate_tool_result(tool_name: str, result: dict[str, Any]) -> str:
     return result_json
 
 
+def extract_assistant_content(response: Any) -> tuple[str, list[Any]]:
+    """Split model response into combined assistant text and tool_use blocks (pure)."""
+    text_parts: list[str] = []
+    tool_calls: list[Any] = []
+    for block in response.content:
+        if block.type == "text":
+            text_parts.append(block.text)
+        elif block.type == "tool_use":
+            tool_calls.append(block)
+    return "".join(text_parts), tool_calls
+
+
+def should_emit_continuation(
+    turns_consumed: int,
+    turn_limit: int,
+    tool_calls: list[Any],
+) -> bool:
+    """True when the loop should stop early with needs_continuation (pure)."""
+    return bool(tool_calls) and turns_consumed >= turn_limit - 1
+
+
 def build_cached_tools(tools: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Add cache_control to the last tool definition for prompt caching."""
     if not tools:
@@ -75,6 +107,36 @@ def build_cached_tools(tools: list[dict[str, Any]]) -> list[dict[str, Any]]:
     cached[-1] = dict(cached[-1])
     cached[-1]["cache_control"] = {"type": "ephemeral"}
     return cached
+
+
+def execute_tool_round(
+    api: PhpApiClient,
+    executors: dict[str, Any],
+    tool_calls: list[Any],
+) -> list[dict[str, Any]]:
+    """Run each tool_call, emit tool_call/tool_result, return Anthropic user message content."""
+    tool_results: list[dict[str, Any]] = []
+    for tool_call in tool_calls:
+        emit("tool_call", tool=tool_call.name, args=tool_call.input)
+
+        executor = executors.get(tool_call.name)
+        if executor is None:
+            result: dict[str, Any] = {"error": f"Unknown tool: {tool_call.name}"}
+        else:
+            try:
+                result = executor(api, tool_call.input)
+            except Exception as e:
+                result = {"error": str(e)}
+
+        emit("tool_result", tool=tool_call.name, result=result)
+        tool_results.append(
+            {
+                "type": "tool_result",
+                "tool_use_id": tool_call.id,
+                "content": truncate_tool_result(tool_call.name, result),
+            }
+        )
+    return tool_results
 
 
 def run_agent_request(request: dict[str, Any], registry: ToolRegistry) -> None:
@@ -89,6 +151,8 @@ def run_agent_request(request: dict[str, Any], registry: ToolRegistry) -> None:
 
     api = PhpApiClient(api_base, api_token, account_id, tenant_id)
     client = anthropic.Anthropic()
+
+    protocol_error_emitted = False
 
     try:
         # Fetch turn limits from session endpoint, fall back to defaults
@@ -189,21 +253,13 @@ def run_agent_request(request: dict[str, Any], registry: ToolRegistry) -> None:
                     "error",
                     message="Failed to get API response after retries and fallbacks",
                 )
+                protocol_error_emitted = True
                 break
 
-            # Collect text and tool_use blocks from the response
-            text_parts: list[str] = []
-            tool_calls: list[Any] = []
-
-            for block in response.content:
-                if block.type == "text":
-                    text_parts.append(block.text)
-                elif block.type == "tool_use":
-                    tool_calls.append(block)
+            combined, tool_calls = extract_assistant_content(response)
 
             # Emit any text content
-            if text_parts:
-                combined = "".join(text_parts)
+            if combined:
                 emit("message", content=combined)
 
             # If no tool calls, we're done
@@ -213,32 +269,9 @@ def run_agent_request(request: dict[str, Any], registry: ToolRegistry) -> None:
             # Append assistant message to history
             messages.append({"role": "assistant", "content": response.content})
 
-            # Execute each tool call and collect results
-            tool_results: list[dict[str, Any]] = []
-            executors = registry.executors
-            for tool_call in tool_calls:
-                emit("tool_call", tool=tool_call.name, args=tool_call.input)
+            tool_results = execute_tool_round(api, registry.executors, tool_calls)
 
-                executor = executors.get(tool_call.name)
-                if executor is None:
-                    result: dict[str, Any] = {"error": f"Unknown tool: {tool_call.name}"}
-                else:
-                    try:
-                        result = executor(api, tool_call.input)
-                    except Exception as e:
-                        result = {"error": str(e)}
-
-                emit("tool_result", tool=tool_call.name, result=result)
-                tool_results.append(
-                    {
-                        "type": "tool_result",
-                        "tool_use_id": tool_call.id,
-                        "content": truncate_tool_result(tool_call.name, result),
-                    }
-                )
-
-            # Check if approaching limit and still have tool calls
-            if turns_consumed >= turn_limit - 1 and tool_calls:
+            if should_emit_continuation(turns_consumed, turn_limit, tool_calls):
                 emit(
                     "needs_continuation",
                     turns_consumed=turns_consumed,
@@ -247,13 +280,13 @@ def run_agent_request(request: dict[str, Any], registry: ToolRegistry) -> None:
                 )
                 break
 
-            # Append tool results and loop
             messages.append({"role": "user", "content": tool_results})
 
-        emit("done")
+        if not protocol_error_emitted:
+            emit("done")
 
     except Exception as e:
-        print(f"Agent error: {e}", file=sys.stderr)
+        # Protocol: errors for PHP on stdout only; keep stderr empty for SubprocessChatClient.
         emit("error", message=str(e))
         sys.exit(1)
     finally:

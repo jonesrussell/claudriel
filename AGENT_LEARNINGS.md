@@ -16,6 +16,8 @@
 
 ## Recent learnings
 
+- **2026-03-30 — Agent JSONL `protocol`:** Every stdout line from `claudriel_agent.emit.emit()` includes `protocol` (`AGENT_PROTOCOL_VERSION`, currently `1.0`). `validate_protocol_events` requires it on every event. `SubprocessChatClient` inspects the first JSON line: omit `protocol` for legacy mocks; if the key is present it must be non-empty and supported (`1.0`) — empty string is rejected. See `docs/specs/agent-subprocess.md` (version bump policy).
+
 - **2026-03-29 — Admin session + Google sign-in (local):** Use **`http://localhost:37840`** for `GOOGLE_*_REDIRECT_URI`, `CLAUDRIEL_API_URL`, and `NUXT_PUBLIC_PHP_ORIGIN` — **not** `127.0.0.1`. The SPA on `localhost:37841` calling PHP on `127.0.0.1:37840` is cross-site; `SameSite=Lax` session cookies are not sent on `fetch`, so GraphQL looks logged out. Same host (`localhost`) fixes it. Google sign-in must preserve `?redirect=` (see `login.twig` + `OAuthController::signin` `oauth_post_login_redirect`).
 
 - **2026-03-29 — `artifact` entity type:** Registered **only** in `WorkspaceServiceProvider`. Do not re-add to `OperationsServiceProvider`; duplicate `EntityType` ids break GraphQL and storage bootstrap (#652). See `Artifact` entity docblock.
