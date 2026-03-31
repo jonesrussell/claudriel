@@ -14,23 +14,15 @@ use Claudriel\Entity\ProspectAudit;
 use Claudriel\Entity\ScheduleEntry;
 use Claudriel\Entity\TriageEntry;
 use Claudriel\Entity\Workspace;
+use Claudriel\Tests\Support\GraphQL\AbstractGraphQlSchemaContractTestCase;
 use GraphQL\Type\Definition\InputObjectType;
 use GraphQL\Type\Definition\NonNull;
 use GraphQL\Type\Definition\ObjectType;
 use GraphQL\Type\Definition\Type;
-use GraphQL\Type\Schema;
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\Attributes\Test;
-use PHPUnit\Framework\TestCase;
-use Symfony\Component\EventDispatcher\EventDispatcher;
-use Waaseyaa\Access\AccountInterface;
-use Waaseyaa\Access\EntityAccessHandler;
 use Waaseyaa\Entity\EntityType;
 use Waaseyaa\Entity\EntityTypeManager;
-use Waaseyaa\GraphQL\Access\GraphQlAccessGuard;
-use Waaseyaa\GraphQL\Resolver\EntityResolver;
-use Waaseyaa\GraphQL\Resolver\ReferenceLoader;
-use Waaseyaa\GraphQL\Schema\SchemaFactory;
 
 /**
  * Contract test: validates Claudriel's entity types produce
@@ -38,17 +30,16 @@ use Waaseyaa\GraphQL\Schema\SchemaFactory;
  *
  * This catches field definition drift between Claudriel entity types
  * and the GraphQL layer without requiring a full kernel boot.
+ *
+ * Uses {@see AbstractGraphQlSchemaContractTestCase} in `tests/Support` (mirror of
+ * `Waaseyaa\Testing\GraphQL` until the split package ships that namespace).
  */
 #[CoversNothing]
-final class SchemaContractTest extends TestCase
+final class SchemaContractTest extends AbstractGraphQlSchemaContractTestCase
 {
-    private EntityTypeManager $entityTypeManager;
-
-    protected function setUp(): void
+    protected function registerEntityTypes(EntityTypeManager $entityTypeManager): void
     {
-        $this->entityTypeManager = new EntityTypeManager(new EventDispatcher);
-
-        $this->entityTypeManager->registerCoreEntityType(new EntityType(
+        $entityTypeManager->registerCoreEntityType(new EntityType(
             id: 'person',
             label: 'Person',
             class: Person::class,
@@ -72,7 +63,7 @@ final class SchemaContractTest extends TestCase
             ],
         ));
 
-        $this->entityTypeManager->registerCoreEntityType(new EntityType(
+        $entityTypeManager->registerCoreEntityType(new EntityType(
             id: 'commitment',
             label: 'Commitment',
             class: Commitment::class,
@@ -96,7 +87,7 @@ final class SchemaContractTest extends TestCase
             ],
         ));
 
-        $this->entityTypeManager->registerCoreEntityType(new EntityType(
+        $entityTypeManager->registerCoreEntityType(new EntityType(
             id: 'workspace',
             label: 'Workspace',
             class: Workspace::class,
@@ -117,7 +108,7 @@ final class SchemaContractTest extends TestCase
             ],
         ));
 
-        $this->entityTypeManager->registerCoreEntityType(new EntityType(
+        $entityTypeManager->registerCoreEntityType(new EntityType(
             id: 'schedule_entry',
             label: 'Schedule Entry',
             class: ScheduleEntry::class,
@@ -141,7 +132,7 @@ final class SchemaContractTest extends TestCase
             ],
         ));
 
-        $this->entityTypeManager->registerCoreEntityType(new EntityType(
+        $entityTypeManager->registerCoreEntityType(new EntityType(
             id: 'triage_entry',
             label: 'Triage Entry',
             class: TriageEntry::class,
@@ -164,7 +155,7 @@ final class SchemaContractTest extends TestCase
             ],
         ));
 
-        $this->entityTypeManager->registerCoreEntityType(new EntityType(
+        $entityTypeManager->registerCoreEntityType(new EntityType(
             id: 'prospect',
             label: 'Prospect',
             class: Prospect::class,
@@ -200,7 +191,7 @@ final class SchemaContractTest extends TestCase
             ],
         ));
 
-        $this->entityTypeManager->registerCoreEntityType(new EntityType(
+        $entityTypeManager->registerCoreEntityType(new EntityType(
             id: 'prospect_attachment',
             label: 'Prospect Attachment',
             class: ProspectAttachment::class,
@@ -218,7 +209,7 @@ final class SchemaContractTest extends TestCase
             ],
         ));
 
-        $this->entityTypeManager->registerCoreEntityType(new EntityType(
+        $entityTypeManager->registerCoreEntityType(new EntityType(
             id: 'prospect_audit',
             label: 'Prospect Audit',
             class: ProspectAudit::class,
@@ -235,7 +226,7 @@ final class SchemaContractTest extends TestCase
             ],
         ));
 
-        $this->entityTypeManager->registerCoreEntityType(new EntityType(
+        $entityTypeManager->registerCoreEntityType(new EntityType(
             id: 'filtered_prospect',
             label: 'Filtered Prospect',
             class: FilteredProspect::class,
@@ -254,7 +245,7 @@ final class SchemaContractTest extends TestCase
             ],
         ));
 
-        $this->entityTypeManager->registerCoreEntityType(new EntityType(
+        $entityTypeManager->registerCoreEntityType(new EntityType(
             id: 'pipeline_config',
             label: 'Pipeline Config',
             class: PipelineConfig::class,
@@ -276,22 +267,6 @@ final class SchemaContractTest extends TestCase
                 'updated_at' => ['type' => 'timestamp', 'readOnly' => true],
             ],
         ));
-    }
-
-    private function buildSchema(): Schema
-    {
-        $accessHandler = new EntityAccessHandler([]);
-        $account = $this->createStub(AccountInterface::class);
-        $guard = new GraphQlAccessGuard($accessHandler, $account);
-        $resolver = new EntityResolver($this->entityTypeManager, $guard);
-        $referenceLoader = new ReferenceLoader($this->entityTypeManager, $guard);
-        $factory = new SchemaFactory(
-            entityTypeManager: $this->entityTypeManager,
-            entityResolver: $resolver,
-            referenceLoader: $referenceLoader,
-        );
-
-        return $factory->build();
     }
 
     #[Test]
@@ -820,14 +795,5 @@ final class SchemaContractTest extends TestCase
         self::assertInstanceOf(ObjectType::class, $listType);
         self::assertTrue($listType->hasField('items'), 'prospectList missing field: items');
         self::assertTrue($listType->hasField('total'), 'prospectList missing field: total');
-    }
-
-    private function unwrapTypeName(Type $type): string
-    {
-        if ($type instanceof NonNull) {
-            $type = $type->getWrappedType();
-        }
-
-        return $type->name;
     }
 }
